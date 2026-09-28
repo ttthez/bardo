@@ -2,8 +2,10 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title id="tituloPagina">Objetivo Agosto · La Sinergia</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title id="tituloPagina">Bardo · La Sinergia</title>
+<meta name="apple-mobile-web-app-title" content="Bardo">
+<meta name="theme-color" content="#0d0a08">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -14,7 +16,6 @@
     --negro:#0d0a08;
     --negro-2:#16110d;
     --carbon:#1f1813;
-    --madera:#3a2a1c;
     --fuego:#e23a16;
     --fuego-claro:#ff5a2c;
     --verde:#3fae5c;
@@ -32,18 +33,41 @@
     line-height:1.5;
     -webkit-font-smoothing:antialiased;
     min-height:100vh;
-    padding:40px 20px 80px;
+    padding:34px 20px calc(104px + env(safe-area-inset-bottom, 0px));
   }
   .wrap{max-width:var(--max);margin:0 auto}
+  [hidden]{display:none !important}
 
-  header{text-align:center;margin-bottom:36px}
-  .kicker{
-    color:var(--fuego-claro);font-weight:700;letter-spacing:.08em;
-    text-transform:uppercase;font-size:.8rem;margin-bottom:6px;
+  .marca{
+    text-align:center;margin-bottom:22px;
+    font-weight:900;font-size:1.45rem;letter-spacing:-.04em;line-height:1;
   }
+  .marca b{color:var(--fuego)}
+  .marca span{
+    display:block;margin-top:5px;
+    font-size:.64rem;font-weight:700;letter-spacing:.22em;
+    text-transform:uppercase;color:var(--gris);
+  }
+
+  header{text-align:center;margin-bottom:24px}
   h1{font-size:2rem;font-weight:900;letter-spacing:-.5px}
   h1 b{color:var(--fuego)}
   .sub{color:var(--crema-tenue);margin-top:8px;font-size:.95rem}
+
+  .mes-nav{display:flex;align-items:center;justify-content:center;gap:8px}
+  .mes-flecha{
+    background:var(--carbon);border:1px solid var(--linea);color:var(--crema);
+    width:34px;height:34px;border-radius:10px;cursor:pointer;
+    font-size:1.1rem;font-family:inherit;line-height:1;flex:none;
+  }
+  .mes-flecha:hover{border-color:var(--fuego);color:var(--fuego-claro)}
+  #mesSelect{
+    flex:0 1 auto;min-width:0;width:auto;text-align:center;
+    color:var(--fuego-claro);font-weight:800;font-size:.8rem;
+    text-transform:uppercase;letter-spacing:.08em;padding:9px 12px;
+  }
+
+  .titulo-objetivo{text-align:center;margin:26px 0 20px}
 
   .card{
     background:var(--negro-2);
@@ -53,6 +77,7 @@
     margin-bottom:20px;
   }
   .card-titulo{font-weight:800;font-size:1.05rem;margin-bottom:16px}
+  .card-nota{font-size:.85rem;color:var(--gris);margin:-8px 0 16px}
 
   .totales{
     display:flex;justify-content:space-between;align-items:baseline;
@@ -78,8 +103,8 @@
     text-shadow:0 1px 2px rgba(0,0,0,.4);
   }
 
-  .stats{display:flex;justify-content:space-between;margin-top:14px;flex-wrap:wrap;gap:10px}
-  .stat{flex:1;min-width:140px}
+  .stats{display:flex;margin-top:14px;flex-wrap:wrap;gap:10px}
+  .stat{flex:1 1 120px}
   .stat .label{color:var(--gris);font-size:.78rem;text-transform:uppercase;letter-spacing:.04em}
   .stat .val{font-size:1.15rem;font-weight:800;margin-top:2px}
 
@@ -88,13 +113,11 @@
     background:rgba(226,58,22,.1);border:1px solid rgba(226,58,22,.25);
     font-weight:600;font-size:.92rem;text-align:center;
   }
-  .motivo.completo{
-    background:rgba(63,174,92,.12);border-color:rgba(63,174,92,.3);
-  }
+  .motivo.completo{background:rgba(63,174,92,.12);border-color:rgba(63,174,92,.3)}
 
   .sync-row{
     display:flex;justify-content:space-between;align-items:center;
-    margin-top:14px;font-size:.78rem;
+    margin:4px 0 14px;font-size:.78rem;gap:10px;flex-wrap:wrap;
   }
   .sync-estado{color:var(--gris)}
 
@@ -107,18 +130,26 @@
   input::placeholder{color:var(--gris)}
   input:focus, select:focus{outline:none;border-color:var(--fuego)}
   input[type="date"]{flex:0 0 150px;color-scheme:dark}
+  input[type="time"]{flex:0 0 120px;color-scheme:dark}
   input[type="number"]{flex:0 0 160px}
+  .input-full{width:100%;flex:none;margin-bottom:10px}
 
   .btn{
     display:inline-flex;align-items:center;justify-content:center;gap:8px;
     font-weight:700;font-size:.95rem;
     padding:12px 22px;border-radius:12px;border:none;cursor:pointer;
     transition:transform .15s ease, background .2s ease;
-    white-space:nowrap;
+    white-space:nowrap;font-family:inherit;
   }
   .btn-fuego{background:var(--fuego);color:#fff}
   .btn-fuego:hover{background:var(--fuego-claro);transform:translateY(-1px)}
-  .btn-fuego:disabled{opacity:.6;cursor:default}
+
+  .btn-mini{
+    font-weight:700;font-size:.85rem;padding:8px 16px;border-radius:10px;
+    border:none;cursor:pointer;font-family:inherit;
+    background:var(--verde);color:#fff;
+  }
+  .btn-mini:hover{background:#4ac26a}
 
   .lista{margin-top:8px}
   .item{
@@ -126,13 +157,13 @@
     padding:12px 4px;border-bottom:1px solid var(--linea);gap:10px;
   }
   .item:last-child{border-bottom:none}
-  .item-info{display:flex;flex-direction:column;gap:2px;min-width:0}
+  .item-info{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1}
   .item-desc{font-weight:600;font-size:.92rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .item-fecha{font-size:.78rem;color:var(--gris)}
   .item-monto{font-weight:800;color:var(--verde);white-space:nowrap;margin-left:auto}
   .item-del{
     background:none;border:none;color:var(--gris);cursor:pointer;
-    font-size:1.1rem;padding:4px 8px;border-radius:8px;line-height:1;
+    font-size:1.1rem;padding:4px 8px;border-radius:8px;line-height:1;font-family:inherit;
   }
   .item-del:hover{color:var(--fuego);background:rgba(226,58,22,.1)}
 
@@ -153,21 +184,15 @@
   .stock-nombre{font-weight:700;font-size:.95rem}
   .stock-cantidad{font-weight:800;color:var(--crema);white-space:nowrap;font-size:1rem;min-width:46px;text-align:right}
   .stock-acciones{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+  .stock-comprometido{font-size:.78rem;color:var(--gris);font-weight:600}
+  .stock-comprometido.falta{color:var(--fuego-claro)}
 
   .venta-fila{display:flex;gap:10px;margin-bottom:10px;flex-wrap:wrap}
   .venta-fila select{flex:2;min-width:150px}
   .venta-fila input{flex:0 0 90px}
 
-  .stock-comprometido{font-size:.78rem;color:var(--gris);font-weight:600}
-  .stock-comprometido.falta{color:var(--fuego-claro)}
-
   .pedido-campos{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px}
-  input[type="time"]{flex:0 0 120px;color-scheme:dark}
-  .input-full{width:100%;flex:none;margin-bottom:10px}
-
-  .pedido{
-    padding:16px 0;border-bottom:1px solid var(--linea);
-  }
+  .pedido{padding:16px 0;border-bottom:1px solid var(--linea)}
   .pedido:last-child{border-bottom:none}
   .pedido-top{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap}
   .pedido-cliente{font-weight:800;font-size:1rem;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
@@ -188,12 +213,19 @@
   .badge-hoy{background:rgba(226,58,22,.18);color:var(--fuego-claro);border:1px solid rgba(226,58,22,.35)}
   .badge-atrasado{background:rgba(226,58,22,.85);color:#fff}
 
-  .btn-mini{
-    font-weight:700;font-size:.85rem;padding:8px 16px;border-radius:10px;
-    border:none;cursor:pointer;font-family:inherit;
-    background:var(--verde);color:#fff;
+  .edit-aviso{
+    display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;
+    padding:11px 14px;border-radius:12px;margin-bottom:14px;font-size:.85rem;font-weight:700;
+    background:rgba(226,58,22,.12);border:1px solid rgba(226,58,22,.3);color:var(--fuego-claro);
   }
-  .btn-mini:hover{background:#4ac26a}
+
+  .toggle{display:flex;gap:6px;margin-bottom:18px;flex-wrap:wrap}
+  .toggle button{
+    background:var(--carbon);border:1px solid var(--linea);color:var(--gris);
+    font-family:inherit;font-size:.8rem;font-weight:700;cursor:pointer;
+    padding:8px 14px;border-radius:999px;
+  }
+  .toggle button.activo{background:rgba(226,58,22,.15);border-color:var(--fuego);color:var(--fuego-claro)}
 
   .resumen{margin-bottom:22px;padding-bottom:20px;border-bottom:1px solid var(--linea)}
   .resumen-total{
@@ -209,134 +241,316 @@
     background:linear-gradient(90deg,var(--fuego),var(--fuego-claro));
   }
   .resumen-num{font-weight:800;font-size:.92rem;flex:0 0 34px;text-align:right}
+
+  .prod-controles{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:6px}
+  .prod-aviso{
+    padding:12px 14px;border-radius:12px;margin:16px 0;font-size:.88rem;font-weight:600;
+    background:rgba(226,58,22,.12);border:1px solid rgba(226,58,22,.3);color:var(--fuego-claro);
+  }
+  .prod-tabla{margin-top:18px}
+  .prod-head, .prod-fila{
+    display:grid;grid-template-columns:1fr 62px 52px 52px;
+    gap:6px;align-items:center;padding:9px 0;
+  }
+  .prod-head{
+    font-size:.68rem;text-transform:uppercase;letter-spacing:.04em;
+    color:var(--gris);border-bottom:1px solid var(--linea);font-weight:700;
+  }
+  .prod-fila{border-bottom:1px solid var(--linea);font-size:.9rem}
+  .prod-fila:last-child{border-bottom:none}
+  .prod-nombre{font-weight:700;overflow:hidden;text-overflow:ellipsis}
+  .prod-num{text-align:center;font-weight:700;color:var(--crema-tenue)}
+  .prod-num.cero{color:var(--gris);opacity:.45}
+  .prod-num.pedidos{color:var(--fuego-claro)}
+  .prod-total{text-align:center;font-weight:900;font-size:1.02rem}
+  .prod-resumen{
+    display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;
+    margin-top:16px;font-size:.85rem;color:var(--gris);
+  }
+
+  /* historial unificado: plata que entró + pizzas que salieron */
+  .hist-tot{
+    display:flex;gap:12px;flex-wrap:wrap;
+    padding-bottom:18px;margin-bottom:6px;border-bottom:1px solid var(--linea);
+  }
+  .hist-tot > div{flex:1 1 130px}
+  .hist-tot .label{
+    color:var(--gris);font-size:.72rem;text-transform:uppercase;letter-spacing:.04em;
+  }
+  .hist-tot .val{font-size:1.5rem;font-weight:900;margin-top:2px}
+  .hist-tot .val.plata{color:var(--verde)}
+  .hist-nums{text-align:right;margin-left:auto;flex:none}
+  .hist-pizzas{font-size:.78rem;color:var(--crema-tenue);font-weight:700;margin-top:1px}
+  .hist-sinplata{font-weight:800;color:var(--gris);font-size:.85rem}
+
+  /* barra de pestañas fija abajo, estilo app */
+  .tabbar{
+    position:fixed;left:0;right:0;bottom:0;z-index:60;
+    display:flex;
+    background:rgba(13,10,8,.94);
+    backdrop-filter:blur(14px);
+    border-top:1px solid var(--linea);
+    padding-bottom:env(safe-area-inset-bottom, 0px);
+  }
+  .tabbar button{
+    flex:1;background:none;border:none;color:var(--gris);
+    font-family:inherit;font-size:.65rem;font-weight:800;
+    padding:9px 2px 8px;cursor:pointer;
+    display:flex;flex-direction:column;align-items:center;gap:3px;
+    letter-spacing:.02em;
+  }
+  .tabbar .ico{font-size:1.3rem;line-height:1;filter:grayscale(1) opacity(.55)}
+  .tabbar button.activo{color:var(--fuego-claro)}
+  .tabbar button.activo .ico{filter:none}
+  .tab-badge{
+    position:absolute;transform:translate(14px,-4px);
+    background:var(--fuego);color:#fff;font-size:.6rem;font-weight:900;
+    min-width:16px;height:16px;border-radius:999px;
+    display:flex;align-items:center;justify-content:center;padding:0 4px;
+  }
 </style>
 </head>
 <body>
 
 <div class="wrap">
-  <header>
-    <div class="kicker" id="kicker">Julio 2026</div>
-    <h1>Objetivo <b id="metaTitulo">$7.000.000</b></h1>
-    <div class="sub">Ingresos de La Sinergia este mes</div>
+
+  <div class="marca">Bard<b>o</b><span>La Sinergia</span></div>
+
+  <header id="cabeceraMes">
+    <div class="mes-nav">
+      <button type="button" class="mes-flecha" id="mesPrev" title="Mes anterior">‹</button>
+      <select id="mesSelect"></select>
+      <button type="button" class="mes-flecha" id="mesNext" title="Mes siguiente">›</button>
+    </div>
   </header>
 
-  <div class="card">
-    <div class="totales">
-      <div class="actual" id="totalActual">$0</div>
-      <div class="meta" id="metaLabel">de $7.000.000</div>
+  <!-- ============ PEDIDOS ============ -->
+  <section class="tab-panel" id="panel-pedidos">
+    <div class="card">
+      <div class="card-titulo">Pedidos a entregar</div>
+      <div id="pedidoEditandoAviso"></div>
+      <div class="pedido-campos">
+        <input type="text" id="pedidoCliente" placeholder="Cliente (ej: Paula)">
+        <input type="date" id="pedidoFecha">
+        <input type="time" id="pedidoHora">
+      </div>
+      <input type="text" id="pedidoDireccion" class="input-full" placeholder="Dirección de entrega (ej: Av. Cabildo 1234)">
+      <input type="text" id="pedidoNotas" class="input-full" placeholder="Notas (opcional): tocar timbre 2B, sin picante…">
+      <div id="pedidoFilas"></div>
+      <div class="footer-row" style="justify-content:flex-start;margin:8px 0 18px">
+        <button type="button" class="link-btn" id="btnPedidoAgregarFila">+ Agregar otro sabor al pedido</button>
+      </div>
+      <button type="button" class="btn btn-fuego" id="btnAgendarPedido" style="width:100%">Agendar pedido</button>
+      <div class="lista" id="listaPedidos" style="margin-top:24px"></div>
     </div>
-    <div class="barra-ext">
-      <div class="barra-int" id="barraInt" style="width:0%">
-        <span class="barra-pct" id="barraPct"></span>
+
+    <div class="card">
+      <div class="card-titulo">Venta manual</div>
+      <div class="card-nota">
+        Para una venta que no estaba agendada. Descuenta del stock al instante.
+      </div>
+      <div id="ventaFilas"></div>
+      <div class="footer-row" style="justify-content:flex-start;margin:8px 0 18px">
+        <button type="button" class="link-btn" id="btnAgregarFila">+ Agregar otro sabor a la venta</button>
+      </div>
+      <button type="button" class="btn btn-fuego" id="btnRegistrarVenta" style="width:100%">Registrar venta y descontar stock</button>
+    </div>
+  </section>
+
+  <!-- ============ OBJETIVO ============ -->
+  <section class="tab-panel" id="panel-objetivo">
+    <div class="titulo-objetivo">
+      <h1>Objetivo <b id="metaTitulo">$0</b></h1>
+      <div class="sub">
+        Ingresos de La Sinergia ·
+        <button class="link-btn" id="btnEditarMeta">cambiar objetivo</button>
       </div>
     </div>
-    <div class="stats">
-      <div class="stat">
-        <div class="label">Falta</div>
-        <div class="val" id="statFalta">$7.000.000</div>
+
+    <div class="card">
+      <div class="totales">
+        <div class="actual" id="totalActual">$0</div>
+        <div class="meta" id="metaLabel">de $0</div>
       </div>
-      <div class="stat">
-        <div class="label">Ingresos anotados</div>
-        <div class="val" id="statCant">0</div>
+      <div class="barra-ext">
+        <div class="barra-int" id="barraInt" style="width:0%">
+          <span class="barra-pct" id="barraPct"></span>
+        </div>
+      </div>
+      <div class="stats">
+        <div class="stat">
+          <div class="label">Falta</div>
+          <div class="val" id="statFalta">$0</div>
+        </div>
+        <div class="stat">
+          <div class="label">Ingresos</div>
+          <div class="val" id="statCant">0</div>
+        </div>
+        <div class="stat">
+          <div class="label">Pedidos</div>
+          <div class="val" id="statPedidos">0</div>
+        </div>
+        <div class="stat">
+          <div class="label">Pizzas</div>
+          <div class="val" id="statPizzas">0</div>
+        </div>
+      </div>
+      <div class="motivo" id="motivo"></div>
+    </div>
+
+    <div class="card">
+      <form id="form">
+        <input type="date" id="fecha" required>
+        <input type="text" id="desc" placeholder="Descripción (ej: Catering Pérez)" required>
+        <input type="number" id="monto" placeholder="Monto $" min="1" step="1" required>
+        <button type="submit" class="btn btn-fuego" id="btnAnotar">Anotar</button>
+      </form>
+    </div>
+
+    <div class="card">
+      <div class="card-titulo">Ingresos del mes</div>
+      <div class="lista" id="lista"></div>
+    </div>
+  </section>
+
+  <!-- ============ PRODUCCIÓN ============ -->
+  <section class="tab-panel" id="panel-produccion">
+    <div class="card">
+      <div class="card-titulo">Día de producción</div>
+      <div class="card-nota">
+        Primero cubre los pedidos agendados, y el resto lo reparte según cuánto se vende
+        históricamente de cada sabor.
+      </div>
+      <div class="prod-controles">
+        <input type="number" id="prodTotal" min="1" step="1" placeholder="¿Cuántas armás?" value="30">
+        <button type="button" class="btn btn-fuego" id="btnCalcularProd">Calcular</button>
+      </div>
+      <div id="prodResultado"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-titulo">Stock de pizzas</div>
+      <div class="totales">
+        <div class="actual" id="stockTotal">0</div>
+        <div class="meta">pizzas en stock</div>
+      </div>
+      <div class="stock-list" id="stockLista"></div>
+      <div class="footer-row" style="margin-top:16px">
+        <button class="link-btn" id="btnAgregarSabor">+ Agregar sabor</button>
       </div>
     </div>
-    <div class="motivo" id="motivo"></div>
-    <div class="sync-row">
-      <span class="sync-estado" id="estado">Cargando…</span>
-      <button class="link-btn" id="btnRefrescar">Actualizar ahora</button>
-    </div>
-  </div>
+  </section>
 
-  <div class="card">
-    <form id="form">
-      <input type="date" id="fecha" required>
-      <input type="text" id="desc" placeholder="Descripción (ej: Catering Pérez)" required>
-      <input type="number" id="monto" placeholder="Monto $" min="1" step="1" required>
-      <button type="submit" class="btn btn-fuego" id="btnAnotar">Anotar</button>
-    </form>
-  </div>
-
-  <div class="card">
-    <div class="card-titulo">Pedidos a entregar</div>
-    <div class="pedido-campos">
-      <input type="text" id="pedidoCliente" placeholder="Cliente (ej: Paula)">
-      <input type="date" id="pedidoFecha">
-      <input type="time" id="pedidoHora">
+  <!-- ============ ESTADÍSTICAS Y VENTAS ============ -->
+  <section class="tab-panel" id="panel-stats">
+    <div class="card">
+      <div class="card-titulo">Sabores más vendidos</div>
+      <div class="toggle" id="toggleResumen">
+        <button type="button" data-rango="mes" class="activo">Este mes</button>
+        <button type="button" data-rango="todo">Histórico</button>
+      </div>
+      <div id="resumenVentas"></div>
     </div>
-    <input type="text" id="pedidoDireccion" class="input-full" placeholder="Dirección de entrega (ej: Av. Cabildo 1234)">
-    <input type="text" id="pedidoNotas" class="input-full" placeholder="Notas (opcional): tocar timbre 2B, sin picante…">
-    <div id="pedidoFilas"></div>
-    <div class="footer-row" style="justify-content:flex-start;margin:8px 0 18px">
-      <button type="button" class="link-btn" id="btnPedidoAgregarFila">+ Agregar otro sabor al pedido</button>
-    </div>
-    <button type="button" class="btn btn-fuego" id="btnAgendarPedido" style="width:100%">Agendar pedido</button>
-    <div class="lista" id="listaPedidos" style="margin-top:24px"></div>
-  </div>
 
-  <div class="card">
-    <div class="lista" id="lista"></div>
-  </div>
-
-  <div class="card">
-    <div class="card-titulo">Stock de pizzas</div>
-    <div class="totales">
-      <div class="actual" id="stockTotal">0</div>
-      <div class="meta">pizzas en stock</div>
+    <div class="card">
+      <div class="card-titulo">Historial del mes</div>
+      <div class="hist-tot" id="histTotales"></div>
+      <div class="lista" id="listaHistorial"></div>
     </div>
-    <div class="stock-list" id="stockLista"></div>
-    <div class="footer-row" style="margin-top:16px">
-      <button class="link-btn" id="btnAgregarSabor">+ Agregar sabor</button>
-    </div>
-  </div>
+  </section>
 
-  <div class="card">
-    <div class="card-titulo">Registrar venta</div>
-    <div id="ventaFilas"></div>
-    <div class="footer-row" style="justify-content:flex-start;margin:8px 0 18px">
-      <button type="button" class="link-btn" id="btnAgregarFila">+ Agregar otro sabor a la venta</button>
-    </div>
-    <button type="button" class="btn btn-fuego" id="btnRegistrarVenta" style="width:100%">Registrar venta y descontar stock</button>
-  </div>
-
-  <div class="card">
-    <div class="card-titulo">Ventas de pizzas registradas</div>
-    <div id="resumenVentas"></div>
-    <div class="lista" id="listaVentas"></div>
+  <div class="sync-row">
+    <span class="sync-estado" id="estado">Cargando…</span>
+    <button class="link-btn" id="btnRefrescar">Actualizar ahora</button>
   </div>
 
   <div class="footer-row">
     <button class="link-btn" id="btnExport">Exportar backup</button>
     <button class="link-btn" id="btnImport">Importar backup</button>
-    <button class="link-btn" id="btnReset">Reiniciar mes</button>
   </div>
   <input type="file" id="fileImport" accept="application/json" style="display:none">
 </div>
 
+<nav class="tabbar" id="tabbar">
+  <button type="button" data-tab="pedidos"><span class="ico">📋</span>Pedidos</button>
+  <button type="button" data-tab="objetivo"><span class="ico">🎯</span>Objetivo</button>
+  <button type="button" data-tab="produccion"><span class="ico">🍕</span>Producción</button>
+  <button type="button" data-tab="stats"><span class="ico">📊</span>Ventas</button>
+</nav>
+
 <script>
-  const MES = 'Agosto 2026';
-  const META = 5000000;
   const FIREBASE_BASE = 'https://objetivo-julio-default-rtdb.firebaseio.com/';
   const INGRESOS_URL = FIREBASE_BASE + 'datos.json';
-  const PIZZAS_URL = FIREBASE_BASE + 'pizzas.json';
-  const PEDIDOS_URL = FIREBASE_BASE + 'pedidos.json';
-  const CACHE_KEY_INGRESOS = 'lasinergia_objetivo_julio_2026_cache';
-  const CACHE_KEY_PIZZAS = 'lasinergia_objetivo_julio_2026_pizzas_cache';
-  const CACHE_KEY_PEDIDOS = 'lasinergia_objetivo_julio_2026_pedidos_cache';
-  const SABORES_DEFAULT = ['Margarita','Honey pesto','Diavola','Di patate','Caramellata','4 Formaggi'];
+  const PIZZAS_URL   = FIREBASE_BASE + 'pizzas.json';
+  const PEDIDOS_URL  = FIREBASE_BASE + 'pedidos.json';
+  const METAS_URL    = FIREBASE_BASE + 'metas.json';
 
-  let items = [];
-  let pizzas = { stock: [], ventas: [] };
+  const CACHE_KEY_INGRESOS = 'lasinergia_cache_ingresos';
+  const CACHE_KEY_PIZZAS   = 'lasinergia_cache_pizzas';
+  const CACHE_KEY_PEDIDOS  = 'lasinergia_cache_pedidos';
+  const CACHE_KEY_METAS    = 'lasinergia_cache_metas';
+  const CACHE_KEY_TAB      = 'lasinergia_tab';
+
+  const SABORES_DEFAULT = ['Margarita','Honey pesto','Diavola','Di patate','Caramellata','4 Formaggi'];
+  const META_DEFAULT = 5000000;
+  const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+  const TABS_CON_MES = ['objetivo','stats'];
+
+  let items   = [];
+  let pizzas  = { stock: [], ventas: [] };
   let pedidos = [];
-  let ventaDraft = [{ sabor: null, cantidad: 1 }];
+  let metas   = {};
+
+  let ventaDraft  = [{ sabor: null, cantidad: 1 }];
   let pedidoDraft = [{ sabor: null, cantidad: 1 }];
+  let editandoPedidoId = null;   // si no es null, el formulario está editando ese pedido
+  let rangoResumen = 'mes';
+  let planCalculado = false;
+  let tabActual = 'pedidos';
+  let filasHistorial = [];
 
   const fmt = n => '$' + Math.round(n).toLocaleString('es-AR');
 
-  // fecha local (no UTC), para que un pedido de las 22h no salte al día siguiente
+  // ---------- fechas y meses ----------
+
+  // fecha local (no UTC), para que una venta de las 22h no salte al día siguiente
   function hoyISO(){
     const d = new Date();
     return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
   }
+  function mesDe(fecha){ return (fecha || '').slice(0, 7); }
+  function mesActual(){ return hoyISO().slice(0, 7); }
+  function nombreMes(ym){
+    const [y, m] = ym.split('-');
+    return `${MESES[+m - 1]} ${y}`;
+  }
+  function correrMes(ym, delta){
+    const [y, m] = ym.split('-').map(Number);
+    const d = new Date(y, m - 1 + delta, 1);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+  }
+  function formatoFecha(f){
+    const [y,m,d] = f.split('-');
+    return `${d}/${m}/${y}`;
+  }
+
+  let mesSel = mesActual();
+
+  function mesesDisponibles(){
+    const set = new Set([mesActual(), mesSel]);
+    items.forEach(i => set.add(mesDe(i.fecha)));
+    pizzas.ventas.forEach(v => set.add(mesDe(v.fecha)));
+    pedidos.forEach(p => set.add(mesDe(p.fecha)));
+    Object.keys(metas).forEach(m => set.add(m));
+    return [...set].filter(m => /^\d{4}-\d{2}$/.test(m)).sort().reverse();
+  }
+
+  function metaDe(ym){
+    const v = metas[ym];
+    return typeof v === 'number' && v > 0 ? v : META_DEFAULT;
+  }
+
+  // ---------- almacenamiento ----------
 
   function leerCache(key, fallback){
     try{
@@ -345,7 +559,7 @@
     }catch(e){ return fallback; }
   }
   function guardarCache(key, data){
-    localStorage.setItem(key, JSON.stringify(data));
+    try{ localStorage.setItem(key, JSON.stringify(data)); }catch(e){}
   }
 
   async function fetchJSON(url){
@@ -353,8 +567,9 @@
     if(!res.ok) throw new Error('status ' + res.status);
     return await res.json();
   }
+
   // revLocal sube con cada cambio hecho desde este dispositivo;
-  // escrituras cuenta los guardados que todavía están viajando al servidor.
+  // escrituras cuenta los guardados que todavía viajan al servidor.
   // Juntos evitan que la sincronización automática pise un cambio recién hecho.
   let revLocal = 0;
   let escrituras = 0;
@@ -376,107 +591,70 @@
   }
 
   async function refrescarTodo(mostrarCarga){
-    // si hay algo guardándose, no traemos nada: el servidor todavía tiene la versión vieja
     if(escrituras > 0) return;
 
     const rev = revLocal;
     if(mostrarCarga) setEstado('Actualizando…', true);
-    let ok = true;
-    let nIngresos, nPizzas, nPedidos;
 
-    try{
-      nIngresos = (await fetchJSON(INGRESOS_URL)) || [];
-    }catch(e){
-      nIngresos = leerCache(CACHE_KEY_INGRESOS, []);
-      ok = false;
-    }
-
-    try{
-      const remoto = await fetchJSON(PIZZAS_URL);
-      if(remoto && Array.isArray(remoto.stock)){
-        nPizzas = { stock: remoto.stock, ventas: Array.isArray(remoto.ventas) ? remoto.ventas : [] };
-      }else{
-        nPizzas = { stock: SABORES_DEFAULT.map(nombre => ({ nombre, cantidad: 0 })), ventas: [] };
-        await guardarJSON(PIZZAS_URL, nPizzas);
-      }
-    }catch(e){
-      nPizzas = leerCache(CACHE_KEY_PIZZAS, { stock: SABORES_DEFAULT.map(nombre => ({ nombre, cantidad: 0 })), ventas: [] });
-      ok = false;
-    }
-
-    try{
-      nPedidos = (await fetchJSON(PEDIDOS_URL)) || [];
-    }catch(e){
-      nPedidos = leerCache(CACHE_KEY_PEDIDOS, []);
-      ok = false;
-    }
+    const [rIng, rPiz, rPed, rMet] = await Promise.allSettled([
+      fetchJSON(INGRESOS_URL), fetchJSON(PIZZAS_URL), fetchJSON(PEDIDOS_URL), fetchJSON(METAS_URL)
+    ]);
 
     // si mientras traíamos datos tocaste algo acá, descartamos lo del servidor
     if(revLocal !== rev || escrituras > 0) return;
 
-    items = nIngresos;
-    pizzas = nPizzas;
-    pedidos = nPedidos;
+    const ok = [rIng, rPiz, rPed, rMet].every(r => r.status === 'fulfilled');
+
+    items = rIng.status === 'fulfilled'
+      ? (rIng.value || [])
+      : leerCache(CACHE_KEY_INGRESOS, []);
+
+    if(rPiz.status === 'fulfilled'){
+      const remoto = rPiz.value;
+      pizzas = (remoto && Array.isArray(remoto.stock))
+        ? { stock: remoto.stock, ventas: Array.isArray(remoto.ventas) ? remoto.ventas : [] }
+        : { stock: SABORES_DEFAULT.map(nombre => ({ nombre, cantidad: 0 })), ventas: [] };
+    }else{
+      pizzas = leerCache(CACHE_KEY_PIZZAS, { stock: SABORES_DEFAULT.map(nombre => ({ nombre, cantidad: 0 })), ventas: [] });
+    }
+
+    pedidos = rPed.status === 'fulfilled'
+      ? (rPed.value || [])
+      : leerCache(CACHE_KEY_PEDIDOS, []);
+
+    metas = rMet.status === 'fulfilled'
+      ? (rMet.value || {})
+      : leerCache(CACHE_KEY_METAS, {});
+
     guardarCache(CACHE_KEY_INGRESOS, items);
     guardarCache(CACHE_KEY_PIZZAS, pizzas);
     guardarCache(CACHE_KEY_PEDIDOS, pedidos);
+    guardarCache(CACHE_KEY_METAS, metas);
 
     setEstado(ok ? 'Sincronizado ✓' : 'Sin conexión — mostrando última copia guardada', ok);
-    renderIngresos();
-    renderPizzas();
-    renderPedidos();
+    renderTodo();
   }
 
-  async function persistirIngresos(){
-    revLocal++;
-    guardarCache(CACHE_KEY_INGRESOS, items);
-    renderIngresos();
-    try{
-      await guardarJSON(INGRESOS_URL, items);
-      setEstado('Sincronizado ✓', true);
-    }catch(e){
-      setEstado('No se pudo sincronizar — vas a reintentar al actualizar', false);
-    }
+  function hacerPersistidor(url, cacheKey, getData){
+    return async function(){
+      revLocal++;
+      guardarCache(cacheKey, getData());
+      renderTodo();
+      try{
+        await guardarJSON(url, getData());
+        setEstado('Sincronizado ✓', true);
+      }catch(e){
+        setEstado('No se pudo sincronizar — vas a reintentar al actualizar', false);
+      }
+    };
   }
 
-  async function persistirPizzas(){
-    revLocal++;
-    guardarCache(CACHE_KEY_PIZZAS, pizzas);
-    renderPizzas();
-    try{
-      await guardarJSON(PIZZAS_URL, pizzas);
-      setEstado('Sincronizado ✓', true);
-    }catch(e){
-      setEstado('No se pudo sincronizar — vas a reintentar al actualizar', false);
-    }
-  }
+  const persistirIngresos = hacerPersistidor(INGRESOS_URL, CACHE_KEY_INGRESOS, () => items);
+  const persistirPizzas   = hacerPersistidor(PIZZAS_URL,   CACHE_KEY_PIZZAS,   () => pizzas);
+  const persistirPedidos  = hacerPersistidor(PEDIDOS_URL,  CACHE_KEY_PEDIDOS,  () => pedidos);
+  const persistirMetas    = hacerPersistidor(METAS_URL,    CACHE_KEY_METAS,    () => metas);
 
-  async function persistirPedidos(){
-    revLocal++;
-    guardarCache(CACHE_KEY_PEDIDOS, pedidos);
-    renderPedidos();
-    renderStockLista();
-    try{
-      await guardarJSON(PEDIDOS_URL, pedidos);
-      setEstado('Sincronizado ✓', true);
-    }catch(e){
-      setEstado('No se pudo sincronizar — vas a reintentar al actualizar', false);
-    }
-  }
-
-  function mensajeMotivo(pct, total){
-    if(total <= 0) return 'Anotá tu primer ingreso del mes y arrancamos a sumar 💪';
-    if(pct >= 100) return '¡Objetivo cumplido! 🎉 Superaste los $7.000.000. Grande el equipo.';
-    if(pct >= 75) return `Estás en la recta final: ${pct.toFixed(0)}% del objetivo. ¡Sigue así!`;
-    if(pct >= 50) return `Vas por la mitad del camino (${pct.toFixed(0)}%). ¡A no aflojar!`;
-    if(pct >= 25) return `Buen arranque: ya llevás el ${pct.toFixed(0)}% del objetivo.`;
-    return `Primeros pasos del mes: ${pct.toFixed(0)}% del objetivo. Cada ingreso suma.`;
-  }
-
-  function formatoFecha(f){
-    const [y,m,d] = f.split('-');
-    return `${d}/${m}/${y}`;
-  }
+  // ---------- helpers ----------
 
   function escapeHtml(s){
     const div = document.createElement('div');
@@ -484,15 +662,110 @@
     return div.innerHTML;
   }
 
+  // pizzas ya prometidas en pedidos agendados (todavía no entregados)
+  function comprometido(nombre){
+    return pedidos.reduce((tot, p) =>
+      tot + p.items.filter(i => i.nombre === nombre).reduce((s, i) => s + i.cantidad, 0), 0);
+  }
+
+  function ventasDe(rango){
+    return rango === 'todo'
+      ? pizzas.ventas
+      : pizzas.ventas.filter(v => mesDe(v.fecha) === mesSel);
+  }
+
+  function contarPorSabor(ventas){
+    const cont = {};
+    ventas.forEach(v => v.items.forEach(i => {
+      cont[i.nombre] = (cont[i.nombre] || 0) + i.cantidad;
+    }));
+    return cont;
+  }
+
+  function totalPizzasDe(venta){
+    return venta.items.reduce((s,i) => s + i.cantidad, 0);
+  }
+
+  function mensajeMotivo(pct, total){
+    if(total <= 0) return 'Anotá tu primer ingreso del mes y arrancamos a sumar 💪';
+    if(pct >= 100) return `¡Objetivo cumplido! 🎉 Superaste la meta de ${nombreMes(mesSel)}. Grande el equipo.`;
+    if(pct >= 75) return `Estás en la recta final: ${pct.toFixed(0)}% del objetivo. ¡Sigue así!`;
+    if(pct >= 50) return `Vas por la mitad del camino (${pct.toFixed(0)}%). ¡A no aflojar!`;
+    if(pct >= 25) return `Buen arranque: ya llevás el ${pct.toFixed(0)}% del objetivo.`;
+    return `Primeros pasos del mes: ${pct.toFixed(0)}% del objetivo. Cada ingreso suma.`;
+  }
+
+  // ---------- pestañas ----------
+
+  function irATab(tab){
+    tabActual = tab;
+    document.querySelectorAll('.tab-panel').forEach(p => {
+      p.hidden = p.id !== 'panel-' + tab;
+    });
+    document.querySelectorAll('#tabbar button').forEach(b => {
+      b.classList.toggle('activo', b.dataset.tab === tab);
+    });
+    document.getElementById('cabeceraMes').hidden = !TABS_CON_MES.includes(tab);
+    guardarCache(CACHE_KEY_TAB, tab);
+    window.scrollTo(0, 0);
+  }
+
+  function renderBadgePedidos(){
+    const hoy = hoyISO();
+    const urgentes = pedidos.filter(p => p.fecha <= hoy).length;
+    const btn = document.querySelector('#tabbar button[data-tab="pedidos"] .ico');
+    const viejo = btn.querySelector('.tab-badge');
+    if(viejo) viejo.remove();
+    if(urgentes > 0){
+      const b = document.createElement('span');
+      b.className = 'tab-badge';
+      b.textContent = urgentes;
+      btn.appendChild(b);
+    }
+  }
+
+  // ---------- render ----------
+
+  function renderTodo(){
+    renderCabecera();
+    renderIngresos();
+    renderPedidos();
+    renderStockLista();
+    renderVentaForm();
+    renderResumenVentas();
+    renderHistorial();
+    renderProduccion();
+    renderBadgePedidos();
+  }
+
+  function renderCabecera(){
+    const sel = document.getElementById('mesSelect');
+    const meses = mesesDisponibles();
+    sel.innerHTML = meses.map(m =>
+      `<option value="${m}" ${m === mesSel ? 'selected' : ''}>${nombreMes(m)}</option>`).join('');
+
+    const meta = metaDe(mesSel);
+    document.getElementById('tituloPagina').textContent = `Bardo · ${nombreMes(mesSel)}`;
+    document.getElementById('metaTitulo').textContent = fmt(meta);
+    document.getElementById('metaLabel').textContent = `de ${fmt(meta)}`;
+  }
+
   function renderIngresos(){
-    const ordenados = items.slice().sort((a,b) => b.fecha.localeCompare(a.fecha));
-    const total = items.reduce((s,i) => s + i.monto, 0);
-    const pct = Math.min((total / META) * 100, 100);
-    const pctReal = (total / META) * 100;
+    const meta = metaDe(mesSel);
+    const delMes = items.filter(i => mesDe(i.fecha) === mesSel);
+    const ordenados = delMes.slice().sort((a,b) => b.fecha.localeCompare(a.fecha));
+    const total = delMes.reduce((s,i) => s + i.monto, 0);
+    const pctReal = (total / meta) * 100;
+    const pct = Math.min(pctReal, 100);
+
+    const ventasMes = ventasDe('mes');
+    const pizzasMes = ventasMes.reduce((s,v) => s + totalPizzasDe(v), 0);
 
     document.getElementById('totalActual').textContent = fmt(total);
-    document.getElementById('statFalta').textContent = fmt(Math.max(META - total, 0));
-    document.getElementById('statCant').textContent = items.length;
+    document.getElementById('statFalta').textContent = fmt(Math.max(meta - total, 0));
+    document.getElementById('statCant').textContent = delMes.length;
+    document.getElementById('statPedidos').textContent = ventasMes.length;
+    document.getElementById('statPizzas').textContent = pizzasMes;
 
     const barra = document.getElementById('barraInt');
     barra.style.width = pct + '%';
@@ -504,7 +777,7 @@
 
     const lista = document.getElementById('lista');
     if(ordenados.length === 0){
-      lista.innerHTML = '<div class="vacio">Todavía no anotaste ningún ingreso.</div>';
+      lista.innerHTML = `<div class="vacio">No hay ingresos anotados en ${nombreMes(mesSel)}.</div>`;
       return;
     }
     lista.innerHTML = ordenados.map(i => `
@@ -527,87 +800,70 @@
     });
   }
 
-  function renderPizzas(){
-    renderStockLista();
-    renderVentaForm();
-    renderVentasLista();
-  }
-
-  function renderStockLista(){
-    const total = pizzas.stock.reduce((s,i) => s + i.cantidad, 0);
-    document.getElementById('stockTotal').textContent = total;
-
-    const cont = document.getElementById('stockLista');
-    if(pizzas.stock.length === 0){
-      cont.innerHTML = '<div class="vacio">No hay sabores cargados todavía.</div>';
-      return;
-    }
-    cont.innerHTML = pizzas.stock.map(s => {
-      const comp = comprometido(s.nombre);
-      const falta = comp > s.cantidad;
-      const nota = comp > 0
-        ? `<div class="stock-comprometido ${falta ? 'falta' : ''}">${comp} comprometidas${falta ? ` · faltan ${comp - s.cantidad}` : ''}</div>`
-        : '';
-      return `
-      <div class="stock-item">
-        <div class="stock-nombre">${escapeHtml(s.nombre)}${nota}</div>
-        <div class="stock-cantidad">${s.cantidad} u.</div>
-        <div class="stock-acciones">
-          <button class="link-btn" data-reponer="${escapeHtml(s.nombre)}">+ Reponer</button>
-          <button class="link-btn" data-editar="${escapeHtml(s.nombre)}">Editar</button>
-          <button class="item-del" data-quitar="${escapeHtml(s.nombre)}" title="Quitar sabor">✕</button>
-        </div>
-      </div>`;
-    }).join('');
-
-    cont.querySelectorAll('[data-reponer]').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const nombre = btn.getAttribute('data-reponer');
-        const val = prompt(`¿Cuántas unidades de "${nombre}" sumás al stock?`, '0');
-        if(val === null) return;
-        const cant = parseInt(val);
-        if(!cant || cant <= 0) return;
-        const item = pizzas.stock.find(s => s.nombre === nombre);
-        item.cantidad += cant;
-        persistirPizzas();
-      });
-    });
-    cont.querySelectorAll('[data-editar]').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const nombre = btn.getAttribute('data-editar');
-        const item = pizzas.stock.find(s => s.nombre === nombre);
-        const val = prompt(`Corregir stock de "${nombre}":`, item.cantidad);
-        if(val === null) return;
-        const num = parseInt(val);
-        if(isNaN(num) || num < 0) return;
-        item.cantidad = num;
-        persistirPizzas();
-      });
-    });
-    cont.querySelectorAll('[data-quitar]').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const nombre = btn.getAttribute('data-quitar');
-        if(!confirm(`¿Quitar "${nombre}" del stock? (esto no borra las ventas ya registradas)`)) return;
-        pizzas.stock = pizzas.stock.filter(s => s.nombre !== nombre);
-        persistirPizzas();
-      });
-    });
-  }
-
-  // pizzas ya prometidas en pedidos agendados (todavía no entregados)
-  function comprometido(nombre){
-    return pedidos.reduce((tot, p) =>
-      tot + p.items.filter(i => i.nombre === nombre).reduce((s, i) => s + i.cantidad, 0), 0);
-  }
-
   function renderPedidos(){
+    renderPedidoModo();
     renderPedidoForm();
     renderPedidosLista();
   }
 
+  // muestra si el formulario está creando un pedido nuevo o editando uno existente
+  function renderPedidoModo(){
+    const aviso = document.getElementById('pedidoEditandoAviso');
+    const btn = document.getElementById('btnAgendarPedido');
+    const enEdicion = editandoPedidoId !== null
+      ? pedidos.find(p => p.id === editandoPedidoId)
+      : null;
+
+    if(!enEdicion){
+      editandoPedidoId = null;
+      aviso.innerHTML = '';
+      btn.textContent = 'Agendar pedido';
+      return;
+    }
+
+    aviso.innerHTML = `
+      <div class="edit-aviso">
+        <span>✎ Editando el pedido de ${escapeHtml(enEdicion.cliente)}</span>
+        <button type="button" class="link-btn" id="btnCancelarEdicion">descartar cambios</button>
+      </div>`;
+    btn.textContent = 'Guardar cambios';
+
+    document.getElementById('btnCancelarEdicion').addEventListener('click', salirDeEdicion);
+  }
+
+  function limpiarFormPedido(){
+    document.getElementById('pedidoCliente').value = '';
+    document.getElementById('pedidoFecha').value = hoyISO();
+    document.getElementById('pedidoHora').value = '';
+    document.getElementById('pedidoDireccion').value = '';
+    document.getElementById('pedidoNotas').value = '';
+    pedidoDraft = [{ sabor: null, cantidad: 1 }];
+  }
+
+  function salirDeEdicion(){
+    editandoPedidoId = null;
+    limpiarFormPedido();
+    renderPedidos();
+  }
+
+  function editarPedido(id){
+    const p = pedidos.find(x => x.id === id);
+    if(!p) return;
+
+    editandoPedidoId = id;
+    document.getElementById('pedidoCliente').value = p.cliente || '';
+    document.getElementById('pedidoFecha').value = p.fecha || hoyISO();
+    document.getElementById('pedidoHora').value = p.hora || '';
+    document.getElementById('pedidoDireccion').value = p.direccion || '';
+    document.getElementById('pedidoNotas').value = p.notas || '';
+    pedidoDraft = p.items.map(i => ({ sabor: i.nombre, cantidad: i.cantidad }));
+
+    renderPedidos();
+    document.getElementById('pedidoEditandoAviso').scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+
   function renderPedidoForm(){
     const cont = document.getElementById('pedidoFilas');
-    // no pisar lo que el usuario está tipeando/eligiendo justo ahora
     if(cont.contains(document.activeElement)) return;
 
     const nombres = pizzas.stock.map(s => s.nombre);
@@ -676,6 +932,7 @@
           ${notas}
           <div class="pedido-acciones">
             <button type="button" class="btn-mini" data-entregar="${p.id}">Entregado ✓</button>
+            <button type="button" class="link-btn" data-editar-pedido="${p.id}">Editar</button>
             <button type="button" class="link-btn" data-borrar-pedido="${p.id}">Cancelar pedido</button>
           </div>
         </div>`;
@@ -684,6 +941,9 @@
     cont.querySelectorAll('[data-entregar]').forEach(btn => {
       btn.addEventListener('click', () => entregarPedido(Number(btn.getAttribute('data-entregar'))));
     });
+    cont.querySelectorAll('[data-editar-pedido]').forEach(btn => {
+      btn.addEventListener('click', () => editarPedido(Number(btn.getAttribute('data-editar-pedido'))));
+    });
     cont.querySelectorAll('[data-borrar-pedido]').forEach(btn => {
       btn.addEventListener('click', () => {
         const id = Number(btn.getAttribute('data-borrar-pedido'));
@@ -691,6 +951,7 @@
         if(!p) return;
         if(!confirm(`¿Cancelar el pedido de ${p.cliente}? No toca el stock.`)) return;
         pedidos = pedidos.filter(x => x.id !== id);
+        if(editandoPedidoId === id){ editandoPedidoId = null; limpiarFormPedido(); }
         persistirPedidos();
       });
     });
@@ -706,13 +967,17 @@
       const s = pizzas.stock.find(x => x.nombre === i.nombre);
       if(s) s.cantidad = Math.max(0, s.cantidad - i.cantidad);
     });
+
+    const ventaId = Date.now();
     pizzas.ventas.push({
-      id: Date.now(),
+      id: ventaId,
       fecha: hoyISO(),
+      cliente: p.cliente,
       items: p.items.map(i => ({ nombre: i.nombre, cantidad: i.cantidad }))
     });
 
     pedidos = pedidos.filter(x => x.id !== id);
+    if(editandoPedidoId === id){ editandoPedidoId = null; limpiarFormPedido(); }
 
     // guardamos primero: si tardás en contestar el monto, el pedido ya quedó entregado
     persistirPizzas();
@@ -723,7 +988,8 @@
       const monto = parseFloat(montoStr);
       if(monto > 0){
         items.push({
-          id: Date.now() + 1,
+          id: ventaId + 1,
+          ventaId: ventaId,          // enlaza el ingreso con su venta en el historial
           fecha: hoyISO(),
           desc: `${p.cliente} x${totalPizzas}`,
           monto
@@ -733,12 +999,71 @@
     }
   }
 
+  function renderStockLista(){
+    const total = pizzas.stock.reduce((s,i) => s + i.cantidad, 0);
+    document.getElementById('stockTotal').textContent = total;
+
+    const cont = document.getElementById('stockLista');
+    if(pizzas.stock.length === 0){
+      cont.innerHTML = '<div class="vacio">No hay sabores cargados todavía.</div>';
+      return;
+    }
+    cont.innerHTML = pizzas.stock.map(s => {
+      const comp = comprometido(s.nombre);
+      const falta = comp > s.cantidad;
+      const nota = comp > 0
+        ? `<div class="stock-comprometido ${falta ? 'falta' : ''}">${comp} comprometidas${falta ? ` · faltan ${comp - s.cantidad}` : ''}</div>`
+        : '';
+      return `
+      <div class="stock-item">
+        <div class="stock-nombre">${escapeHtml(s.nombre)}${nota}</div>
+        <div class="stock-cantidad">${s.cantidad} u.</div>
+        <div class="stock-acciones">
+          <button class="link-btn" data-reponer="${escapeHtml(s.nombre)}">+ Reponer</button>
+          <button class="link-btn" data-editar="${escapeHtml(s.nombre)}">Editar</button>
+          <button class="item-del" data-quitar="${escapeHtml(s.nombre)}" title="Quitar sabor">✕</button>
+        </div>
+      </div>`;
+    }).join('');
+
+    cont.querySelectorAll('[data-reponer]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const nombre = btn.getAttribute('data-reponer');
+        const val = prompt(`¿Cuántas unidades de "${nombre}" sumás al stock?`, '0');
+        if(val === null) return;
+        const cant = parseInt(val);
+        if(!cant || cant <= 0) return;
+        pizzas.stock.find(s => s.nombre === nombre).cantidad += cant;
+        persistirPizzas();
+      });
+    });
+    cont.querySelectorAll('[data-editar]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const nombre = btn.getAttribute('data-editar');
+        const item = pizzas.stock.find(s => s.nombre === nombre);
+        const val = prompt(`Corregir stock de "${nombre}":`, item.cantidad);
+        if(val === null) return;
+        const num = parseInt(val);
+        if(isNaN(num) || num < 0) return;
+        item.cantidad = num;
+        persistirPizzas();
+      });
+    });
+    cont.querySelectorAll('[data-quitar]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const nombre = btn.getAttribute('data-quitar');
+        if(!confirm(`¿Quitar "${nombre}" del stock? (esto no borra las ventas ya registradas)`)) return;
+        pizzas.stock = pizzas.stock.filter(s => s.nombre !== nombre);
+        persistirPizzas();
+      });
+    });
+  }
+
   function renderVentaForm(){
     const cont = document.getElementById('ventaFilas');
     if(cont.contains(document.activeElement)) return;
 
     const nombres = pizzas.stock.map(s => s.nombre);
-
     if(nombres.length === 0){
       cont.innerHTML = '<div class="vacio">Agregá al menos un sabor en "Stock de pizzas" para poder registrar ventas.</div>';
       return;
@@ -757,14 +1082,10 @@
     `).join('');
 
     cont.querySelectorAll('.venta-select').forEach(sel => {
-      sel.addEventListener('change', () => {
-        ventaDraft[+sel.dataset.idx].sabor = sel.value;
-      });
+      sel.addEventListener('change', () => { ventaDraft[+sel.dataset.idx].sabor = sel.value; });
     });
     cont.querySelectorAll('.venta-cantidad').forEach(inp => {
-      inp.addEventListener('input', () => {
-        ventaDraft[+inp.dataset.idx].cantidad = parseInt(inp.value) || 1;
-      });
+      inp.addEventListener('input', () => { ventaDraft[+inp.dataset.idx].cantidad = parseInt(inp.value) || 1; });
     });
     cont.querySelectorAll('.venta-quitar').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -776,22 +1097,21 @@
 
   function renderResumenVentas(){
     const cont = document.getElementById('resumenVentas');
-    const porSabor = {};
-    pizzas.ventas.forEach(v => {
-      v.items.forEach(i => {
-        porSabor[i.nombre] = (porSabor[i.nombre] || 0) + i.cantidad;
-      });
-    });
+    const ranking = Object.entries(contarPorSabor(ventasDe(rangoResumen))).sort((a,b) => b[1] - a[1]);
 
-    const ranking = Object.entries(porSabor).sort((a,b) => b[1] - a[1]);
-    if(ranking.length === 0){ cont.innerHTML = ''; return; }
+    if(ranking.length === 0){
+      cont.innerHTML = `<div class="vacio">Sin ventas ${rangoResumen === 'mes' ? 'en ' + nombreMes(mesSel) : 'registradas'}.</div>`;
+      return;
+    }
 
     const total = ranking.reduce((s,[,n]) => s + n, 0);
     const max = ranking[0][1];
 
     cont.innerHTML = `
-      <div class="resumen">
-        <div class="resumen-total"><b>${total}</b> pizzas vendidas en total</div>
+      <div class="resumen" style="border-bottom:none;margin-bottom:0;padding-bottom:0">
+        <div class="resumen-total">
+          <b>${total}</b> pizzas vendidas ${rangoResumen === 'mes' ? 'en ' + nombreMes(mesSel) : 'desde el inicio'}
+        </div>
         ${ranking.map(([nombre, cant]) => `
           <div class="resumen-fila">
             <div class="resumen-nombre">${escapeHtml(nombre)}</div>
@@ -802,39 +1122,315 @@
       </div>`;
   }
 
-  function renderVentasLista(){
-    renderResumenVentas();
-    const cont = document.getElementById('listaVentas');
-    const ordenadas = pizzas.ventas.slice().sort((a,b) => b.id - a.id);
-    if(ordenadas.length === 0){
-      cont.innerHTML = '<div class="vacio">Todavía no registraste ninguna venta de pizzas.</div>';
+  // ---------- historial unificado (plata que entró + pizzas que salieron) ----------
+
+  // saca el "x6" del final de una descripción tipo "Rubio x6" → 6
+  function pizzasEnDesc(desc){
+    const m = String(desc || '').match(/x\s*(\d+)\s*$/i);
+    return m ? parseInt(m[1]) : null;
+  }
+  // "Rubio x6" → "Rubio" (la cantidad ya se muestra aparte en el historial)
+  function tituloSinCantidad(desc, n){
+    return String(desc || '').replace(new RegExp(`\\s*x\\s*${n}\\s*$`, 'i'), '').trim() || String(desc || '');
+  }
+
+  function armarHistorial(){
+    const ingresosMes = items.filter(i => mesDe(i.fecha) === mesSel);
+    const ventasMes = pizzas.ventas.filter(v => mesDe(v.fecha) === mesSel);
+
+    const usados = new Set();
+    const filas = [];
+
+    ventasMes.forEach(v => {
+      const cantPizzas = totalPizzasDe(v);
+      const libre = i => !usados.has(i.id) && i.fecha === v.fecha;
+
+      // 1) enlace explícito (pedidos entregados desde ahora)
+      let ing = ingresosMes.find(i => !usados.has(i.id) && i.ventaId === v.id);
+      // 2) datos viejos con cliente en la venta: descripción "Cliente xN"
+      if(!ing && v.cliente){
+        ing = ingresosMes.find(i => libre(i) && i.desc === `${v.cliente} x${cantPizzas}`);
+      }
+      // 3) datos viejos sin cliente: mismo día y misma cantidad de pizzas en la descripción
+      if(!ing){
+        ing = ingresosMes.find(i => libre(i) && pizzasEnDesc(i.desc) === cantPizzas);
+      }
+      if(ing) usados.add(ing.id);
+
+      filas.push({
+        orden: v.id,
+        fecha: v.fecha,
+        titulo: v.cliente || (ing ? tituloSinCantidad(ing.desc, cantPizzas) : 'Venta'),
+        monto: ing ? ing.monto : null,
+        pizzas: cantPizzas,
+        detalle: v.items.map(i => `${i.cantidad}x ${i.nombre}`).join(', '),
+        ventaId: v.id,
+        ingresoId: ing ? ing.id : null
+      });
+    });
+
+    // ingresos sin venta asociada (eventos, catering, señas…)
+    ingresosMes.filter(i => !usados.has(i.id)).forEach(i => {
+      filas.push({
+        orden: i.id, fecha: i.fecha, titulo: i.desc,
+        monto: i.monto, pizzas: null, detalle: '',
+        ventaId: null, ingresoId: i.id
+      });
+    });
+
+    return filas.sort((a,b) => b.fecha.localeCompare(a.fecha) || b.orden - a.orden);
+  }
+
+  function renderHistorial(){
+    filasHistorial = armarHistorial();
+
+    const plata = filasHistorial.reduce((s,f) => s + (f.monto || 0), 0);
+    const pizzasFuera = filasHistorial.reduce((s,f) => s + (f.pizzas || 0), 0);
+
+    document.getElementById('histTotales').innerHTML = `
+      <div>
+        <div class="label">Entró en ${nombreMes(mesSel)}</div>
+        <div class="val plata">${fmt(plata)}</div>
+      </div>
+      <div>
+        <div class="label">Pizzas que salieron</div>
+        <div class="val">${pizzasFuera}</div>
+      </div>
+      <div>
+        <div class="label">Operaciones</div>
+        <div class="val">${filasHistorial.length}</div>
+      </div>`;
+
+    const cont = document.getElementById('listaHistorial');
+    if(filasHistorial.length === 0){
+      cont.innerHTML = `<div class="vacio">Sin movimientos en ${nombreMes(mesSel)}.</div>`;
       return;
     }
-    cont.innerHTML = ordenadas.map(v => `
+
+    cont.innerHTML = filasHistorial.map((f, idx) => `
       <div class="item">
         <div class="item-info">
-          <div class="item-desc">${v.items.map(i => `${i.cantidad}x ${escapeHtml(i.nombre)}`).join(', ')}</div>
-          <div class="item-fecha">${formatoFecha(v.fecha)}</div>
+          <div class="item-desc">${escapeHtml(f.titulo)}</div>
+          <div class="item-fecha">${formatoFecha(f.fecha)}${f.detalle ? ' · ' + escapeHtml(f.detalle) : ''}</div>
         </div>
-        <button class="item-del" data-venta-id="${v.id}" title="Deshacer (repone stock)">✕</button>
+        <div class="hist-nums">
+          ${f.monto != null
+            ? `<div class="item-monto">${fmt(f.monto)}</div>`
+            : '<div class="hist-sinplata">sin cobrar</div>'}
+          ${f.pizzas != null ? `<div class="hist-pizzas">${f.pizzas} pizza${f.pizzas === 1 ? '' : 's'}</div>` : ''}
+        </div>
+        <button class="item-del" data-hist="${idx}" title="Borrar">✕</button>
       </div>
     `).join('');
 
-    cont.querySelectorAll('[data-venta-id]').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const id = Number(btn.getAttribute('data-venta-id'));
-        const venta = pizzas.ventas.find(v => v.id === id);
-        if(!venta) return;
-        if(!confirm('¿Deshacer esta venta? Se repone el stock descontado.')) return;
-        venta.items.forEach(i => {
-          const stockItem = pizzas.stock.find(s => s.nombre === i.nombre);
-          if(stockItem) stockItem.cantidad += i.cantidad;
-        });
-        pizzas.ventas = pizzas.ventas.filter(v => v.id !== id);
-        persistirPizzas();
-      });
+    cont.querySelectorAll('[data-hist]').forEach(btn => {
+      btn.addEventListener('click', () => borrarFilaHistorial(filasHistorial[+btn.getAttribute('data-hist')]));
     });
   }
+
+  function borrarFilaHistorial(f){
+    if(!f) return;
+    const partes = [];
+    if(f.monto != null) partes.push(`${fmt(f.monto)} del objetivo del mes`);
+    if(f.ventaId != null) partes.push(`${f.pizzas} pizzas (se reponen al stock)`);
+
+    if(!confirm(`¿Borrar "${f.titulo}"?\n\nSe descuenta ${partes.join(' y ')}.`)) return;
+
+    if(f.ingresoId != null){
+      items = items.filter(i => i.id !== f.ingresoId);
+      persistirIngresos();
+    }
+    if(f.ventaId != null){
+      const v = pizzas.ventas.find(x => x.id === f.ventaId);
+      if(v){
+        v.items.forEach(i => {
+          const s = pizzas.stock.find(x => x.nombre === i.nombre);
+          if(s) s.cantidad += i.cantidad;
+        });
+        pizzas.ventas = pizzas.ventas.filter(x => x.id !== f.ventaId);
+        persistirPizzas();
+      }
+    }
+  }
+
+  // ---------- día de producción ----------
+
+  // reparte `total` unidades enteras entre los sabores, proporcional a `pesos`,
+  // usando el método del mayor resto para que la suma dé exacto
+  function repartirEntero(pesos, total){
+    const nombres = Object.keys(pesos);
+    const out = {};
+    nombres.forEach(n => out[n] = 0);
+    if(total <= 0 || nombres.length === 0) return out;
+
+    const suma = nombres.reduce((s,n) => s + pesos[n], 0);
+    if(suma <= 0){
+      for(let i = 0; i < total; i++) out[nombres[i % nombres.length]]++;
+      return out;
+    }
+
+    const restos = [];
+    let asignado = 0;
+    nombres.forEach(n => {
+      const exacto = (pesos[n] / suma) * total;
+      out[n] = Math.floor(exacto);
+      asignado += out[n];
+      restos.push([n, exacto - out[n]]);
+    });
+    restos.sort((a,b) => b[1] - a[1]);
+    for(let i = 0; asignado < total; i++, asignado++){
+      out[restos[i % restos.length][0]]++;
+    }
+    return out;
+  }
+
+  // participación histórica de cada sabor sobre el total vendido (sólo sabores activos)
+  function shareHistorico(sabores){
+    const cont = contarPorSabor(pizzas.ventas);
+    const share = {};
+    const totalActivos = sabores.reduce((s,n) => s + (cont[n] || 0), 0);
+    if(totalActivos === 0){
+      sabores.forEach(n => share[n] = 1 / sabores.length);
+    }else{
+      sabores.forEach(n => share[n] = (cont[n] || 0) / totalActivos);
+    }
+    return share;
+  }
+
+  function planProduccion(total){
+    const sabores = pizzas.stock.map(s => s.nombre);
+    if(sabores.length === 0) return null;
+
+    const share = shareHistorico(sabores);
+    const faltante = {}, libre = {};
+    let sumFaltante = 0, sumLibre = 0;
+
+    sabores.forEach(n => {
+      const stock = pizzas.stock.find(s => s.nombre === n).cantidad;
+      const comp = comprometido(n);
+      faltante[n] = Math.max(0, comp - stock);   // hay que hornear sí o sí
+      libre[n]    = Math.max(0, stock - comp);   // queda disponible para vender
+      sumFaltante += faltante[n];
+      sumLibre += libre[n];
+    });
+
+    const resto = total - sumFaltante;
+    if(resto <= 0){
+      return { sabores, faltante, extra: {}, sumFaltante, resto, share };
+    }
+
+    // objetivo: que el stock libre final se parezca a la mezcla histórica de ventas
+    const objetivoTotal = sumLibre + resto;
+    const pesos = {};
+    sabores.forEach(n => {
+      pesos[n] = Math.max(0, objetivoTotal * share[n] - libre[n]);
+    });
+
+    return { sabores, faltante, extra: repartirEntero(pesos, resto), sumFaltante, resto, share };
+  }
+
+  function renderProduccion(){
+    const cont = document.getElementById('prodResultado');
+    if(!planCalculado){ cont.innerHTML = ''; return; }
+
+    const total = parseInt(document.getElementById('prodTotal').value);
+    if(!total || total <= 0){ cont.innerHTML = ''; return; }
+
+    const plan = planProduccion(total);
+    if(!plan){
+      cont.innerHTML = '<div class="vacio">Agregá sabores al stock para poder planificar.</div>';
+      return;
+    }
+
+    const filas = plan.sabores
+      .map(n => ({ nombre: n, pedidos: plan.faltante[n] || 0, extra: plan.extra[n] || 0 }))
+      .map(f => ({ ...f, total: f.pedidos + f.extra }))
+      .filter(f => f.total > 0)
+      .sort((a,b) => b.total - a.total);
+
+    const aviso = plan.resto < 0
+      ? `<div class="prod-aviso">⚠ Con ${total} no alcanzás: sólo para cubrir los pedidos agendados necesitás ${plan.sumFaltante}. Te faltan ${plan.sumFaltante - total}.</div>`
+      : '';
+
+    if(filas.length === 0){
+      cont.innerHTML = aviso + '<div class="vacio">No hace falta producir nada.</div>';
+      return;
+    }
+
+    const sumaTotal = filas.reduce((s,f) => s + f.total, 0);
+
+    cont.innerHTML = `
+      ${aviso}
+      <div class="prod-tabla">
+        <div class="prod-head">
+          <div>Sabor</div><div style="text-align:center">Pedidos</div>
+          <div style="text-align:center">Extra</div><div style="text-align:center">Armar</div>
+        </div>
+        ${filas.map(f => `
+          <div class="prod-fila">
+            <div class="prod-nombre">${escapeHtml(f.nombre)}</div>
+            <div class="prod-num ${f.pedidos ? 'pedidos' : 'cero'}">${f.pedidos}</div>
+            <div class="prod-num ${f.extra ? '' : 'cero'}">${f.extra}</div>
+            <div class="prod-total">${f.total}</div>
+          </div>
+        `).join('')}
+      </div>
+      <div class="prod-resumen">
+        <span><b style="color:var(--fuego-claro)">${plan.sumFaltante}</b> para pedidos agendados</span>
+        <span><b style="color:var(--crema)">${Math.max(0, plan.resto)}</b> para stock</span>
+      </div>
+      <button type="button" class="btn btn-fuego" id="btnAplicarProd" style="width:100%;margin-top:18px">
+        Ya las armé — sumar ${sumaTotal} al stock
+      </button>`;
+
+    document.getElementById('btnAplicarProd').addEventListener('click', () => {
+      if(!confirm(`¿Sumar ${sumaTotal} pizzas al stock según este plan?`)) return;
+      filas.forEach(f => {
+        const s = pizzas.stock.find(x => x.nombre === f.nombre);
+        if(s) s.cantidad += f.total;
+      });
+      planCalculado = false;
+      persistirPizzas();
+    });
+  }
+
+  // ---------- eventos ----------
+
+  document.getElementById('tabbar').addEventListener('click', e => {
+    const btn = e.target.closest('button[data-tab]');
+    if(btn) irATab(btn.dataset.tab);
+  });
+
+  document.getElementById('mesSelect').addEventListener('change', e => {
+    mesSel = e.target.value;
+    renderTodo();
+  });
+  document.getElementById('mesPrev').addEventListener('click', () => {
+    mesSel = correrMes(mesSel, -1);
+    renderTodo();
+  });
+  document.getElementById('mesNext').addEventListener('click', () => {
+    mesSel = correrMes(mesSel, 1);
+    renderTodo();
+  });
+
+  document.getElementById('btnEditarMeta').addEventListener('click', () => {
+    const val = prompt(`Objetivo de ingresos para ${nombreMes(mesSel)}:`, metaDe(mesSel));
+    if(val === null) return;
+    const num = parseFloat(String(val).replace(/[^\d.]/g, ''));
+    if(!num || num <= 0) return;
+    metas[mesSel] = num;
+    persistirMetas();
+  });
+
+  document.getElementById('toggleResumen').addEventListener('click', e => {
+    const btn = e.target.closest('button[data-rango]');
+    if(!btn) return;
+    rangoResumen = btn.getAttribute('data-rango');
+    document.querySelectorAll('#toggleResumen button').forEach(b =>
+      b.classList.toggle('activo', b === btn));
+    renderResumenVentas();
+  });
 
   document.getElementById('form').addEventListener('submit', e => {
     e.preventDefault();
@@ -844,11 +1440,13 @@
     if(!fecha || !desc || !monto || monto <= 0) return;
 
     items.push({ id: Date.now(), fecha, desc, monto });
-    persistirIngresos();
+
+    // si anotás un ingreso de otro mes, saltamos a ese mes para que lo veas
+    if(mesDe(fecha) !== mesSel) mesSel = mesDe(fecha);
 
     document.getElementById('desc').value = '';
     document.getElementById('monto').value = '';
-    document.getElementById('fecha').value = fecha;
+    persistirIngresos();
   });
 
   document.getElementById('btnRefrescar').addEventListener('click', () => refrescarTodo(true));
@@ -861,8 +1459,7 @@
       alert('Ese sabor ya está en la lista.');
       return;
     }
-    const val = prompt(`¿Cuántas unidades de "${limpio}" tenés ahora?`, '0');
-    const cantInicial = parseInt(val) || 0;
+    const cantInicial = parseInt(prompt(`¿Cuántas unidades de "${limpio}" tenés ahora?`, '0')) || 0;
     pizzas.stock.push({ nombre: limpio, cantidad: cantInicial });
     persistirPizzas();
   });
@@ -890,18 +1487,25 @@
     const validas = pedidoDraft.filter(f => f.sabor && f.cantidad > 0);
     if(validas.length === 0){ alert('Elegí al menos un sabor.'); return; }
 
-    pedidos.push({
-      id: Date.now(),
+    const datos = {
       cliente, fecha, hora, direccion, notas,
       items: validas.map(f => ({ nombre: f.sabor, cantidad: f.cantidad }))
-    });
+    };
 
-    document.getElementById('pedidoCliente').value = '';
-    document.getElementById('pedidoHora').value = '';
-    document.getElementById('pedidoDireccion').value = '';
-    document.getElementById('pedidoNotas').value = '';
-    pedidoDraft = [{ sabor: null, cantidad: 1 }];
+    if(editandoPedidoId !== null){
+      const p = pedidos.find(x => x.id === editandoPedidoId);
+      if(p){
+        Object.assign(p, datos);          // conserva el id original
+      }else{
+        alert('Ese pedido ya no existe (lo borraron desde otro lado). Lo guardo como pedido nuevo.');
+        pedidos.push({ id: Date.now(), ...datos });
+      }
+      editandoPedidoId = null;
+    }else{
+      pedidos.push({ id: Date.now(), ...datos });
+    }
 
+    limpiarFormPedido();
     persistirPedidos();
   });
 
@@ -912,28 +1516,26 @@
     const detalle = [];
     validas.forEach(f => {
       const stockItem = pizzas.stock.find(s => s.nombre === f.sabor);
-      if(stockItem){
-        stockItem.cantidad = Math.max(0, stockItem.cantidad - f.cantidad);
-      }
+      if(stockItem) stockItem.cantidad = Math.max(0, stockItem.cantidad - f.cantidad);
       detalle.push({ nombre: f.sabor, cantidad: f.cantidad });
     });
 
-    pizzas.ventas.push({
-      id: Date.now(),
-      fecha: hoyISO(),
-      items: detalle
-    });
-
+    pizzas.ventas.push({ id: Date.now(), fecha: hoyISO(), items: detalle });
     ventaDraft = [{ sabor: null, cantidad: 1 }];
     persistirPizzas();
   });
 
+  document.getElementById('btnCalcularProd').addEventListener('click', () => {
+    planCalculado = true;
+    renderProduccion();
+  });
+
   document.getElementById('btnExport').addEventListener('click', () => {
-    const blob = new Blob([JSON.stringify({ ingresos: items, pizzas, pedidos }, null, 2)], {type:'application/json'});
+    const blob = new Blob([JSON.stringify({ ingresos: items, pizzas, pedidos, metas }, null, 2)], {type:'application/json'});
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'objetivo-julio-2026-backup.json';
+    a.download = `bardo-backup-${hoyISO()}.json`;
     a.click();
     URL.revokeObjectURL(url);
   });
@@ -957,9 +1559,11 @@
             pizzas = { stock: data.pizzas.stock, ventas: Array.isArray(data.pizzas.ventas) ? data.pizzas.ventas : [] };
           }
           if(Array.isArray(data.pedidos)) pedidos = data.pedidos;
+          if(data.metas && typeof data.metas === 'object') metas = data.metas;
           persistirIngresos();
           persistirPizzas();
           persistirPedidos();
+          persistirMetas();
         }else{
           alert('El archivo no es un backup válido.');
         }
@@ -968,25 +1572,16 @@
     reader.readAsText(file);
   });
 
-  document.getElementById('btnReset').addEventListener('click', () => {
-    if(confirm('¿Seguro que querés borrar todos los ingresos anotados este mes? Te conviene exportar un backup antes. (El stock de pizzas no se toca)')){
-      items = [];
-      persistirIngresos();
-    }
-  });
+  // ---------- arranque ----------
 
-  // fecha de hoy por defecto
-  document.getElementById('fecha').valueAsDate = new Date();
+  document.getElementById('fecha').value = hoyISO();
   document.getElementById('pedidoFecha').value = hoyISO();
 
-  document.getElementById('tituloPagina').textContent = `Objetivo ${MES} · La Sinergia`;
-  document.getElementById('kicker').textContent = MES;
-  document.getElementById('metaTitulo').textContent = fmt(META);
-  document.getElementById('metaLabel').textContent = `de ${fmt(META)}`;
-
+  irATab(leerCache(CACHE_KEY_TAB, 'pedidos'));
+  renderTodo();
   refrescarTodo(true);
 
-  // repasa cambios hechos desde el otro dispositivo mientras la pestaña está abierta
+  // trae cambios hechos desde el otro dispositivo mientras la pestaña está abierta
   setInterval(() => {
     if(document.visibilityState === 'visible') refrescarTodo(false);
   }, 20000);
