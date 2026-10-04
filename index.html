@@ -294,12 +294,12 @@
   }
   .tabbar button{
     flex:1;background:none;border:none;color:var(--gris);
-    font-family:inherit;font-size:.65rem;font-weight:800;
-    padding:9px 2px 8px;cursor:pointer;
+    font-family:inherit;font-size:.6rem;font-weight:800;
+    padding:9px 1px 8px;cursor:pointer;
     display:flex;flex-direction:column;align-items:center;gap:3px;
-    letter-spacing:.02em;
+    letter-spacing:.01em;
   }
-  .tabbar .ico{font-size:1.3rem;line-height:1;filter:grayscale(1) opacity(.55)}
+  .tabbar .ico{font-size:1.22rem;line-height:1;filter:grayscale(1) opacity(.55)}
   .tabbar button.activo{color:var(--fuego-claro)}
   .tabbar button.activo .ico{filter:none}
   .tab-badge{
@@ -308,6 +308,117 @@
     min-width:16px;height:16px;border-radius:999px;
     display:flex;align-items:center;justify-content:center;padding:0 4px;
   }
+
+  /* ---------- catering ---------- */
+  input[type="checkbox"]{
+    flex:none;min-width:0;width:21px;height:21px;padding:0;border-radius:6px;
+    accent-color:var(--fuego);cursor:pointer;
+  }
+
+  .evento{
+    padding:16px 0;border-bottom:1px solid var(--linea);cursor:pointer;
+  }
+  .evento:last-child{border-bottom:none}
+  .evento:hover .evento-nombre{color:var(--fuego-claro)}
+  .evento-top{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap}
+  .evento-nombre{font-weight:800;font-size:1.02rem;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .evento-meta{font-size:.84rem;color:var(--gris);margin-top:6px}
+  .evento-meta b{color:var(--crema-tenue)}
+
+  .volver{
+    background:none;border:none;color:var(--gris);font-family:inherit;
+    font-size:.85rem;font-weight:700;cursor:pointer;padding:0;margin-bottom:16px;
+  }
+  .volver:hover{color:var(--fuego-claro)}
+
+  .ev-cabecera{margin-bottom:4px}
+  .ev-titulo{font-size:1.5rem;font-weight:900;letter-spacing:-.3px}
+  .ev-sub{color:var(--crema-tenue);font-size:.88rem;margin-top:4px}
+
+  .ing-fila{padding:12px 0;border-bottom:1px solid var(--linea)}
+  .ing-fila:last-child{border-bottom:none}
+  .ing-top{display:flex;align-items:center;gap:6px}
+  .ing-top input[type="text"]{flex:1;min-width:0}
+  .ing-calc{display:flex;align-items:center;gap:6px;margin-top:8px}
+  .ing-calc input[type="number"]{
+    flex:0 0 58px;min-width:0;padding:8px 6px;text-align:center;font-size:.9rem;
+  }
+  .ing-x{font-size:.75rem;color:var(--gris);font-weight:600;white-space:nowrap}
+  .ing-total{
+    margin-left:auto;font-weight:900;font-size:.95rem;color:var(--crema);
+    white-space:nowrap;
+  }
+
+  .ing-porpersona{
+    font-size:.76rem;color:var(--gris);font-weight:600;text-align:right;margin-top:5px;
+  }
+
+  /* precios por kilo y costo de insumos */
+  .ing-precio{display:flex;align-items:center;gap:6px;margin-top:8px}
+  .ing-precio input[type="number"]{
+    flex:0 0 96px;min-width:0;padding:8px 6px;text-align:center;font-size:.9rem;
+  }
+  .ing-costo{margin-left:auto;font-weight:900;font-size:.95rem;color:var(--verde);white-space:nowrap}
+  .ing-costo.falta{color:var(--gris);font-weight:700;font-size:.78rem}
+
+  .costo-totales{
+    display:flex;gap:12px;flex-wrap:wrap;margin-top:18px;
+    padding-top:18px;border-top:1px solid var(--linea);
+  }
+  .costo-totales > div{flex:1 1 90px}
+  .costo-totales .label{color:var(--gris);font-size:.7rem;text-transform:uppercase;letter-spacing:.04em}
+  .costo-totales .val{font-size:1.2rem;font-weight:900;margin-top:2px}
+  .costo-totales .val.plata{color:var(--verde);font-size:1.45rem}
+  .costo-aviso{font-size:.82rem;color:var(--fuego-claro);font-weight:700;margin-top:12px}
+
+  .badge-cerrado{background:rgba(63,174,92,.15);color:var(--verde);border:1px solid rgba(63,174,92,.35)}
+  .cerrado-aviso{
+    display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;
+    padding:11px 14px;border-radius:12px;margin-bottom:16px;font-size:.84rem;font-weight:700;
+    background:rgba(63,174,92,.1);border:1px solid rgba(63,174,92,.3);color:var(--verde);
+  }
+  .btn-cerrar{
+    width:100%;margin-top:18px;padding:12px;border-radius:12px;cursor:pointer;
+    background:transparent;border:1.5px solid var(--verde);color:var(--verde);
+    font-family:inherit;font-weight:800;font-size:.92rem;
+  }
+  .btn-cerrar:hover{background:rgba(63,174,92,.1)}
+  input:disabled{opacity:.75;cursor:default}
+
+  .precio-fila{
+    display:flex;align-items:center;gap:8px;
+    padding:9px 0;border-bottom:1px solid var(--linea);
+  }
+  .precio-fila:last-child{border-bottom:none}
+  .precio-nombre{flex:1;min-width:0;font-weight:700;font-size:.92rem}
+  .precio-nombre small{display:block;color:var(--fuego-claro);font-size:.72rem;font-weight:700}
+  .precio-fila input[type="number"]{flex:0 0 104px;min-width:0;padding:9px 8px;text-align:center}
+  .item-nuevo input#nuevoPrecioValor{flex:0 0 104px;text-align:center}
+
+  /* checklist como lista de ítems a llevar */
+  .item-check{
+    display:flex;align-items:center;gap:8px;
+    padding:9px 0;border-bottom:1px solid var(--linea);
+  }
+  .item-check:last-child{border-bottom:none}
+  .item-check input[type="text"]{flex:1;min-width:0;padding:9px 11px;font-size:.92rem}
+  .item-check input.item-cant{flex:0 0 76px;text-align:center}
+  .item-check.hecho input[type="text"]{color:var(--gris);text-decoration:line-through;opacity:.7}
+  .item-nuevo{display:flex;gap:8px;margin-top:14px}
+  .item-nuevo input{min-width:0}
+  .item-nuevo input#nuevoItemCant{flex:0 0 76px;text-align:center}
+  .item-nuevo .btn{padding:10px 16px}
+
+  .check-progreso{
+    font-size:.78rem;color:var(--gris);text-transform:uppercase;
+    letter-spacing:.04em;font-weight:700;margin-bottom:14px;
+  }
+  .check-progreso b{color:var(--crema);font-size:1.1rem}
+
+  .alerta-sabores{
+    font-size:.84rem;font-weight:700;margin-top:12px;color:var(--fuego-claro);
+  }
+  .alerta-sabores.ok{color:var(--verde)}
 </style>
 </head>
 <body>
@@ -355,6 +466,50 @@
       </div>
       <button type="button" class="btn btn-fuego" id="btnRegistrarVenta" style="width:100%">Registrar venta y descontar stock</button>
     </div>
+  </section>
+
+  <!-- ============ CATERING ============ -->
+  <section class="tab-panel" id="panel-catering">
+    <div id="cateringLista">
+      <div class="card">
+        <div class="card-titulo">Nuevo evento</div>
+        <div class="pedido-campos">
+          <input type="text" id="evNombre" placeholder="Nombre del evento (ej: Casamiento Pérez)">
+          <input type="date" id="evFecha">
+          <input type="time" id="evHora">
+        </div>
+        <input type="text" id="evLugar" class="input-full" placeholder="Lugar / dirección">
+        <div class="pedido-campos">
+          <input type="number" id="evPersonas" min="1" placeholder="Personas">
+          <input type="number" id="evPizzas" min="1" placeholder="Pizzas a llevar">
+        </div>
+        <div id="evCopiarWrap"></div>
+        <button type="button" class="btn btn-fuego" id="btnCrearEvento" style="width:100%">Crear evento</button>
+      </div>
+
+      <div class="card">
+        <div class="card-titulo">Eventos agendados</div>
+        <div class="lista" id="listaEventos"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-titulo">Precios por kilo</div>
+        <div class="card-nota">
+          Cargá el precio de cada ingrediente una vez y lo usan todos los eventos.
+          Cuando cambie, lo actualizás acá.
+        </div>
+        <div id="listaPrecios"></div>
+        <form id="formPrecio" class="item-nuevo">
+          <input type="text" id="nuevoPrecioNombre" list="ingredientesConocidos" placeholder="Ingrediente">
+          <input type="number" id="nuevoPrecioValor" min="0" step="any" placeholder="$ / kg">
+          <button type="submit" class="btn btn-fuego">+</button>
+        </form>
+      </div>
+    </div>
+
+    <div id="cateringDetalle" hidden></div>
+    <!-- sugerencias de nombres, para que "Mozzarella" se escriba siempre igual y matchee su precio -->
+    <datalist id="ingredientesConocidos"></datalist>
   </section>
 
   <!-- ============ OBJETIVO ============ -->
@@ -473,9 +628,10 @@
 
 <nav class="tabbar" id="tabbar">
   <button type="button" data-tab="pedidos"><span class="ico">📋</span>Pedidos</button>
-  <button type="button" data-tab="objetivo"><span class="ico">🎯</span>Objetivo</button>
+  <button type="button" data-tab="catering"><span class="ico">🍽️</span>Catering</button>
   <button type="button" data-tab="produccion"><span class="ico">🍕</span>Producción</button>
   <button type="button" data-tab="stats"><span class="ico">📊</span>Ventas</button>
+  <button type="button" data-tab="objetivo"><span class="ico">🎯</span>Objetivo</button>
 </nav>
 
 <script>
@@ -484,11 +640,15 @@
   const PIZZAS_URL   = FIREBASE_BASE + 'pizzas.json';
   const PEDIDOS_URL  = FIREBASE_BASE + 'pedidos.json';
   const METAS_URL    = FIREBASE_BASE + 'metas.json';
+  const CATERING_URL = FIREBASE_BASE + 'catering.json';
+  const PRECIOS_URL  = FIREBASE_BASE + 'precios.json';
 
   const CACHE_KEY_INGRESOS = 'lasinergia_cache_ingresos';
   const CACHE_KEY_PIZZAS   = 'lasinergia_cache_pizzas';
   const CACHE_KEY_PEDIDOS  = 'lasinergia_cache_pedidos';
   const CACHE_KEY_METAS    = 'lasinergia_cache_metas';
+  const CACHE_KEY_CATERING = 'lasinergia_cache_catering';
+  const CACHE_KEY_PRECIOS  = 'lasinergia_cache_precios';
   const CACHE_KEY_TAB      = 'lasinergia_tab';
 
   const SABORES_DEFAULT = ['Margarita','Honey pesto','Diavola','Di patate','Caramellata','4 Formaggi'];
@@ -496,10 +656,14 @@
   const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
   const TABS_CON_MES = ['objetivo','stats'];
 
-  let items   = [];
-  let pizzas  = { stock: [], ventas: [] };
-  let pedidos = [];
-  let metas   = {};
+  let items    = [];
+  let pizzas   = { stock: [], ventas: [] };
+  let pedidos  = [];
+  let metas    = {};
+  let catering = [];
+  let precios  = [];   // [{ nombre: 'Mozzarella', precioKg: 9500 }] — compartido entre eventos
+
+  let eventoAbierto = null;   // id del evento de catering abierto, o null = lista
 
   let ventaDraft  = [{ sabor: null, cantidad: 1 }];
   let pedidoDraft = [{ sabor: null, cantidad: 1 }];
@@ -596,14 +760,15 @@
     const rev = revLocal;
     if(mostrarCarga) setEstado('Actualizando…', true);
 
-    const [rIng, rPiz, rPed, rMet] = await Promise.allSettled([
-      fetchJSON(INGRESOS_URL), fetchJSON(PIZZAS_URL), fetchJSON(PEDIDOS_URL), fetchJSON(METAS_URL)
+    const [rIng, rPiz, rPed, rMet, rCat, rPre] = await Promise.allSettled([
+      fetchJSON(INGRESOS_URL), fetchJSON(PIZZAS_URL), fetchJSON(PEDIDOS_URL),
+      fetchJSON(METAS_URL), fetchJSON(CATERING_URL), fetchJSON(PRECIOS_URL)
     ]);
 
     // si mientras traíamos datos tocaste algo acá, descartamos lo del servidor
     if(revLocal !== rev || escrituras > 0) return;
 
-    const ok = [rIng, rPiz, rPed, rMet].every(r => r.status === 'fulfilled');
+    const ok = [rIng, rPiz, rPed, rMet, rCat, rPre].every(r => r.status === 'fulfilled');
 
     items = rIng.status === 'fulfilled'
       ? (rIng.value || [])
@@ -626,10 +791,20 @@
       ? (rMet.value || {})
       : leerCache(CACHE_KEY_METAS, {});
 
+    catering = rCat.status === 'fulfilled'
+      ? (rCat.value || [])
+      : leerCache(CACHE_KEY_CATERING, []);
+
+    precios = rPre.status === 'fulfilled'
+      ? (rPre.value || [])
+      : leerCache(CACHE_KEY_PRECIOS, []);
+    guardarCache(CACHE_KEY_PRECIOS, precios);
+
     guardarCache(CACHE_KEY_INGRESOS, items);
     guardarCache(CACHE_KEY_PIZZAS, pizzas);
     guardarCache(CACHE_KEY_PEDIDOS, pedidos);
     guardarCache(CACHE_KEY_METAS, metas);
+    guardarCache(CACHE_KEY_CATERING, catering);
 
     setEstado(ok ? 'Sincronizado ✓' : 'Sin conexión — mostrando última copia guardada', ok);
     renderTodo();
@@ -653,8 +828,17 @@
   const persistirPizzas   = hacerPersistidor(PIZZAS_URL,   CACHE_KEY_PIZZAS,   () => pizzas);
   const persistirPedidos  = hacerPersistidor(PEDIDOS_URL,  CACHE_KEY_PEDIDOS,  () => pedidos);
   const persistirMetas    = hacerPersistidor(METAS_URL,    CACHE_KEY_METAS,    () => metas);
+  const persistirCatering = hacerPersistidor(CATERING_URL, CACHE_KEY_CATERING, () => catering);
+  const persistirPrecios  = hacerPersistidor(PRECIOS_URL,  CACHE_KEY_PRECIOS,  () => precios);
 
   // ---------- helpers ----------
+
+  // true si estás escribiendo en un campo dentro de `cont` (los botones y checkboxes no cuentan),
+  // para que la sincronización automática no te borre lo que estás tipeando
+  function escribiendoEn(cont){
+    const a = document.activeElement;
+    return !!a && cont.contains(a) && a.matches('input:not([type="checkbox"]), select, textarea');
+  }
 
   function escapeHtml(s){
     const div = document.createElement('div');
@@ -735,7 +919,9 @@
     renderResumenVentas();
     renderHistorial();
     renderProduccion();
+    renderCatering();
     renderBadgePedidos();
+    renderBadgeCatering();
   }
 
   function renderCabecera(){
@@ -864,7 +1050,7 @@
 
   function renderPedidoForm(){
     const cont = document.getElementById('pedidoFilas');
-    if(cont.contains(document.activeElement)) return;
+    if(escribiendoEn(cont)) return;
 
     const nombres = pizzas.stock.map(s => s.nombre);
     if(nombres.length === 0){
@@ -1061,7 +1247,7 @@
 
   function renderVentaForm(){
     const cont = document.getElementById('ventaFilas');
-    if(cont.contains(document.activeElement)) return;
+    if(escribiendoEn(cont)) return;
 
     const nombres = pizzas.stock.map(s => s.nombre);
     if(nombres.length === 0){
@@ -1250,6 +1436,559 @@
         pizzas.ventas = pizzas.ventas.filter(x => x.id !== f.ventaId);
         persistirPizzas();
       }
+    }
+  }
+
+  // ---------- catering ----------
+
+  function fmtGramos(g){
+    return Math.round(g || 0).toLocaleString('es-AR') + ' g';
+  }
+  function totalIngrediente(ing){
+    return (Number(ing.pizzas) || 0) * (Number(ing.gramos) || 0);
+  }
+  // gramos de un ingrediente por cada persona del evento (para escalar a otros eventos)
+  function porPersona(ing, ev){
+    const personas = Number(ev.personas) || 0;
+    if(!personas) return '';
+    const g = totalIngrediente(ing) / personas;
+    const txt = g < 10
+      ? g.toLocaleString('es-AR', { maximumFractionDigits: 1 })
+      : Math.round(g).toLocaleString('es-AR');
+    return `≈ ${txt} g por persona`;
+  }
+  function pizzasPorPersona(ev){
+    const personas = Number(ev.personas) || 0;
+    const pz = Number(ev.pizzas) || 0;
+    if(!personas || !pz) return '';
+    return (pz / personas).toLocaleString('es-AR', { maximumFractionDigits: 2 }) + ' pizzas por persona';
+  }
+  function eventoPorId(id){
+    return catering.find(e => e.id === id) || null;
+  }
+
+  // ----- precios por kilo -----
+  // los nombres se comparan sin mayúsculas ni espacios de más: "mozzarella " = "Mozzarella"
+  const normal = s => String(s || '').trim().toLowerCase();
+
+  function precioKgDe(nombre){
+    const p = precios.find(x => normal(x.nombre) === normal(nombre));
+    return p ? (Number(p.precioKg) || 0) : 0;
+  }
+  function setPrecioKg(nombre, valor){
+    const n = String(nombre || '').trim();
+    if(!n) return false;
+    const p = precios.find(x => normal(x.nombre) === normal(n));
+    if(p){ p.precioKg = valor; return true; }
+    // si el ingrediente ya figura en algún evento, guardamos el nombre tal como está escrito ahí
+    const existente = ingredientesConocidos().find(k => normal(k) === normal(n));
+    precios.push({ nombre: existente || n, precioKg: valor });
+    return true;
+  }
+  // precio por kilo que corresponde a un ingrediente de un evento:
+  // si el evento está cerrado, el que quedó congelado al cerrarlo; si no, el de la lista actual
+  function precioIng(ing, ev){
+    if(ev && ev.cerrado && typeof ing.precioKgCerrado === 'number') return ing.precioKgCerrado;
+    return precioKgDe(ing.nombre);
+  }
+  function costoIngrediente(ing, ev){
+    return totalIngrediente(ing) / 1000 * precioIng(ing, ev);
+  }
+  // costo total de insumos de un evento, y qué ingredientes todavía no tienen precio
+  function costosEvento(ev){
+    const usados = (ev.ingredientes || []).filter(i => normal(i.nombre) && totalIngrediente(i) > 0);
+    const sinPrecio = usados.filter(i => !precioIng(i, ev)).map(i => i.nombre.trim());
+    const total = usados.reduce((s,i) => s + costoIngrediente(i, ev), 0);
+    return { total, sinPrecio };
+  }
+  function textoCosto(ing, ev){
+    if(!precioIng(ing, ev)) return 'sin precio';
+    return fmt(costoIngrediente(ing, ev));
+  }
+  // bloque de totales de costo al pie de "Insumos del evento"
+  function htmlCostos(ev){
+    const { total, sinPrecio } = costosEvento(ev);
+    const personas = Number(ev.personas) || 0;
+    const pz = Number(ev.pizzas) || 0;
+    if(total <= 0 && sinPrecio.length === 0) return '';
+    return `
+      <div class="costo-totales">
+        <div>
+          <div class="label">${ev.cerrado ? 'Gastado en insumos' : 'Costo de insumos'}</div>
+          <div class="val plata">${fmt(total)}</div>
+        </div>
+        ${personas ? `<div><div class="label">Por persona</div><div class="val">${fmt(total / personas)}</div></div>` : ''}
+        ${pz ? `<div><div class="label">Por pizza</div><div class="val">${fmt(total / pz)}</div></div>` : ''}
+      </div>
+      ${sinPrecio.length
+        ? `<div class="costo-aviso">Falta el precio de: ${sinPrecio.map(escapeHtml).join(', ')}. El total no los incluye.</div>`
+        : ''}`;
+  }
+
+  // congela en cada ingrediente el precio por kilo de hoy; desde ahí el costo del evento no cambia
+  function cerrarEvento(ev){
+    const { total, sinPrecio } = costosEvento(ev);
+    const aviso = sinPrecio.length
+      ? `\n\nOjo: falta el precio de ${sinPrecio.join(', ')}. Van a quedar sin costo.`
+      : '';
+    if(!confirm(`¿Cerrar "${ev.nombre}"?\n\nSe congela el gasto en insumos en ${fmt(total)} con los precios de hoy, y las cantidades quedan bloqueadas.${aviso}`)) return;
+    (ev.ingredientes || []).forEach(i => { i.precioKgCerrado = precioKgDe(i.nombre); });
+    ev.cerrado = true;
+    ev.cerradoEl = hoyISO();
+    persistirCatering();
+  }
+
+  function reabrirEvento(ev){
+    if(!confirm(`¿Reabrir "${ev.nombre}"?\n\nVuelve a calcularse con los precios actuales y se pierden los precios congelados al cerrarlo.`)) return;
+    (ev.ingredientes || []).forEach(i => { delete i.precioKgCerrado; });
+    ev.cerrado = false;
+    delete ev.cerradoEl;
+    persistirCatering();
+  }
+
+  // todos los nombres de ingredientes que aparecen en precios o en algún evento
+  function ingredientesConocidos(){
+    const vistos = new Map();
+    precios.forEach(p => { if(normal(p.nombre)) vistos.set(normal(p.nombre), p.nombre.trim()); });
+    catering.forEach(e => (e.ingredientes || []).forEach(i => {
+      if(normal(i.nombre) && !vistos.has(normal(i.nombre))) vistos.set(normal(i.nombre), i.nombre.trim());
+    }));
+    return [...vistos.values()].sort((a,b) => a.localeCompare(b, 'es'));
+  }
+  // ítems de la checklist: soporta el formato viejo {texto} y el nuevo {nombre, cantidad}
+  function itemsDe(ev){
+    return (ev.checklist || []).map(t => ({
+      nombre: t.nombre != null ? t.nombre : (t.texto || ''),
+      cantidad: t.cantidad || '',
+      hecho: !!t.hecho
+    }));
+  }
+
+  function renderCatering(){
+    document.getElementById('ingredientesConocidos').innerHTML =
+      ingredientesConocidos().map(n => `<option value="${escapeHtml(n)}">`).join('');
+
+    const ev = eventoAbierto !== null ? eventoPorId(eventoAbierto) : null;
+    document.getElementById('cateringLista').hidden = !!ev;
+    document.getElementById('cateringDetalle').hidden = !ev;
+    if(ev) renderEventoDetalle(ev);
+    else { eventoAbierto = null; renderListaEventos(); renderPrecios(); }
+  }
+
+  function renderPrecios(){
+    const cont = document.getElementById('listaPrecios');
+    if(escribiendoEn(cont)) return;
+
+    const nombres = ingredientesConocidos();
+    if(nombres.length === 0){
+      cont.innerHTML = '<div class="vacio">Todavía no hay ingredientes. Cargalos acá o en un evento.</div>';
+      return;
+    }
+
+    // primero los que faltan precio, así se ven
+    const filas = nombres
+      .map(n => ({ nombre: n, precio: precioKgDe(n), guardado: precios.some(p => normal(p.nombre) === normal(n)) }))
+      .sort((a,b) => (a.precio ? 1 : 0) - (b.precio ? 1 : 0) || a.nombre.localeCompare(b.nombre, 'es'));
+
+    cont.innerHTML = filas.map((f, i) => `
+      <div class="precio-fila">
+        <div class="precio-nombre">${escapeHtml(f.nombre)}${f.precio ? '' : '<small>falta el precio</small>'}</div>
+        <span class="ing-x">$</span>
+        <input type="number" min="0" step="any" data-precio="${i}" value="${f.precio || ''}" placeholder="—">
+        <span class="ing-x">/kg</span>
+        ${f.guardado
+          ? `<button type="button" class="item-del" data-precio-del="${i}" title="Quitar precio">✕</button>`
+          : '<span style="width:30px"></span>'}
+      </div>`).join('');
+
+    cont.querySelectorAll('[data-precio]').forEach(inp => {
+      inp.addEventListener('change', () => {
+        setPrecioKg(filas[+inp.getAttribute('data-precio')].nombre, parseFloat(inp.value) || 0);
+        persistirPrecios();
+      });
+    });
+    cont.querySelectorAll('[data-precio-del]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const nombre = filas[+btn.getAttribute('data-precio-del')].nombre;
+        if(!confirm(`¿Quitar el precio de "${nombre}"?`)) return;
+        precios = precios.filter(p => normal(p.nombre) !== normal(nombre));
+        persistirPrecios();
+      });
+    });
+  }
+
+  function renderListaEventos(){
+    // opción de copiar ingredientes y checklist de un evento anterior
+    const wrap = document.getElementById('evCopiarWrap');
+    const previos = catering.slice().sort((a,b) => b.fecha.localeCompare(a.fecha));
+    wrap.innerHTML = previos.length
+      ? `<select id="evCopiar" class="input-full">
+           <option value="">Empezar de cero</option>
+           ${previos.map(e => `<option value="${e.id}">Copiar ingredientes y checklist de: ${escapeHtml(e.nombre)}</option>`).join('')}
+         </select>`
+      : '';
+
+    const cont = document.getElementById('listaEventos');
+    const hoy = hoyISO();
+    const ordenados = catering.slice().sort((a,b) =>
+      (a.fecha + (a.hora || '99:99')).localeCompare(b.fecha + (b.hora || '99:99')));
+
+    if(ordenados.length === 0){
+      cont.innerHTML = '<div class="vacio">No hay eventos agendados todavía.</div>';
+      return;
+    }
+
+    cont.innerHTML = ordenados.map(e => {
+      const tareas = itemsDe(e);
+      const hechas = tareas.filter(t => t.hecho).length;
+      const costo = costosEvento(e).total;
+      let badge = '';
+      if(e.cerrado) badge = '<span class="badge badge-cerrado">Cerrado</span>';
+      else if(e.fecha < hoy) badge = '<span class="badge badge-atrasado">Sin cerrar</span>';
+      else if(e.fecha === hoy) badge = '<span class="badge badge-hoy">Hoy</span>';
+
+      return `
+        <div class="evento" data-ev="${e.id}">
+          <div class="evento-top">
+            <div class="evento-nombre">${escapeHtml(e.nombre)} ${badge}</div>
+            <div class="pedido-cuando">${formatoFecha(e.fecha)}${e.hora ? ' · ' + e.hora : ''}</div>
+          </div>
+          <div class="evento-meta">
+            <b>${e.personas || 0}</b> personas · <b>${e.pizzas || 0}</b> pizzas
+            ${costo > 0 ? ` · ${e.cerrado ? 'gastado' : 'insumos'} <b>${fmt(costo)}</b>` : ''}
+            ${tareas.length ? ` · cargado <b>${hechas}/${tareas.length}</b>` : ''}
+          </div>
+        </div>`;
+    }).join('');
+
+    cont.querySelectorAll('[data-ev]').forEach(el => {
+      el.addEventListener('click', () => {
+        eventoAbierto = Number(el.getAttribute('data-ev'));
+        renderCatering();
+        window.scrollTo(0, 0);
+      });
+    });
+  }
+
+  function renderEventoDetalle(ev){
+    const cont = document.getElementById('cateringDetalle');
+    // no pisar lo que estás tipeando
+    if(escribiendoEn(cont)) return;
+
+    const sabores = ev.sabores || [];
+    const ingredientes = ev.ingredientes || [];
+    const tareas = itemsDe(ev);
+    const ratio = pizzasPorPersona(ev);
+    const cerrado = !!ev.cerrado;
+    const bloq = cerrado ? 'disabled' : '';   // un evento cerrado no deja tocar cantidades ni precios
+    const asignadas = sabores.reduce((s,x) => s + (Number(x.cantidad) || 0), 0);
+    const objetivo = Number(ev.pizzas) || 0;
+    const nombresStock = pizzas.stock.map(s => s.nombre);
+    const hechas = tareas.filter(t => t.hecho).length;
+
+    let avisoSabores = '';
+    if(objetivo > 0 && asignadas !== objetivo){
+      avisoSabores = asignadas < objetivo
+        ? `<div class="alerta-sabores">Te faltan asignar ${objetivo - asignadas} pizzas de las ${objetivo}.</div>`
+        : `<div class="alerta-sabores">Asignaste ${asignadas - objetivo} pizzas de más (objetivo: ${objetivo}).</div>`;
+    }else if(objetivo > 0){
+      avisoSabores = `<div class="alerta-sabores ok">✓ Las ${objetivo} pizzas están repartidas.</div>`;
+    }
+
+    cont.innerHTML = `
+      <button type="button" class="volver" id="btnVolverCatering">‹ Volver a eventos</button>
+
+      <div class="card">
+        <div class="ev-cabecera">
+          <div class="ev-titulo">${escapeHtml(ev.nombre)}</div>
+          <div class="ev-sub">${formatoFecha(ev.fecha)}${ev.hora ? ' · ' + ev.hora : ''}${ratio ? ' · ' + ratio : ''}</div>
+        </div>
+        <div class="pedido-campos" style="margin-top:18px">
+          <input type="text" data-campo="nombre" value="${escapeHtml(ev.nombre)}" placeholder="Nombre">
+          <input type="date" data-campo="fecha" value="${ev.fecha || ''}">
+          <input type="time" data-campo="hora" value="${ev.hora || ''}">
+        </div>
+        <input type="text" class="input-full" data-campo="lugar" value="${escapeHtml(ev.lugar || '')}" placeholder="Lugar / dirección">
+        <div class="pedido-campos">
+          <input type="number" data-campo="personas" min="0" value="${ev.personas || ''}" placeholder="Personas">
+          <input type="number" data-campo="pizzas" min="0" value="${ev.pizzas || ''}" placeholder="Pizzas a llevar">
+        </div>
+        <input type="text" class="input-full" data-campo="notas" value="${escapeHtml(ev.notas || '')}" placeholder="Notas del evento">
+        ${ev.lugar ? `<a class="pedido-mapa" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(ev.lugar)}" target="_blank" rel="noopener">📍 Cómo llegar</a>` : ''}
+        <div class="footer-row" style="justify-content:flex-start;margin-top:16px">
+          <button type="button" class="link-btn" id="btnBorrarEvento">Borrar evento</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-titulo">Sabores a llevar</div>
+        <div id="evSabores">
+          ${sabores.length === 0 ? '<div class="vacio">Todavía no cargaste sabores.</div>' : sabores.map((s, i) => `
+            <div class="venta-fila">
+              <input type="text" list="saboresConocidos" data-sabor="${i}" value="${escapeHtml(s.nombre || '')}" placeholder="Sabor">
+              <input type="number" min="0" data-sabor-cant="${i}" value="${s.cantidad || 0}">
+              <button type="button" class="item-del" data-sabor-del="${i}">✕</button>
+            </div>`).join('')}
+        </div>
+        ${avisoSabores}
+        <div class="footer-row" style="justify-content:flex-start;margin-top:14px">
+          <button type="button" class="link-btn" id="btnAgregarSaborEv">+ Agregar sabor</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-titulo">Insumos del evento</div>
+        ${cerrado
+          ? `<div class="cerrado-aviso">
+               <span>✓ Cerrado el ${formatoFecha(ev.cerradoEl || ev.fecha)} · precios congelados</span>
+               <button type="button" class="link-btn" id="btnReabrirEvento">reabrir</button>
+             </div>`
+          : `<div class="card-nota">
+               Por cada ingrediente: cuántas de las ${objetivo || '—'} pizzas lo llevan, y cuántos gramos va en cada una.
+             </div>`}
+        <div id="evIngredientes">
+          ${ingredientes.length === 0 ? '<div class="vacio">Todavía no cargaste ingredientes.</div>' : ingredientes.map((g, i) => `
+            <div class="ing-fila">
+              <div class="ing-top">
+                <input type="text" list="ingredientesConocidos" data-ing="${i}" value="${escapeHtml(g.nombre || '')}" placeholder="Ingrediente (ej: Mozzarella)" ${bloq}>
+                ${cerrado ? '' : `<button type="button" class="item-del" data-ing-del="${i}">✕</button>`}
+              </div>
+              <div class="ing-calc">
+                <input type="number" min="0" data-ing-pizzas="${i}" value="${g.pizzas || 0}" ${bloq}>
+                <span class="ing-x">pizzas ×</span>
+                <input type="number" min="0" data-ing-gramos="${i}" value="${g.gramos || 0}" ${bloq}>
+                <span class="ing-x">g</span>
+                <span class="ing-total" data-ing-total="${i}">${fmtGramos(totalIngrediente(g))}</span>
+              </div>
+              <div class="ing-porpersona" data-ing-pp="${i}">${porPersona(g, ev)}</div>
+              <div class="ing-precio">
+                <span class="ing-x">$</span>
+                <input type="number" min="0" step="any" data-ing-precio="${i}" value="${precioIng(g, ev) || ''}" placeholder="precio" ${bloq}>
+                <span class="ing-x">/kg</span>
+                <span class="ing-costo ${precioIng(g, ev) ? '' : 'falta'}" data-ing-costo="${i}">${textoCosto(g, ev)}</span>
+              </div>
+            </div>`).join('')}
+        </div>
+        ${cerrado ? '' : `
+          <div class="footer-row" style="justify-content:flex-start;margin-top:14px">
+            <button type="button" class="link-btn" id="btnAgregarIngrediente">+ Agregar ingrediente</button>
+          </div>`}
+        <div id="evCostos">${htmlCostos(ev)}</div>
+        ${cerrado ? '' : `
+          <button type="button" class="btn-cerrar" id="btnCerrarEvento">
+            ✓ Cerrar evento y congelar costos
+          </button>`}
+      </div>
+
+      <div class="card">
+        <div class="card-titulo">Checklist del evento</div>
+        <div class="check-progreso"><b>${hechas}</b> de <b>${tareas.length}</b> cargados</div>
+        <div id="evChecklist">
+          ${tareas.length === 0 ? '<div class="vacio">Agregá lo que hay que llevar a este evento.</div>' : tareas.map((t, i) => `
+            <div class="item-check ${t.hecho ? 'hecho' : ''}">
+              <input type="checkbox" data-chk="${i}" ${t.hecho ? 'checked' : ''} title="Cargado">
+              <input type="text" data-item="${i}" value="${escapeHtml(t.nombre)}" placeholder="Ítem">
+              <input type="text" class="item-cant" data-item-cant="${i}" value="${escapeHtml(t.cantidad)}" placeholder="cant.">
+              <button type="button" class="item-del" data-chk-del="${i}">✕</button>
+            </div>`).join('')}
+        </div>
+        <form id="formChecklist" class="item-nuevo">
+          <input type="text" id="nuevoItem" placeholder="Ítem (ej: Servilletas)">
+          <input type="text" id="nuevoItemCant" placeholder="cant.">
+          <button type="submit" class="btn btn-fuego">+</button>
+        </form>
+      </div>
+
+      <datalist id="saboresConocidos">
+        ${nombresStock.map(n => `<option value="${escapeHtml(n)}">`).join('')}
+      </datalist>`;
+
+    enlazarEventoDetalle(ev);
+  }
+
+  function enlazarEventoDetalle(ev){
+    const cont = document.getElementById('cateringDetalle');
+
+    document.getElementById('btnVolverCatering').addEventListener('click', () => {
+      eventoAbierto = null;
+      renderCatering();
+      window.scrollTo(0, 0);
+    });
+
+    document.getElementById('btnBorrarEvento').addEventListener('click', () => {
+      if(!confirm(`¿Borrar el evento "${ev.nombre}"? Se pierde su checklist e insumos.`)) return;
+      catering = catering.filter(e => e.id !== ev.id);
+      eventoAbierto = null;
+      persistirCatering();
+    });
+
+    // campos sueltos del evento
+    cont.querySelectorAll('[data-campo]').forEach(inp => {
+      inp.addEventListener('change', () => {
+        const campo = inp.getAttribute('data-campo');
+        ev[campo] = inp.type === 'number' ? (parseFloat(inp.value) || 0) : inp.value;
+        persistirCatering();
+      });
+    });
+
+    // sabores
+    cont.querySelectorAll('[data-sabor]').forEach(inp => {
+      inp.addEventListener('change', () => {
+        ev.sabores[+inp.getAttribute('data-sabor')].nombre = inp.value.trim();
+        persistirCatering();
+      });
+    });
+    cont.querySelectorAll('[data-sabor-cant]').forEach(inp => {
+      inp.addEventListener('change', () => {
+        ev.sabores[+inp.getAttribute('data-sabor-cant')].cantidad = parseInt(inp.value) || 0;
+        persistirCatering();
+      });
+    });
+    cont.querySelectorAll('[data-sabor-del]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        ev.sabores.splice(+btn.getAttribute('data-sabor-del'), 1);
+        persistirCatering();
+      });
+    });
+    document.getElementById('btnAgregarSaborEv').addEventListener('click', () => {
+      ev.sabores = ev.sabores || [];
+      ev.sabores.push({ nombre: '', cantidad: 0 });
+      persistirCatering();
+    });
+
+    // ingredientes: recalculamos en vivo sin re-renderizar, y guardamos al salir del campo
+    const recalcular = () => {
+      (ev.ingredientes || []).forEach((g, i) => {
+        const celda = cont.querySelector(`[data-ing-total="${i}"]`);
+        if(celda) celda.textContent = fmtGramos(totalIngrediente(g));
+        const pp = cont.querySelector(`[data-ing-pp="${i}"]`);
+        if(pp) pp.textContent = porPersona(g, ev);
+        const costo = cont.querySelector(`[data-ing-costo="${i}"]`);
+        if(costo){
+          costo.textContent = textoCosto(g, ev);
+          costo.classList.toggle('falta', !precioIng(g, ev));
+        }
+      });
+      document.getElementById('evCostos').innerHTML = htmlCostos(ev);
+    };
+
+    // el precio es por ingrediente y compartido: se guarda en la lista de precios,
+    // así lo usan este y todos los demás eventos
+    cont.querySelectorAll('[data-ing-precio]').forEach(inp => {
+      const g = () => ev.ingredientes[+inp.getAttribute('data-ing-precio')];
+      inp.addEventListener('input', () => {
+        if(!normal(g().nombre)) return;
+        setPrecioKg(g().nombre, parseFloat(inp.value) || 0);
+        recalcular();
+      });
+      inp.addEventListener('change', () => {
+        if(!normal(g().nombre)){
+          alert('Poné primero el nombre del ingrediente, así el precio queda guardado para él.');
+          inp.value = '';
+          return;
+        }
+        setPrecioKg(g().nombre, parseFloat(inp.value) || 0);
+        persistirPrecios();
+      });
+    });
+
+    cont.querySelectorAll('[data-ing]').forEach(inp => {
+      inp.addEventListener('change', () => {
+        ev.ingredientes[+inp.getAttribute('data-ing')].nombre = inp.value.trim();
+        persistirCatering();
+      });
+    });
+    cont.querySelectorAll('[data-ing-pizzas]').forEach(inp => {
+      inp.addEventListener('input', () => {
+        ev.ingredientes[+inp.getAttribute('data-ing-pizzas')].pizzas = parseInt(inp.value) || 0;
+        recalcular();
+      });
+      inp.addEventListener('change', persistirCatering);
+    });
+    cont.querySelectorAll('[data-ing-gramos]').forEach(inp => {
+      inp.addEventListener('input', () => {
+        ev.ingredientes[+inp.getAttribute('data-ing-gramos')].gramos = parseFloat(inp.value) || 0;
+        recalcular();
+      });
+      inp.addEventListener('change', persistirCatering);
+    });
+    cont.querySelectorAll('[data-ing-del]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        ev.ingredientes.splice(+btn.getAttribute('data-ing-del'), 1);
+        persistirCatering();
+      });
+    });
+    const btnAgregarIng = document.getElementById('btnAgregarIngrediente');
+    if(btnAgregarIng) btnAgregarIng.addEventListener('click', () => {
+      ev.ingredientes = ev.ingredientes || [];
+      // por defecto el ingrediente va en todas las pizzas del evento
+      ev.ingredientes.push({ nombre: '', pizzas: Number(ev.pizzas) || 0, gramos: 0 });
+      persistirCatering();
+    });
+
+    const btnCerrar = document.getElementById('btnCerrarEvento');
+    if(btnCerrar) btnCerrar.addEventListener('click', () => cerrarEvento(ev));
+    const btnReabrir = document.getElementById('btnReabrirEvento');
+    if(btnReabrir) btnReabrir.addEventListener('click', () => reabrirEvento(ev));
+
+    // checklist de ítems: normalizamos al formato {nombre, cantidad, hecho} antes de tocarla
+    ev.checklist = itemsDe(ev);
+
+    cont.querySelectorAll('[data-chk]').forEach(chk => {
+      chk.addEventListener('change', () => {
+        ev.checklist[+chk.getAttribute('data-chk')].hecho = chk.checked;
+        // actualizamos la fila y el contador acá mismo, sin depender de que se redibuje todo
+        chk.closest('.item-check').classList.toggle('hecho', chk.checked);
+        const hechas = ev.checklist.filter(t => t.hecho).length;
+        cont.querySelector('.check-progreso').innerHTML =
+          `<b>${hechas}</b> de <b>${ev.checklist.length}</b> cargados`;
+        persistirCatering();
+      });
+    });
+    cont.querySelectorAll('[data-item]').forEach(inp => {
+      inp.addEventListener('change', () => {
+        ev.checklist[+inp.getAttribute('data-item')].nombre = inp.value.trim();
+        persistirCatering();
+      });
+    });
+    cont.querySelectorAll('[data-item-cant]').forEach(inp => {
+      inp.addEventListener('change', () => {
+        ev.checklist[+inp.getAttribute('data-item-cant')].cantidad = inp.value.trim();
+        persistirCatering();
+      });
+    });
+    cont.querySelectorAll('[data-chk-del]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        ev.checklist.splice(+btn.getAttribute('data-chk-del'), 1);
+        persistirCatering();
+      });
+    });
+    document.getElementById('formChecklist').addEventListener('submit', e => {
+      e.preventDefault();
+      const inpNombre = document.getElementById('nuevoItem');
+      const inpCant = document.getElementById('nuevoItemCant');
+      const nombre = inpNombre.value.trim();
+      if(!nombre) return;
+      ev.checklist.push({ nombre, cantidad: inpCant.value.trim(), hecho: false });
+      // soltamos el foco para que se redibuje la lista, y lo devolvemos al campo
+      // nuevo para cargar el siguiente ítem de corrido
+      document.activeElement.blur();
+      persistirCatering();
+      document.getElementById('nuevoItem').focus();
+    });
+  }
+
+  function renderBadgeCatering(){
+    const hoy = hoyISO();
+    const proximos = catering.filter(e => e.fecha >= hoy).length;
+    const ico = document.querySelector('#tabbar button[data-tab="catering"] .ico');
+    const viejo = ico.querySelector('.tab-badge');
+    if(viejo) viejo.remove();
+    if(proximos > 0){
+      const b = document.createElement('span');
+      b.className = 'tab-badge';
+      b.textContent = proximos;
+      ico.appendChild(b);
     }
   }
 
@@ -1530,8 +2269,81 @@
     renderProduccion();
   });
 
+  document.getElementById('formPrecio').addEventListener('submit', e => {
+    e.preventDefault();
+    const inpNombre = document.getElementById('nuevoPrecioNombre');
+    const inpValor = document.getElementById('nuevoPrecioValor');
+    const valor = parseFloat(inpValor.value);
+    if(!inpNombre.value.trim()){ alert('Poné el nombre del ingrediente.'); return; }
+    if(!valor || valor <= 0){ alert('Poné el precio por kilo.'); return; }
+    setPrecioKg(inpNombre.value, valor);
+    inpNombre.value = '';
+    inpValor.value = '';
+    document.activeElement.blur();   // para que la lista se redibuje
+    persistirPrecios();
+  });
+
+  document.getElementById('btnCrearEvento').addEventListener('click', () => {
+    const nombre = document.getElementById('evNombre').value.trim();
+    const fecha = document.getElementById('evFecha').value;
+    if(!nombre){ alert('Poné un nombre para el evento.'); return; }
+    if(!fecha){ alert('Elegí la fecha del evento.'); return; }
+
+    const personasEv = parseInt(document.getElementById('evPersonas').value) || 0;
+    let pizzasEv = parseInt(document.getElementById('evPizzas').value) || 0;
+    const selCopiar = document.getElementById('evCopiar');
+    const base = selCopiar && selCopiar.value ? eventoPorId(Number(selCopiar.value)) : null;
+
+    // si no pusiste cuántas pizzas, las sacamos de las personas con la proporción
+    // del evento que estás copiando (ej: 120 pizzas para 150 personas → 0,8 por persona)
+    if(!pizzasEv && base && personasEv && base.personas > 0 && base.pizzas > 0){
+      pizzasEv = Math.ceil(base.pizzas / base.personas * personasEv);
+    }
+
+    const nuevo = {
+      id: Date.now(),
+      nombre,
+      fecha,
+      hora: document.getElementById('evHora').value,
+      lugar: document.getElementById('evLugar').value.trim(),
+      personas: personasEv,
+      pizzas: pizzasEv,
+      notas: '',
+      sabores: [],
+      // copiamos ingredientes y checklist del evento elegido. Las pizzas que lleva
+      // cada ingrediente se reescalan manteniendo la proporción del evento base
+      // (si 105 de 120 llevaban muzza, en uno de 60 van 53), redondeando para arriba.
+      ingredientes: base
+        ? (base.ingredientes || []).map(g => ({
+            nombre: g.nombre,
+            pizzas: (base.pizzas > 0 && pizzasEv > 0)
+              ? Math.min(pizzasEv, Math.ceil(g.pizzas / base.pizzas * pizzasEv))
+              : (pizzasEv || g.pizzas),
+            gramos: g.gramos
+          }))
+        : [{ nombre: 'Masa', pizzas: pizzasEv, gramos: 0 },
+           { nombre: 'Salsa de tomate', pizzas: pizzasEv, gramos: 0 },
+           { nombre: 'Mozzarella', pizzas: pizzasEv, gramos: 0 }],
+      checklist: base
+        ? itemsDe(base).map(t => ({ nombre: t.nombre, cantidad: t.cantidad, hecho: false }))
+        : []
+    };
+
+    catering.push(nuevo);
+
+    document.getElementById('evNombre').value = '';
+    document.getElementById('evHora').value = '';
+    document.getElementById('evLugar').value = '';
+    document.getElementById('evPersonas').value = '';
+    document.getElementById('evPizzas').value = '';
+
+    eventoAbierto = nuevo.id;
+    persistirCatering();
+    window.scrollTo(0, 0);
+  });
+
   document.getElementById('btnExport').addEventListener('click', () => {
-    const blob = new Blob([JSON.stringify({ ingresos: items, pizzas, pedidos, metas }, null, 2)], {type:'application/json'});
+    const blob = new Blob([JSON.stringify({ ingresos: items, pizzas, pedidos, metas, catering, precios }, null, 2)], {type:'application/json'});
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -1560,10 +2372,14 @@
           }
           if(Array.isArray(data.pedidos)) pedidos = data.pedidos;
           if(data.metas && typeof data.metas === 'object') metas = data.metas;
+          if(Array.isArray(data.catering)) catering = data.catering;
+          if(Array.isArray(data.precios)) precios = data.precios;
           persistirIngresos();
           persistirPizzas();
           persistirPedidos();
           persistirMetas();
+          persistirCatering();
+          persistirPrecios();
         }else{
           alert('El archivo no es un backup válido.');
         }
@@ -1576,6 +2392,7 @@
 
   document.getElementById('fecha').value = hoyISO();
   document.getElementById('pedidoFecha').value = hoyISO();
+  document.getElementById('evFecha').value = hoyISO();
 
   irATab(leerCache(CACHE_KEY_TAB, 'pedidos'));
   renderTodo();
