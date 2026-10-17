@@ -420,6 +420,16 @@
   }
   .alerta-sabores.ok{color:var(--verde)}
 
+  /* ---------- login ---------- */
+  .login{
+    position:fixed;inset:0;z-index:100;background:var(--negro);
+    display:flex;align-items:center;justify-content:center;padding:24px;
+  }
+  .login form{width:100%;max-width:340px;display:flex;flex-direction:column;gap:12px}
+  .login input{flex:none;width:100%}
+  .login .btn{width:100%;margin-top:4px}
+  .login-error{color:var(--fuego-claro);font-size:.85rem;font-weight:700;text-align:center;min-height:1.2em}
+
   /* ---------- gastos del negocio ---------- */
   .gasto-cats{margin-bottom:14px}
   .gasto-cats button{font-size:.82rem;padding:9px 13px}
@@ -438,6 +448,16 @@
 </style>
 </head>
 <body>
+
+<div class="login" id="login" hidden>
+  <form id="formLogin">
+    <div class="marca">Bard<b>o</b><span>La Sinergia</span></div>
+    <input type="email" id="loginEmail" placeholder="Email" autocomplete="username" required>
+    <input type="password" id="loginPass" placeholder="Contraseña" autocomplete="current-password" required>
+    <button type="submit" class="btn btn-fuego" id="btnLogin">Entrar</button>
+    <div class="login-error" id="loginError"></div>
+  </form>
+</div>
 
 <div class="wrap">
 
@@ -699,6 +719,7 @@
   <div class="footer-row">
     <button class="link-btn" id="btnExport">Exportar backup</button>
     <button class="link-btn" id="btnImport">Importar backup</button>
+    <button class="link-btn" id="btnLogout">Cerrar sesión</button>
   </div>
   <input type="file" id="fileImport" accept="application/json" style="display:none">
 </div>
@@ -714,6 +735,9 @@
 
 <script>
   const FIREBASE_BASE = 'https://objetivo-julio-default-rtdb.firebaseio.com/';
+  // Clave web del proyecto (Firebase → Configuración del proyecto → General).
+  // No es secreta: lo que protege los datos son las reglas de la base.
+  const FIREBASE_API_KEY = '';
   const INGRESOS_URL = FIREBASE_BASE + 'datos.json';
   const PIZZAS_URL   = FIREBASE_BASE + 'pizzas.json';
   const PEDIDOS_URL  = FIREBASE_BASE + 'pedidos.json';
@@ -821,8 +845,76 @@
     try{ localStorage.setItem(key, JSON.stringify(data)); }catch(e){}
   }
 
+  // ---------- sesión ----------
+  // Login con email y contraseña de Firebase Authentication (por REST, sin librerías).
+  // El token dura 1 hora; se renueva solo con el refreshToken guardado.
+
+  const CACHE_KEY_SESION = 'lasinergia_sesion';
+  let sesion = leerCache(CACHE_KEY_SESION, null);
+
+  function guardarSesion(idToken, refreshToken, expiraEnSeg, email){
+    sesion = { idToken, refreshToken, email: email || (sesion && sesion.email),
+               vence: Date.now() + Number(expiraEnSeg) * 1000 };
+    guardarCache(CACHE_KEY_SESION, sesion);
+  }
+
+  async function iniciarSesion(email, pass){
+    const res = await fetch('https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=' + FIREBASE_API_KEY, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password: pass, returnSecureToken: true })
+    });
+    const data = await res.json();
+    if(!res.ok){
+      const cod = (data.error && data.error.message) || '';
+      if(/INVALID|NOT_FOUND|PASSWORD/.test(cod)) throw new Error('Email o contraseña incorrectos.');
+      if(/TOO_MANY/.test(cod)) throw new Error('Demasiados intentos. Probá en unos minutos.');
+      if(/DISABLED/.test(cod)) throw new Error('Este usuario está deshabilitado.');
+      throw new Error('No se pudo entrar (' + (cod || res.status) + ').');
+    }
+    guardarSesion(data.idToken, data.refreshToken, data.expiresIn, data.email);
+  }
+
+  // si varias lecturas piden token a la vez, comparten una sola renovación
+  let renovando = null;
+  function tokenActual(){
+    if(!sesion) return Promise.reject(new Error('sin sesión'));
+    if(Date.now() < sesion.vence - 60000) return Promise.resolve(sesion.idToken);
+    if(!renovando) renovando = renovarToken().finally(() => { renovando = null; });
+    return renovando;
+  }
+  async function renovarToken(){
+    const res = await fetch('https://securetoken.googleapis.com/v1/token?key=' + FIREBASE_API_KEY, {
+      method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: 'grant_type=refresh_token&refresh_token=' + encodeURIComponent(sesion.refreshToken)
+    });
+    if(res.status === 400 || res.status === 401 || res.status === 403){ cerrarSesion(); throw new Error('sesión vencida'); }
+    if(!res.ok) throw new Error('status ' + res.status);
+    const data = await res.json();
+    guardarSesion(data.id_token, data.refresh_token, data.expires_in);
+    return sesion.idToken;
+  }
+
+  async function conAuth(url){
+    return url + '?auth=' + encodeURIComponent(await tokenActual());
+  }
+
+  function mostrarLogin(mensaje){
+    document.getElementById('login').hidden = false;
+    document.getElementById('loginError').textContent = mensaje || '';
+  }
+
+  // borra la sesión y la copia local de los datos, para que no queden en un celular prestado
+  function cerrarSesion(mensaje){
+    sesion = null;
+    Object.keys(localStorage)
+      .filter(k => k.startsWith('lasinergia_') && k !== CACHE_KEY_TAB)
+      .forEach(k => localStorage.removeItem(k));
+    mostrarLogin(mensaje || 'Tu sesión se cerró. Volvé a entrar.');
+  }
+
   async function fetchJSON(url){
-    const res = await fetch(url, { cache: 'no-store' });
+    const res = await fetch(await conAuth(url), { cache: 'no-store' });
+    if(res.status === 401){ cerrarSesion(); throw new Error('sin permiso'); }
     if(!res.ok) throw new Error('status ' + res.status);
     return await res.json();
   }
@@ -836,7 +928,8 @@
   async function guardarJSON(url, data){
     escrituras++;
     try{
-      const res = await fetch(url, { method: 'PUT', body: JSON.stringify(data) });
+      const res = await fetch(await conAuth(url), { method: 'PUT', body: JSON.stringify(data) });
+      if(res.status === 401){ cerrarSesion(); throw new Error('sin permiso'); }
       if(!res.ok) throw new Error('status ' + res.status);
     }finally{
       escrituras--;
@@ -850,7 +943,7 @@
   }
 
   async function refrescarTodo(mostrarCarga){
-    if(escrituras > 0) return;
+    if(!sesion || escrituras > 0) return;
 
     const rev = revLocal;
     if(mostrarCarga) setEstado('Actualizando…', true);
@@ -2685,9 +2778,37 @@
   document.getElementById('evFecha').value = hoyISO();
   document.getElementById('gastoFecha').value = hoyISO();
 
+  document.getElementById('formLogin').addEventListener('submit', async e => {
+    e.preventDefault();
+    const btn = document.getElementById('btnLogin');
+    btn.disabled = true;
+    btn.textContent = 'Entrando…';
+    try{
+      await iniciarSesion(document.getElementById('loginEmail').value.trim(),
+                          document.getElementById('loginPass').value);
+      document.getElementById('loginPass').value = '';
+      document.getElementById('login').hidden = true;
+      refrescarTodo(true);
+    }catch(err){
+      document.getElementById('loginError').textContent = err.message;
+    }finally{
+      btn.disabled = false;
+      btn.textContent = 'Entrar';
+    }
+  });
+
+  document.getElementById('btnLogout').addEventListener('click', () => {
+    if(!confirm('¿Cerrar sesión en este dispositivo?')) return;
+    cerrarSesion(' ');
+    items = []; pizzas = { stock: [], ventas: [] }; pedidos = []; metas = {};
+    catering = []; precios = []; gastos = { fijos: [], movs: [], pagos: {} };
+    renderTodo();
+  });
+
   irATab(leerCache(CACHE_KEY_TAB, 'pedidos'));
   renderTodo();
-  refrescarTodo(true);
+  if(sesion) refrescarTodo(true);
+  else mostrarLogin();
 
   // trae cambios hechos desde el otro dispositivo mientras la pestaña está abierta
   setInterval(() => {
