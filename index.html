@@ -420,6 +420,92 @@
   }
   .alerta-sabores.ok{color:var(--verde)}
 
+  /* ---------- retoques generales ---------- */
+  body{padding-top:calc(22px + env(safe-area-inset-top, 0px))}
+  .marca{margin-bottom:18px;font-size:1.3rem}
+  .card{
+    background:linear-gradient(180deg, rgba(244,236,225,.035), rgba(244,236,225,0) 70%), var(--negro-2);
+    border-radius:22px;padding:22px;
+    box-shadow:0 1px 0 rgba(244,236,225,.04) inset, 0 10px 30px rgba(0,0,0,.25);
+  }
+  .card-titulo{display:flex;align-items:baseline;gap:6px;flex-wrap:wrap}
+  .btn{border-radius:14px}
+  .btn-fuego{box-shadow:0 6px 18px rgba(226,58,22,.28)}
+  input, select{border-radius:14px}
+  /* formularios: el texto ocupa la fila entera, fecha y hora comparten la siguiente */
+  .pedido-campos input[type="text"]{flex:1 1 100%}
+  .pedido-campos input[type="date"], .pedido-campos input[type="time"],
+  .pedido-campos input[type="number"]{flex:1 1 0;min-width:0}
+
+  /* barra de pestañas con íconos de línea */
+  .tabbar{background:rgba(13,10,8,.9);padding:6px 4px env(safe-area-inset-bottom, 0px)}
+  .tabbar button{font-size:.62rem;font-weight:700;padding:6px 1px 8px;gap:4px;position:relative}
+  .tabbar .ico{
+    position:relative;display:grid;place-items:center;
+    width:46px;height:30px;border-radius:999px;filter:none;
+    transition:background .2s ease;
+  }
+  .tabbar .ico svg{width:21px;height:21px}
+  .tabbar button.activo .ico{background:rgba(226,58,22,.16)}
+  .tab-badge{top:-3px;right:2px;transform:none;box-shadow:0 0 0 2px var(--negro)}
+
+  /* ---------- inicio ---------- */
+  .home-saludo{margin:4px 2px 18px}
+  .home-fecha{color:var(--gris);font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em}
+  .home-saludo h1{font-size:1.75rem;margin-top:2px;letter-spacing:-.6px}
+  .home-objetivo{cursor:pointer;position:relative;overflow:hidden}
+  .home-objetivo::after{
+    content:'';position:absolute;right:-60px;top:-60px;width:180px;height:180px;border-radius:50%;
+    background:radial-gradient(circle, rgba(226,58,22,.22), transparent 70%);pointer-events:none;
+  }
+  .home-label{color:var(--gris);font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:.08em}
+  .home-monto{font-size:2.3rem;font-weight:900;letter-spacing:-1px;line-height:1.1;margin:6px 0 2px}
+  .home-meta{color:var(--crema-tenue);font-size:.88rem;margin-bottom:14px}
+  .home-objetivo .barra-ext{height:10px}
+  .home-objetivo .barra-int{min-width:0}
+  .home-kpis{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1.35fr) minmax(0,.8fr);gap:8px;margin-top:16px}
+  .home-kpis > div{background:rgba(244,236,225,.04);border:1px solid var(--linea);border-radius:14px;padding:10px}
+  .home-kpis .home-label{font-size:.64rem}
+  .home-kpis .val{font-weight:900;font-size:.95rem;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .home-ver{color:var(--fuego-claro);font-size:.8rem;font-weight:800;margin-top:14px}
+
+  .home-acciones{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:20px}
+  .home-accion{
+    background:var(--negro-2);border:1px solid var(--linea);border-radius:18px;
+    color:var(--crema);font-family:inherit;font-size:.72rem;font-weight:700;cursor:pointer;
+    padding:14px 4px 12px;display:flex;flex-direction:column;align-items:center;gap:8px;
+  }
+  .home-accion span{
+    width:40px;height:40px;border-radius:13px;display:grid;place-items:center;
+    background:rgba(226,58,22,.14);color:var(--fuego-claro);
+  }
+  .home-accion svg{width:20px;height:20px}
+  .home-accion:active{transform:scale(.96)}
+
+  .home-fila{
+    display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--linea);cursor:pointer;
+  }
+  .home-fila:last-child{border-bottom:none;padding-bottom:0}
+  .home-fila:first-child{padding-top:0}
+  .home-ico{
+    width:38px;height:38px;border-radius:12px;flex:none;display:grid;place-items:center;
+    background:var(--carbon);font-size:1.05rem;
+  }
+  .home-info{flex:1;min-width:0}
+  .home-info b{display:block;font-size:.92rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .home-info small{display:block;color:var(--gris);font-size:.78rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .home-der{text-align:right;flex:none;font-size:.82rem;font-weight:800}
+  .home-der small{display:block;color:var(--gris);font-weight:600;font-size:.72rem}
+  .home-stock{display:flex;flex-wrap:wrap;gap:8px}
+  .home-stock span{
+    background:var(--carbon);border:1px solid var(--linea);border-radius:999px;
+    padding:6px 12px;font-size:.8rem;font-weight:700;
+  }
+  .home-stock span b{color:var(--crema);margin-left:4px}
+  .home-stock span.bajo{border-color:rgba(226,58,22,.45);color:var(--fuego-claro)}
+  .home-stock span.bajo b{color:var(--fuego-claro)}
+  .volver-inicio{margin:0 0 6px}
+
   /* ---------- catering: cobro y personal ---------- */
   .cobro-acciones{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
   .cobro-acciones input{flex:1 1 130px}
@@ -482,6 +568,49 @@
       <button type="button" class="mes-flecha" id="mesNext" title="Mes siguiente">›</button>
     </div>
   </header>
+
+  <!-- ============ INICIO ============ -->
+  <section class="tab-panel" id="panel-inicio">
+    <div class="home-saludo">
+      <div class="home-fecha" id="homeFecha"></div>
+      <h1 id="homeSaludo">Hola</h1>
+    </div>
+
+    <div class="card home-objetivo" id="homeObjetivo">
+      <div class="home-label" id="homeObjLabel">Objetivo del mes</div>
+      <div class="home-monto" id="homeIngresos">$0</div>
+      <div class="home-meta" id="homeMeta"></div>
+      <div class="barra-ext"><div class="barra-int" id="homeBarra" style="width:0%"></div></div>
+      <div class="home-kpis">
+        <div><div class="home-label">Gastos</div><div class="val" id="homeGastos">$0</div></div>
+        <div><div class="home-label">Ganancia</div><div class="val" id="homeGanancia">$0</div></div>
+        <div><div class="home-label">Pizzas</div><div class="val" id="homePizzas">0</div></div>
+      </div>
+      <div class="home-ver">Ver ingresos y objetivo ›</div>
+    </div>
+
+    <div class="home-acciones">
+      <button type="button" class="home-accion" data-accion="pedido"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1M9 10h6M9 14h6M9 18h3"/></svg></span>Pedido</button>
+      <button type="button" class="home-accion" data-accion="venta"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 3 20h18z"/><path d="M7 13h10"/></svg></span>Venta</button>
+      <button type="button" class="home-accion" data-accion="gasto"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18M7 15h3"/></svg></span>Gasto</button>
+      <button type="button" class="home-accion" data-accion="evento"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 17h16M6 17a6 6 0 0 1 12 0M12 8v3M3 20h18"/><circle cx="12" cy="7" r="1"/></svg></span>Evento</button>
+    </div>
+
+    <div class="card">
+      <div class="card-titulo">Para hoy</div>
+      <div id="homeHoy"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-titulo">Próximos eventos</div>
+      <div id="homeEventos"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-titulo">Stock <span class="item-fecha" id="homeStockTotal"></span></div>
+      <div class="home-stock" id="homeStock"></div>
+    </div>
+  </section>
 
   <!-- ============ PEDIDOS ============ -->
   <section class="tab-panel" id="panel-pedidos">
@@ -547,6 +676,7 @@
 
   <!-- ============ OBJETIVO ============ -->
   <section class="tab-panel" id="panel-objetivo">
+    <button type="button" class="volver volver-inicio" data-ir="inicio">‹ Inicio</button>
     <div class="titulo-objetivo">
       <h1>Objetivo <b id="metaTitulo">$0</b></h1>
       <div class="sub">
@@ -722,12 +852,12 @@
 </div>
 
 <nav class="tabbar" id="tabbar">
-  <button type="button" data-tab="pedidos"><span class="ico">📋</span>Pedidos</button>
-  <button type="button" data-tab="catering"><span class="ico">🍽️</span>Catering</button>
-  <button type="button" data-tab="produccion"><span class="ico">🍕</span>Producción</button>
-  <button type="button" data-tab="stats"><span class="ico">📊</span>Ventas</button>
-  <button type="button" data-tab="gastos"><span class="ico">💸</span>Gastos</button>
-  <button type="button" data-tab="objetivo"><span class="ico">🎯</span>Objetivo</button>
+  <button type="button" data-tab="inicio"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg></span>Inicio</button>
+  <button type="button" data-tab="pedidos"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1M9 10h6M9 14h6M9 18h3"/></svg></span>Pedidos</button>
+  <button type="button" data-tab="catering"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 17h16M6 17a6 6 0 0 1 12 0M12 8v3M3 20h18"/><circle cx="12" cy="7" r="1"/></svg></span>Catering</button>
+  <button type="button" data-tab="produccion"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 3 20h18z"/><circle cx="10" cy="14" r="1.2"/><circle cx="14" cy="16" r="1.2"/><circle cx="12.5" cy="10.5" r="1.2"/></svg></span>Producción</button>
+  <button type="button" data-tab="stats"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg></span>Ventas</button>
+  <button type="button" data-tab="gastos"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18M7 15h3"/></svg></span>Gastos</button>
 </nav>
 
 <script>
@@ -1091,8 +1221,10 @@
     document.querySelectorAll('.tab-panel').forEach(p => {
       p.hidden = p.id !== 'panel-' + tab;
     });
+    // Objetivo se abre desde Inicio, así que mientras lo mirás queda marcado Inicio
+    const tabMarcado = tab === 'objetivo' ? 'inicio' : tab;
     document.querySelectorAll('#tabbar button').forEach(b => {
-      b.classList.toggle('activo', b.dataset.tab === tab);
+      b.classList.toggle('activo', b.dataset.tab === tabMarcado);
     });
     document.getElementById('cabeceraMes').hidden = !TABS_CON_MES.includes(tab);
     guardarCache(CACHE_KEY_TAB, tab);
@@ -1117,6 +1249,7 @@
 
   function renderTodo(){
     renderCabecera();
+    renderInicio();
     renderIngresos();
     renderPedidos();
     renderStockLista();
@@ -1195,6 +1328,104 @@
         persistirIngresos();
       });
     });
+  }
+
+  // ---------- inicio ----------
+
+  const DIAS = ['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
+
+  function fechaCorta(f){
+    const hoy = hoyISO();
+    if(f === hoy) return 'Hoy';
+    const d = new Date(f + 'T12:00:00');
+    const dif = Math.round((d - new Date(hoy + 'T12:00:00')) / 86400000);
+    if(dif === 1) return 'Mañana';
+    if(dif === -1) return 'Ayer';
+    if(dif > 1 && dif < 7) return DIAS[d.getDay()][0].toUpperCase() + DIAS[d.getDay()].slice(1);
+    return formatoFecha(f).slice(0, 5);
+  }
+
+  function renderInicio(){
+    const ahora = new Date();
+    const hora = ahora.getHours();
+    document.getElementById('homeSaludo').textContent =
+      hora < 6 ? 'Buenas noches' : hora < 13 ? 'Buen día' : hora < 20 ? 'Buenas tardes' : 'Buenas noches';
+    document.getElementById('homeFecha').textContent =
+      `${DIAS[ahora.getDay()]} ${ahora.getDate()} de ${MESES[ahora.getMonth()].toLowerCase()}`;
+
+    // resumen del mes en curso (Inicio siempre mira el mes de hoy)
+    const ym = mesActual();
+    const ingresos = items.filter(i => mesDe(i.fecha) === ym).reduce((s,i) => s + i.monto, 0);
+    const gastado = totalGastosDe(ym);
+    const meta = metaDe(ym);
+    const pct = Math.min(ingresos / meta * 100, 100);
+    const pizzasMes = pizzas.ventas.filter(v => mesDe(v.fecha) === ym).reduce((s,v) => s + totalPizzasDe(v), 0);
+    document.getElementById('homeObjLabel').textContent = `Ingresos de ${MESES[+ym.slice(5) - 1].toLowerCase()}`;
+    document.getElementById('homeIngresos').textContent = fmt(ingresos);
+    document.getElementById('homeMeta').textContent =
+      `${(ingresos / meta * 100).toFixed(0)}% del objetivo de ${fmt(meta)}`;
+    const barra = document.getElementById('homeBarra');
+    barra.style.width = pct + '%';
+    barra.classList.toggle('completo', pct >= 100);
+    document.getElementById('homeGastos').textContent = fmt(gastado);
+    const elGan = document.getElementById('homeGanancia');
+    elGan.textContent = fmt(ingresos - gastado);
+    elGan.style.color = ingresos - gastado < 0 ? 'var(--fuego-claro)' : 'var(--verde)';
+    document.getElementById('homePizzas').textContent = pizzasMes;
+
+    // para hoy: pedidos de hoy o atrasados, eventos de hoy, fijos vencidos o por vencer
+    const hoy = hoyISO();
+    const dia = Number(hoy.slice(8, 10));
+    const filas = [];
+    pedidos.filter(p => p.fecha <= hoy)
+      .sort((a,b) => (a.fecha + (a.hora || '')).localeCompare(b.fecha + (b.hora || '')))
+      .forEach(p => {
+        const n = p.items.reduce((s,i) => s + i.cantidad, 0);
+        filas.push(`<div class="home-fila" data-ir="pedidos">
+          <div class="home-ico">📦</div>
+          <div class="home-info"><b>${escapeHtml(p.cliente)}</b><small>${n} ${n === 1 ? 'pizza' : 'pizzas'}${p.direccion ? ' · ' + escapeHtml(p.direccion) : ''}</small></div>
+          <div class="home-der">${p.fecha < hoy ? '<span class="badge badge-atrasado">Atrasado</span>' : (p.hora || 'Hoy')}</div>
+        </div>`);
+      });
+    catering.filter(e => e.fecha === hoy).forEach(e => {
+      const r = resumenEvento(e);
+      filas.push(`<div class="home-fila" data-evento="${e.id}">
+        <div class="home-ico">🍽️</div>
+        <div class="home-info"><b>${escapeHtml(e.nombre)}</b><small>${e.personas || 0} pax${e.lugar ? ' · ' + escapeHtml(e.lugar) : ''}</small></div>
+        <div class="home-der">${e.hora || 'Hoy'}${r.falta ? `<small>cobrar ${fmt(r.falta)}</small>` : ''}</div>
+      </div>`);
+    });
+    const pagados = gastos.pagos[ym] || [];
+    fijosDe(ym).filter(f => f.dia && !pagados.includes(f.id) && f.dia - dia <= 3).forEach(f => {
+      filas.push(`<div class="home-fila" data-ir="gastos">
+        <div class="home-ico">🧾</div>
+        <div class="home-info"><b>${escapeHtml(f.nombre)}</b><small>${f.dia < dia ? 'Vencido el ' + f.dia : f.dia === dia ? 'Vence hoy' : 'Vence el ' + f.dia}</small></div>
+        <div class="home-der">${fmt(f.monto)}</div>
+      </div>`);
+    });
+    document.getElementById('homeHoy').innerHTML = filas.length
+      ? filas.join('')
+      : '<div class="vacio">Nada pendiente para hoy ✨</div>';
+
+    // próximos eventos
+    const proximos = catering.filter(e => e.fecha >= hoy)
+      .sort((a,b) => (a.fecha + (a.hora || '')).localeCompare(b.fecha + (b.hora || ''))).slice(0, 3);
+    document.getElementById('homeEventos').innerHTML = proximos.length ? proximos.map(e => {
+      const r = resumenEvento(e);
+      return `<div class="home-fila" data-evento="${e.id}">
+        <div class="home-ico">🍕</div>
+        <div class="home-info"><b>${escapeHtml(e.nombre)}</b><small>${fechaCorta(e.fecha)}${e.hora ? ' · ' + e.hora : ''} · ${e.personas || 0} pax</small></div>
+        <div class="home-der">${r.precio ? fmt(r.precio) : ''}${r.falta && r.cobrado ? `<small>falta ${fmt(r.falta)}</small>` : badgeEvento(e) ? `<small>${badgeEvento(e)}</small>` : ''}</div>
+      </div>`;
+    }).join('') : '<div class="vacio">No hay eventos agendados.</div>';
+
+    // stock
+    const stock = pizzas.stock || [];
+    const total = stock.reduce((s,x) => s + (Number(x.cantidad) || 0), 0);
+    document.getElementById('homeStockTotal').textContent = `· ${total} pizzas`;
+    document.getElementById('homeStock').innerHTML = stock.length
+      ? stock.map(x => `<span class="${x.cantidad <= 3 ? 'bajo' : ''}">${escapeHtml(x.nombre)}<b>${x.cantidad}</b></span>`).join('')
+      : '<div class="vacio">Sin sabores cargados.</div>';
   }
 
   // ---------- gastos del negocio ----------
@@ -2325,6 +2556,39 @@
     if(btn) irATab(btn.dataset.tab);
   });
 
+  // inicio: accesos rápidos y filas que llevan a otra pestaña
+  function irYMostrar(tab, id){
+    irATab(tab);
+    const el = document.getElementById(id);
+    if(!el) return;
+    el.closest('.card').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    setTimeout(() => el.focus({ preventScroll: true }), 350);
+  }
+  document.getElementById('homeObjetivo').addEventListener('click', () => {
+    mesSel = mesActual();
+    renderTodo();
+    irATab('objetivo');
+  });
+  document.querySelector('.home-acciones').addEventListener('click', e => {
+    const b = e.target.closest('[data-accion]');
+    if(!b) return;
+    const a = b.dataset.accion;
+    if(a === 'pedido') irYMostrar('pedidos', 'pedidoCliente');
+    if(a === 'venta') irYMostrar('pedidos', 'btnRegistrarVenta');
+    if(a === 'gasto'){ mesSel = mesActual(); renderTodo(); irYMostrar('gastos', 'gastoMonto'); }
+    if(a === 'evento'){ eventoAbierto = null; renderCatering(); irYMostrar('catering', 'evNombre'); }
+  });
+  document.addEventListener('click', e => {
+    const ir = e.target.closest('#panel-inicio [data-ir], #panel-objetivo [data-ir]');
+    if(ir){ irATab(ir.dataset.ir); return; }
+    const ev = e.target.closest('#panel-inicio [data-evento]');
+    if(ev){
+      eventoAbierto = Number(ev.dataset.evento);
+      irATab('catering');
+      renderCatering();
+    }
+  });
+
   document.getElementById('mesSelect').addEventListener('change', e => {
     mesSel = e.target.value;
     renderTodo();
@@ -2659,7 +2923,8 @@
     renderTodo();
   });
 
-  irATab(leerCache(CACHE_KEY_TAB, 'pedidos'));
+  // la app siempre abre en Inicio
+  irATab('inicio');
   renderTodo();
   if(sesion) refrescarTodo(true);
   else mostrarLogin();
