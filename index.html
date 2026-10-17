@@ -419,6 +419,22 @@
     font-size:.84rem;font-weight:700;margin-top:12px;color:var(--fuego-claro);
   }
   .alerta-sabores.ok{color:var(--verde)}
+
+  /* ---------- gastos del negocio ---------- */
+  .gasto-cats{margin-bottom:14px}
+  .gasto-cats button{font-size:.82rem;padding:9px 13px}
+  .hist-tot .val.negativo{color:var(--fuego-claro)}
+  .gcat-fila{display:flex;align-items:center;gap:10px;margin-bottom:9px}
+  .gcat-nombre{font-size:.88rem;font-weight:600;flex:0 0 118px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .gcat-num{font-weight:800;font-size:.88rem;flex:0 0 92px;text-align:right;white-space:nowrap}
+  .item-monto.gasto{color:var(--crema)}
+  .fijo-item{cursor:pointer}
+  .fijo-item.pagado .item-desc{color:var(--gris);text-decoration:line-through}
+  .fijo-item .badge{margin-left:6px;font-size:.6rem;padding:2px 7px}
+  #formGasto input#gastoMonto{flex:1 1 120px}
+  #formFijo select{flex:1 1 140px}
+  #formFijo input[type="number"]{flex:1 1 110px}
+  #formFijo input#fijoDia{flex:0 0 76px;min-width:0}
 </style>
 </head>
 <body>
@@ -549,6 +565,14 @@
           <div class="label">Pizzas</div>
           <div class="val" id="statPizzas">0</div>
         </div>
+        <div class="stat">
+          <div class="label">Gastos</div>
+          <div class="val" id="statGastos">$0</div>
+        </div>
+        <div class="stat">
+          <div class="label">Ganancia</div>
+          <div class="val" id="statGanancia">$0</div>
+        </div>
       </div>
       <div class="motivo" id="motivo"></div>
     </div>
@@ -565,6 +589,59 @@
     <div class="card">
       <div class="card-titulo">Ingresos del mes</div>
       <div class="lista" id="lista"></div>
+    </div>
+  </section>
+
+  <!-- ============ GASTOS ============ -->
+  <section class="tab-panel" id="panel-gastos">
+    <div class="card">
+      <div class="card-titulo">Gastos del negocio</div>
+      <div class="totales">
+        <div class="actual" id="gastoTotal">$0</div>
+        <div class="meta" id="gastoSub">fijos $0 · variables $0</div>
+      </div>
+      <div class="hist-tot">
+        <div>
+          <div class="label">Ingresos</div>
+          <div class="val" id="gastoIngresos">$0</div>
+        </div>
+        <div>
+          <div class="label">Ganancia</div>
+          <div class="val plata" id="gastoGanancia">$0</div>
+        </div>
+      </div>
+      <div id="gastoPorCat" style="margin-top:18px"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-titulo">Anotar gasto</div>
+      <div class="toggle gasto-cats" id="gastoCats"></div>
+      <form id="formGasto">
+        <input type="date" id="gastoFecha" required>
+        <input type="number" id="gastoMonto" inputmode="decimal" min="0" step="any" placeholder="Monto $" required>
+        <input type="text" id="gastoDesc" class="input-full" placeholder="Detalle (opcional): mozzarella 5kg, cajas…" style="margin-bottom:0">
+        <button type="submit" class="btn btn-fuego" style="width:100%">Anotar gasto</button>
+      </form>
+    </div>
+
+    <div class="card">
+      <div class="card-titulo">Fijos mensuales <span class="item-fecha" id="fijosPagados"></span></div>
+      <div class="card-nota">
+        Se suman solos todos los meses. Tildá cuando lo pagás; tocá uno para cambiarle el monto.
+      </div>
+      <div class="lista" id="listaFijos"></div>
+      <form id="formFijo" class="item-nuevo" style="flex-wrap:wrap">
+        <input type="text" id="fijoNombre" placeholder="Nombre (ej: Monotributo)" class="input-full" style="margin-bottom:0">
+        <input type="number" id="fijoMonto" inputmode="decimal" min="0" step="any" placeholder="Monto $">
+        <input type="number" id="fijoDia" min="1" max="31" placeholder="Día">
+        <select id="fijoCat"></select>
+        <button type="submit" class="btn btn-fuego">+</button>
+      </form>
+    </div>
+
+    <div class="card">
+      <div class="card-titulo">Gastos variables del mes</div>
+      <div class="lista" id="listaGastos"></div>
     </div>
   </section>
 
@@ -631,6 +708,7 @@
   <button type="button" data-tab="catering"><span class="ico">🍽️</span>Catering</button>
   <button type="button" data-tab="produccion"><span class="ico">🍕</span>Producción</button>
   <button type="button" data-tab="stats"><span class="ico">📊</span>Ventas</button>
+  <button type="button" data-tab="gastos"><span class="ico">💸</span>Gastos</button>
   <button type="button" data-tab="objetivo"><span class="ico">🎯</span>Objetivo</button>
 </nav>
 
@@ -642,6 +720,7 @@
   const METAS_URL    = FIREBASE_BASE + 'metas.json';
   const CATERING_URL = FIREBASE_BASE + 'catering.json';
   const PRECIOS_URL  = FIREBASE_BASE + 'precios.json';
+  const GASTOS_URL   = FIREBASE_BASE + 'gastos.json';
 
   const CACHE_KEY_INGRESOS = 'lasinergia_cache_ingresos';
   const CACHE_KEY_PIZZAS   = 'lasinergia_cache_pizzas';
@@ -649,12 +728,23 @@
   const CACHE_KEY_METAS    = 'lasinergia_cache_metas';
   const CACHE_KEY_CATERING = 'lasinergia_cache_catering';
   const CACHE_KEY_PRECIOS  = 'lasinergia_cache_precios';
+  const CACHE_KEY_GASTOS   = 'lasinergia_cache_gastos';
   const CACHE_KEY_TAB      = 'lasinergia_tab';
 
   const SABORES_DEFAULT = ['Margarita','Honey pesto','Diavola','Di patate','Caramellata','4 Formaggi'];
   const META_DEFAULT = 5000000;
   const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
-  const TABS_CON_MES = ['objetivo','stats'];
+  const TABS_CON_MES = ['objetivo','stats','gastos'];
+  const CATS_GASTO = [
+    { id: 'insumos',   nombre: 'Insumos',     emoji: '🧀' },
+    { id: 'packaging', nombre: 'Packaging',   emoji: '📦' },
+    { id: 'impuestos', nombre: 'Impuestos',   emoji: '🧾' },
+    { id: 'auto',      nombre: 'Auto',        emoji: '🚗' },
+    { id: 'servicios', nombre: 'Servicios',   emoji: '💡' },
+    { id: 'equipo',    nombre: 'Equipamiento', emoji: '🔧' },
+    { id: 'publicidad',nombre: 'Publicidad',  emoji: '📣' },
+    { id: 'otros',     nombre: 'Otros',       emoji: '•' }
+  ];
 
   let items    = [];
   let pizzas   = { stock: [], ventas: [] };
@@ -662,6 +752,10 @@
   let metas    = {};
   let catering = [];
   let precios  = [];   // [{ nombre: 'Mozzarella', precioKg: 9500 }] — compartido entre eventos
+  // fijos: se repiten cada mes desde `desde` hasta `hasta` (si se dio de baja)
+  // movs: gastos sueltos con fecha · pagos: { '2026-10': [idFijo, ...] }
+  let gastos   = { fijos: [], movs: [], pagos: {} };
+  let catGasto = 'insumos';
 
   let eventoAbierto = null;   // id del evento de catering abierto, o null = lista
 
@@ -706,6 +800,7 @@
     pizzas.ventas.forEach(v => set.add(mesDe(v.fecha)));
     pedidos.forEach(p => set.add(mesDe(p.fecha)));
     Object.keys(metas).forEach(m => set.add(m));
+    gastos.movs.forEach(g => set.add(mesDe(g.fecha)));
     return [...set].filter(m => /^\d{4}-\d{2}$/.test(m)).sort().reverse();
   }
 
@@ -760,15 +855,16 @@
     const rev = revLocal;
     if(mostrarCarga) setEstado('Actualizando…', true);
 
-    const [rIng, rPiz, rPed, rMet, rCat, rPre] = await Promise.allSettled([
+    const [rIng, rPiz, rPed, rMet, rCat, rPre, rGas] = await Promise.allSettled([
       fetchJSON(INGRESOS_URL), fetchJSON(PIZZAS_URL), fetchJSON(PEDIDOS_URL),
-      fetchJSON(METAS_URL), fetchJSON(CATERING_URL), fetchJSON(PRECIOS_URL)
+      fetchJSON(METAS_URL), fetchJSON(CATERING_URL), fetchJSON(PRECIOS_URL),
+      fetchJSON(GASTOS_URL)
     ]);
 
     // si mientras traíamos datos tocaste algo acá, descartamos lo del servidor
     if(revLocal !== rev || escrituras > 0) return;
 
-    const ok = [rIng, rPiz, rPed, rMet, rCat, rPre].every(r => r.status === 'fulfilled');
+    const ok = [rIng, rPiz, rPed, rMet, rCat, rPre, rGas].every(r => r.status === 'fulfilled');
 
     items = rIng.status === 'fulfilled'
       ? (rIng.value || [])
@@ -800,6 +896,11 @@
       : leerCache(CACHE_KEY_PRECIOS, []);
     guardarCache(CACHE_KEY_PRECIOS, precios);
 
+    gastos = normalizarGastos(rGas.status === 'fulfilled'
+      ? rGas.value
+      : leerCache(CACHE_KEY_GASTOS, null));
+    guardarCache(CACHE_KEY_GASTOS, gastos);
+
     guardarCache(CACHE_KEY_INGRESOS, items);
     guardarCache(CACHE_KEY_PIZZAS, pizzas);
     guardarCache(CACHE_KEY_PEDIDOS, pedidos);
@@ -830,6 +931,19 @@
   const persistirMetas    = hacerPersistidor(METAS_URL,    CACHE_KEY_METAS,    () => metas);
   const persistirCatering = hacerPersistidor(CATERING_URL, CACHE_KEY_CATERING, () => catering);
   const persistirPrecios  = hacerPersistidor(PRECIOS_URL,  CACHE_KEY_PRECIOS,  () => precios);
+  const persistirGastos   = hacerPersistidor(GASTOS_URL,   CACHE_KEY_GASTOS,   () => gastos);
+
+  // Firebase no guarda listas vacías, así que al leer completamos lo que falte
+  function normalizarGastos(v){
+    v = v && typeof v === 'object' ? v : {};
+    const pagos = {};
+    Object.entries(v.pagos || {}).forEach(([ym, ids]) => { pagos[ym] = Object.values(ids || {}); });
+    return {
+      fijos: Object.values(v.fijos || {}),
+      movs:  Object.values(v.movs  || {}),
+      pagos
+    };
+  }
 
   // ---------- helpers ----------
 
@@ -920,6 +1034,7 @@
     renderHistorial();
     renderProduccion();
     renderCatering();
+    renderGastos();
     renderBadgePedidos();
     renderBadgeCatering();
   }
@@ -952,6 +1067,11 @@
     document.getElementById('statCant').textContent = delMes.length;
     document.getElementById('statPedidos').textContent = ventasMes.length;
     document.getElementById('statPizzas').textContent = pizzasMes;
+    const gastoMes = totalGastosDe(mesSel);
+    const elGan = document.getElementById('statGanancia');
+    document.getElementById('statGastos').textContent = fmt(gastoMes);
+    elGan.textContent = fmt(total - gastoMes);
+    elGan.style.color = total - gastoMes < 0 ? 'var(--fuego-claro)' : 'var(--verde)';
 
     const barra = document.getElementById('barraInt');
     barra.style.width = pct + '%';
@@ -984,6 +1104,100 @@
         persistirIngresos();
       });
     });
+  }
+
+  // ---------- gastos del negocio ----------
+
+  function catGastoDe(id){ return CATS_GASTO.find(c => c.id === id) || CATS_GASTO[CATS_GASTO.length - 1]; }
+  function fijosDe(ym){ return gastos.fijos.filter(f => f.desde <= ym && (!f.hasta || f.hasta >= ym)); }
+  function movsDe(ym){ return gastos.movs.filter(g => mesDe(g.fecha) === ym); }
+  function totalGastosDe(ym){
+    return fijosDe(ym).reduce((s,f) => s + f.monto, 0) + movsDe(ym).reduce((s,g) => s + g.monto, 0);
+  }
+
+  // estado de vencimiento de un fijo en el mes que estás mirando
+  function badgeVence(f, pagado){
+    if(pagado || !f.dia) return '';
+    const hoy = hoyISO();
+    if(mesSel > mesActual()) return '';
+    if(mesSel < mesActual()) return '<span class="badge badge-atrasado">sin pagar</span>';
+    const dia = Number(hoy.slice(8, 10));
+    if(dia > f.dia) return '<span class="badge badge-atrasado">vencido</span>';
+    if(f.dia - dia <= 3) return `<span class="badge badge-hoy">${dia === f.dia ? 'vence hoy' : 'vence pronto'}</span>`;
+    return '';
+  }
+
+  function renderGastos(){
+    const fijos = fijosDe(mesSel).sort((a,b) => (a.dia || 99) - (b.dia || 99));
+    const movs = movsDe(mesSel).sort((a,b) => b.fecha.localeCompare(a.fecha) || b.id - a.id);
+    const pagados = gastos.pagos[mesSel] || [];
+    const totFijos = fijos.reduce((s,f) => s + f.monto, 0);
+    const totMovs = movs.reduce((s,g) => s + g.monto, 0);
+    const total = totFijos + totMovs;
+    const ingresos = items.filter(i => mesDe(i.fecha) === mesSel).reduce((s,i) => s + i.monto, 0);
+    const ganancia = ingresos - total;
+
+    document.getElementById('gastoTotal').textContent = fmt(total);
+    document.getElementById('gastoSub').textContent = `fijos ${fmt(totFijos)} · variables ${fmt(totMovs)}`;
+    document.getElementById('gastoIngresos').textContent = fmt(ingresos);
+    const elGan = document.getElementById('gastoGanancia');
+    elGan.textContent = fmt(ganancia);
+    elGan.classList.toggle('negativo', ganancia < 0);
+
+    // por categoría
+    const porCat = {};
+    fijos.forEach(f => porCat[f.cat] = (porCat[f.cat] || 0) + f.monto);
+    movs.forEach(g => porCat[g.cat] = (porCat[g.cat] || 0) + g.monto);
+    const filas = Object.entries(porCat).sort((a,b) => b[1] - a[1]);
+    const max = filas.length ? filas[0][1] : 1;
+    document.getElementById('gastoPorCat').innerHTML = filas.map(([id, monto]) => {
+      const c = catGastoDe(id);
+      return `<div class="gcat-fila">
+        <div class="gcat-nombre">${c.emoji} ${c.nombre}</div>
+        <div class="resumen-barra"><i style="width:${monto / max * 100}%"></i></div>
+        <div class="gcat-num">${fmt(monto)}</div>
+      </div>`;
+    }).join('');
+
+    // chips de categoría
+    document.getElementById('gastoCats').innerHTML = CATS_GASTO.map(c =>
+      `<button type="button" data-cat="${c.id}" class="${c.id === catGasto ? 'activo' : ''}">${c.emoji} ${c.nombre}</button>`
+    ).join('');
+    const selCat = document.getElementById('fijoCat');
+    if(!selCat.options.length){
+      selCat.innerHTML = CATS_GASTO.map(c => `<option value="${c.id}">${c.emoji} ${c.nombre}</option>`).join('');
+      selCat.value = 'impuestos';
+    }
+
+    // fijos
+    document.getElementById('fijosPagados').textContent =
+      fijos.length ? `· ${fijos.filter(f => pagados.includes(f.id)).length}/${fijos.length} pagados` : '';
+    document.getElementById('listaFijos').innerHTML = fijos.length ? fijos.map(f => {
+      const c = catGastoDe(f.cat);
+      const pagado = pagados.includes(f.id);
+      return `<div class="item fijo-item ${pagado ? 'pagado' : ''}" data-fijo="${f.id}">
+        <input type="checkbox" data-pago="${f.id}" ${pagado ? 'checked' : ''} title="Pagado">
+        <div class="item-info">
+          <div class="item-desc">${escapeHtml(f.nombre)}</div>
+          <div class="item-fecha">${c.emoji} ${c.nombre}${f.dia ? ` · día ${f.dia}` : ''}${badgeVence(f, pagado)}</div>
+        </div>
+        <div class="item-monto gasto">${fmt(f.monto)}</div>
+        <button class="item-del" data-baja="${f.id}" title="Dar de baja">✕</button>
+      </div>`;
+    }).join('') : `<div class="vacio">Agregá tus fijos: monotributo, seguro del auto, alquiler…</div>`;
+
+    // variables
+    document.getElementById('listaGastos').innerHTML = movs.length ? movs.map(g => {
+      const c = catGastoDe(g.cat);
+      return `<div class="item">
+        <div class="item-info">
+          <div class="item-desc">${c.emoji} ${g.desc ? escapeHtml(g.desc) : c.nombre}</div>
+          <div class="item-fecha">${formatoFecha(g.fecha)}${g.desc ? ' · ' + c.nombre : ''}</div>
+        </div>
+        <div class="item-monto gasto">${fmt(g.monto)}</div>
+        <button class="item-del" data-borrar="${g.id}" title="Eliminar">✕</button>
+      </div>`;
+    }).join('') : `<div class="vacio">No hay gastos anotados en ${nombreMes(mesSel)}.</div>`;
   }
 
   function renderPedidos(){
@@ -2188,6 +2402,80 @@
     persistirIngresos();
   });
 
+  document.getElementById('gastoCats').addEventListener('click', e => {
+    const btn = e.target.closest('button[data-cat]');
+    if(!btn) return;
+    catGasto = btn.dataset.cat;
+    renderGastos();
+  });
+
+  document.getElementById('formGasto').addEventListener('submit', e => {
+    e.preventDefault();
+    const fecha = document.getElementById('gastoFecha').value || hoyISO();
+    const monto = parseFloat(document.getElementById('gastoMonto').value);
+    if(!monto || monto <= 0) return;
+    gastos.movs.push({ id: Date.now(), fecha, cat: catGasto, monto,
+      desc: document.getElementById('gastoDesc').value.trim() });
+    if(mesDe(fecha) !== mesSel) mesSel = mesDe(fecha);
+    document.getElementById('gastoMonto').value = '';
+    document.getElementById('gastoDesc').value = '';
+    document.activeElement.blur();
+    persistirGastos();
+  });
+
+  document.getElementById('formFijo').addEventListener('submit', e => {
+    e.preventDefault();
+    const nombre = document.getElementById('fijoNombre').value.trim();
+    const monto = parseFloat(document.getElementById('fijoMonto').value);
+    const dia = parseInt(document.getElementById('fijoDia').value) || null;
+    if(!nombre){ alert('Poné el nombre del gasto fijo.'); return; }
+    if(!monto || monto <= 0){ alert('Poné el monto.'); return; }
+    gastos.fijos.push({ id: Date.now(), nombre, monto, dia: dia && Math.min(dia, 31),
+      cat: document.getElementById('fijoCat').value, desde: mesSel });
+    ['fijoNombre','fijoMonto','fijoDia'].forEach(id => document.getElementById(id).value = '');
+    document.activeElement.blur();
+    persistirGastos();
+  });
+
+  document.getElementById('listaFijos').addEventListener('click', e => {
+    const pago = e.target.closest('[data-pago]');
+    if(pago){
+      const id = Number(pago.dataset.pago);
+      const lista = gastos.pagos[mesSel] = (gastos.pagos[mesSel] || []).filter(x => x !== id);
+      if(pago.checked) lista.push(id);
+      persistirGastos();
+      return;
+    }
+    const baja = e.target.closest('[data-baja]');
+    if(baja){
+      const f = gastos.fijos.find(x => x.id === Number(baja.dataset.baja));
+      if(!f || !confirm(`¿Dar de baja "${f.nombre}" desde ${nombreMes(mesSel)}?\n\nLos meses anteriores no cambian.`)) return;
+      const hasta = correrMes(mesSel, -1);
+      if(f.desde > hasta) gastos.fijos = gastos.fijos.filter(x => x !== f);
+      else f.hasta = hasta;
+      persistirGastos();
+      return;
+    }
+    const fila = e.target.closest('[data-fijo]');
+    if(fila){
+      const f = gastos.fijos.find(x => x.id === Number(fila.dataset.fijo));
+      if(!f) return;
+      const val = prompt(`Nuevo monto de "${f.nombre}":`, f.monto);
+      if(val === null) return;
+      const num = parseFloat(String(val).replace(/[^\d.,]/g, '').replace(',', '.'));
+      if(!num || num <= 0) return;
+      f.monto = num;
+      persistirGastos();
+    }
+  });
+
+  document.getElementById('listaGastos').addEventListener('click', e => {
+    const btn = e.target.closest('[data-borrar]');
+    if(!btn) return;
+    gastos.movs = gastos.movs.filter(g => g.id !== Number(btn.dataset.borrar));
+    persistirGastos();
+  });
+
   document.getElementById('btnRefrescar').addEventListener('click', () => refrescarTodo(true));
 
   document.getElementById('btnAgregarSabor').addEventListener('click', () => {
@@ -2343,7 +2631,7 @@
   });
 
   document.getElementById('btnExport').addEventListener('click', () => {
-    const blob = new Blob([JSON.stringify({ ingresos: items, pizzas, pedidos, metas, catering, precios }, null, 2)], {type:'application/json'});
+    const blob = new Blob([JSON.stringify({ ingresos: items, pizzas, pedidos, metas, catering, precios, gastos }, null, 2)], {type:'application/json'});
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -2374,12 +2662,14 @@
           if(data.metas && typeof data.metas === 'object') metas = data.metas;
           if(Array.isArray(data.catering)) catering = data.catering;
           if(Array.isArray(data.precios)) precios = data.precios;
+          if(data.gastos && typeof data.gastos === 'object') gastos = normalizarGastos(data.gastos);
           persistirIngresos();
           persistirPizzas();
           persistirPedidos();
           persistirMetas();
           persistirCatering();
           persistirPrecios();
+          if(data.gastos) persistirGastos();
         }else{
           alert('El archivo no es un backup válido.');
         }
@@ -2393,6 +2683,7 @@
   document.getElementById('fecha').value = hoyISO();
   document.getElementById('pedidoFecha').value = hoyISO();
   document.getElementById('evFecha').value = hoyISO();
+  document.getElementById('gastoFecha').value = hoyISO();
 
   irATab(leerCache(CACHE_KEY_TAB, 'pedidos'));
   renderTodo();
