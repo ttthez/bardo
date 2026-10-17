@@ -420,6 +420,18 @@
   }
   .alerta-sabores.ok{color:var(--verde)}
 
+  /* ---------- catering: cobro y personal ---------- */
+  .cobro-acciones{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+  .cobro-acciones input{flex:1 1 130px}
+  .cobro-acciones .btn{flex:1 1 130px}
+  .btn-borde{
+    background:transparent;border:1.5px solid var(--verde);color:var(--verde);
+  }
+  .btn-borde:hover{background:rgba(63,174,92,.1)}
+  .item-monto.gasto{color:var(--crema)}
+  .tag-ok{font-size:.72rem;font-weight:800;color:var(--verde);white-space:nowrap}
+  .badge-senado{background:rgba(255,190,60,.14);color:#f2b84b;border:1px solid rgba(255,190,60,.35)}
+
   /* ---------- login ---------- */
   .login{
     position:fixed;inset:0;z-index:100;background:var(--negro);
@@ -528,24 +540,9 @@
         <div class="lista" id="listaEventos"></div>
       </div>
 
-      <div class="card">
-        <div class="card-titulo">Precios por kilo</div>
-        <div class="card-nota">
-          Cargá el precio de cada ingrediente una vez y lo usan todos los eventos.
-          Cuando cambie, lo actualizás acá.
-        </div>
-        <div id="listaPrecios"></div>
-        <form id="formPrecio" class="item-nuevo">
-          <input type="text" id="nuevoPrecioNombre" list="ingredientesConocidos" placeholder="Ingrediente">
-          <input type="number" id="nuevoPrecioValor" min="0" step="any" placeholder="$ / kg">
-          <button type="submit" class="btn btn-fuego">+</button>
-        </form>
-      </div>
     </div>
 
     <div id="cateringDetalle" hidden></div>
-    <!-- sugerencias de nombres, para que "Mozzarella" se escriba siempre igual y matchee su precio -->
-    <datalist id="ingredientesConocidos"></datalist>
   </section>
 
   <!-- ============ OBJETIVO ============ -->
@@ -767,6 +764,7 @@
     { id: 'servicios', nombre: 'Servicios',   emoji: '💡' },
     { id: 'equipo',    nombre: 'Equipamiento', emoji: '🔧' },
     { id: 'publicidad',nombre: 'Publicidad',  emoji: '📣' },
+    { id: 'personal',  nombre: 'Personal',    emoji: '👥' },
     { id: 'otros',     nombre: 'Otros',       emoji: '•' }
   ];
 
@@ -1748,22 +1746,6 @@
 
   // ---------- catering ----------
 
-  function fmtGramos(g){
-    return Math.round(g || 0).toLocaleString('es-AR') + ' g';
-  }
-  function totalIngrediente(ing){
-    return (Number(ing.pizzas) || 0) * (Number(ing.gramos) || 0);
-  }
-  // gramos de un ingrediente por cada persona del evento (para escalar a otros eventos)
-  function porPersona(ing, ev){
-    const personas = Number(ev.personas) || 0;
-    if(!personas) return '';
-    const g = totalIngrediente(ing) / personas;
-    const txt = g < 10
-      ? g.toLocaleString('es-AR', { maximumFractionDigits: 1 })
-      : Math.round(g).toLocaleString('es-AR');
-    return `≈ ${txt} g por persona`;
-  }
   function pizzasPorPersona(ev){
     const personas = Number(ev.personas) || 0;
     const pz = Number(ev.pizzas) || 0;
@@ -1774,94 +1756,36 @@
     return catering.find(e => e.id === id) || null;
   }
 
-  // ----- precios por kilo -----
-  // los nombres se comparan sin mayúsculas ni espacios de más: "mozzarella " = "Mozzarella"
-  const normal = s => String(s || '').trim().toLowerCase();
+  // ----- cobros y personal -----
+  // Los cobros (seña, saldo) se guardan como ingresos con `eventoId`, así suman en Objetivo
+  // y si borrás uno desde ahí, el evento se entera solo.
+  function cobrosDe(ev){
+    return items.filter(i => i.eventoId === ev.id).sort((a,b) => a.fecha.localeCompare(b.fecha) || a.id - b.id);
+  }
+  function personalDe(ev){ return ev.personal || []; }
+  // un pago al personal "ya está en gastos" si existe el gasto que lo referencia
+  function gastoDePersonal(p){ return gastos.movs.find(g => g.personalId === p.id) || null; }
 
-  function precioKgDe(nombre){
-    const p = precios.find(x => normal(x.nombre) === normal(nombre));
-    return p ? (Number(p.precioKg) || 0) : 0;
-  }
-  function setPrecioKg(nombre, valor){
-    const n = String(nombre || '').trim();
-    if(!n) return false;
-    const p = precios.find(x => normal(x.nombre) === normal(n));
-    if(p){ p.precioKg = valor; return true; }
-    // si el ingrediente ya figura en algún evento, guardamos el nombre tal como está escrito ahí
-    const existente = ingredientesConocidos().find(k => normal(k) === normal(n));
-    precios.push({ nombre: existente || n, precioKg: valor });
-    return true;
-  }
-  // precio por kilo que corresponde a un ingrediente de un evento:
-  // si el evento está cerrado, el que quedó congelado al cerrarlo; si no, el de la lista actual
-  function precioIng(ing, ev){
-    if(ev && ev.cerrado && typeof ing.precioKgCerrado === 'number') return ing.precioKgCerrado;
-    return precioKgDe(ing.nombre);
-  }
-  function costoIngrediente(ing, ev){
-    return totalIngrediente(ing) / 1000 * precioIng(ing, ev);
-  }
-  // costo total de insumos de un evento, y qué ingredientes todavía no tienen precio
-  function costosEvento(ev){
-    const usados = (ev.ingredientes || []).filter(i => normal(i.nombre) && totalIngrediente(i) > 0);
-    const sinPrecio = usados.filter(i => !precioIng(i, ev)).map(i => i.nombre.trim());
-    const total = usados.reduce((s,i) => s + costoIngrediente(i, ev), 0);
-    return { total, sinPrecio };
-  }
-  function textoCosto(ing, ev){
-    if(!precioIng(ing, ev)) return 'sin precio';
-    return fmt(costoIngrediente(ing, ev));
-  }
-  // bloque de totales de costo al pie de "Insumos del evento"
-  function htmlCostos(ev){
-    const { total, sinPrecio } = costosEvento(ev);
-    const personas = Number(ev.personas) || 0;
-    const pz = Number(ev.pizzas) || 0;
-    if(total <= 0 && sinPrecio.length === 0) return '';
-    return `
-      <div class="costo-totales">
-        <div>
-          <div class="label">${ev.cerrado ? 'Gastado en insumos' : 'Costo de insumos'}</div>
-          <div class="val plata">${fmt(total)}</div>
-        </div>
-        ${personas ? `<div><div class="label">Por persona</div><div class="val">${fmt(total / personas)}</div></div>` : ''}
-        ${pz ? `<div><div class="label">Por pizza</div><div class="val">${fmt(total / pz)}</div></div>` : ''}
-      </div>
-      ${sinPrecio.length
-        ? `<div class="costo-aviso">Falta el precio de: ${sinPrecio.map(escapeHtml).join(', ')}. El total no los incluye.</div>`
-        : ''}`;
+  function resumenEvento(ev){
+    const precio = Number(ev.precio) || 0;
+    const cobrado = cobrosDe(ev).reduce((s,i) => s + i.monto, 0);
+    const personal = personalDe(ev).reduce((s,p) => s + (Number(p.monto) || 0), 0);
+    const falta = Math.max(precio - cobrado, 0);
+    // si todavía no pusiste el precio, la ganancia se calcula sobre lo cobrado
+    const ganancia = (precio || cobrado) - personal;
+    return { precio, cobrado, personal, falta, ganancia };
   }
 
-  // congela en cada ingrediente el precio por kilo de hoy; desde ahí el costo del evento no cambia
-  function cerrarEvento(ev){
-    const { total, sinPrecio } = costosEvento(ev);
-    const aviso = sinPrecio.length
-      ? `\n\nOjo: falta el precio de ${sinPrecio.join(', ')}. Van a quedar sin costo.`
-      : '';
-    if(!confirm(`¿Cerrar "${ev.nombre}"?\n\nSe congela el gasto en insumos en ${fmt(total)} con los precios de hoy, y las cantidades quedan bloqueadas.${aviso}`)) return;
-    (ev.ingredientes || []).forEach(i => { i.precioKgCerrado = precioKgDe(i.nombre); });
-    ev.cerrado = true;
-    ev.cerradoEl = hoyISO();
-    persistirCatering();
+  function badgeEvento(e){
+    const { precio, cobrado, falta } = resumenEvento(e);
+    const hoy = hoyISO();
+    if(precio > 0 && falta === 0) return '<span class="badge badge-cerrado">Cobrado</span>';
+    if(e.fecha < hoy && falta > 0) return '<span class="badge badge-atrasado">Falta cobrar</span>';
+    if(e.fecha === hoy) return '<span class="badge badge-hoy">Hoy</span>';
+    if(cobrado > 0) return '<span class="badge badge-senado">Señado</span>';
+    return '';
   }
 
-  function reabrirEvento(ev){
-    if(!confirm(`¿Reabrir "${ev.nombre}"?\n\nVuelve a calcularse con los precios actuales y se pierden los precios congelados al cerrarlo.`)) return;
-    (ev.ingredientes || []).forEach(i => { delete i.precioKgCerrado; });
-    ev.cerrado = false;
-    delete ev.cerradoEl;
-    persistirCatering();
-  }
-
-  // todos los nombres de ingredientes que aparecen en precios o en algún evento
-  function ingredientesConocidos(){
-    const vistos = new Map();
-    precios.forEach(p => { if(normal(p.nombre)) vistos.set(normal(p.nombre), p.nombre.trim()); });
-    catering.forEach(e => (e.ingredientes || []).forEach(i => {
-      if(normal(i.nombre) && !vistos.has(normal(i.nombre))) vistos.set(normal(i.nombre), i.nombre.trim());
-    }));
-    return [...vistos.values()].sort((a,b) => a.localeCompare(b, 'es'));
-  }
   // ítems de la checklist: soporta el formato viejo {texto} y el nuevo {nombre, cantidad}
   function itemsDe(ev){
     return (ev.checklist || []).map(t => ({
@@ -1872,71 +1796,25 @@
   }
 
   function renderCatering(){
-    document.getElementById('ingredientesConocidos').innerHTML =
-      ingredientesConocidos().map(n => `<option value="${escapeHtml(n)}">`).join('');
-
     const ev = eventoAbierto !== null ? eventoPorId(eventoAbierto) : null;
     document.getElementById('cateringLista').hidden = !!ev;
     document.getElementById('cateringDetalle').hidden = !ev;
     if(ev) renderEventoDetalle(ev);
-    else { eventoAbierto = null; renderListaEventos(); renderPrecios(); }
-  }
-
-  function renderPrecios(){
-    const cont = document.getElementById('listaPrecios');
-    if(escribiendoEn(cont)) return;
-
-    const nombres = ingredientesConocidos();
-    if(nombres.length === 0){
-      cont.innerHTML = '<div class="vacio">Todavía no hay ingredientes. Cargalos acá o en un evento.</div>';
-      return;
-    }
-
-    // primero los que faltan precio, así se ven
-    const filas = nombres
-      .map(n => ({ nombre: n, precio: precioKgDe(n), guardado: precios.some(p => normal(p.nombre) === normal(n)) }))
-      .sort((a,b) => (a.precio ? 1 : 0) - (b.precio ? 1 : 0) || a.nombre.localeCompare(b.nombre, 'es'));
-
-    cont.innerHTML = filas.map((f, i) => `
-      <div class="precio-fila">
-        <div class="precio-nombre">${escapeHtml(f.nombre)}${f.precio ? '' : '<small>falta el precio</small>'}</div>
-        <span class="ing-x">$</span>
-        <input type="number" min="0" step="any" data-precio="${i}" value="${f.precio || ''}" placeholder="—">
-        <span class="ing-x">/kg</span>
-        ${f.guardado
-          ? `<button type="button" class="item-del" data-precio-del="${i}" title="Quitar precio">✕</button>`
-          : '<span style="width:30px"></span>'}
-      </div>`).join('');
-
-    cont.querySelectorAll('[data-precio]').forEach(inp => {
-      inp.addEventListener('change', () => {
-        setPrecioKg(filas[+inp.getAttribute('data-precio')].nombre, parseFloat(inp.value) || 0);
-        persistirPrecios();
-      });
-    });
-    cont.querySelectorAll('[data-precio-del]').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const nombre = filas[+btn.getAttribute('data-precio-del')].nombre;
-        if(!confirm(`¿Quitar el precio de "${nombre}"?`)) return;
-        precios = precios.filter(p => normal(p.nombre) !== normal(nombre));
-        persistirPrecios();
-      });
-    });
+    else { eventoAbierto = null; renderListaEventos(); }
   }
 
   function renderListaEventos(){
-    // opción de copiar ingredientes y checklist de un evento anterior
+    // opción de copiar checklist y personal de un evento anterior
     const wrap = document.getElementById('evCopiarWrap');
     const previos = catering.slice().sort((a,b) => b.fecha.localeCompare(a.fecha));
     wrap.innerHTML = previos.length
       ? `<select id="evCopiar" class="input-full">
            <option value="">Empezar de cero</option>
-           ${previos.map(e => `<option value="${e.id}">Copiar ingredientes y checklist de: ${escapeHtml(e.nombre)}</option>`).join('')}
+           ${previos.map(e => `<option value="${e.id}">Copiar checklist y personal de: ${escapeHtml(e.nombre)}</option>`).join('')}
          </select>`
       : '';
 
     const cont = document.getElementById('listaEventos');
-    const hoy = hoyISO();
     const ordenados = catering.slice().sort((a,b) =>
       (a.fecha + (a.hora || '99:99')).localeCompare(b.fecha + (b.hora || '99:99')));
 
@@ -1948,11 +1826,8 @@
     cont.innerHTML = ordenados.map(e => {
       const tareas = itemsDe(e);
       const hechas = tareas.filter(t => t.hecho).length;
-      const costo = costosEvento(e).total;
-      let badge = '';
-      if(e.cerrado) badge = '<span class="badge badge-cerrado">Cerrado</span>';
-      else if(e.fecha < hoy) badge = '<span class="badge badge-atrasado">Sin cerrar</span>';
-      else if(e.fecha === hoy) badge = '<span class="badge badge-hoy">Hoy</span>';
+      const r = resumenEvento(e);
+      const badge = badgeEvento(e);
 
       return `
         <div class="evento" data-ev="${e.id}">
@@ -1962,7 +1837,8 @@
           </div>
           <div class="evento-meta">
             <b>${e.personas || 0}</b> personas · <b>${e.pizzas || 0}</b> pizzas
-            ${costo > 0 ? ` · ${e.cerrado ? 'gastado' : 'insumos'} <b>${fmt(costo)}</b>` : ''}
+            ${r.precio ? ` · <b>${fmt(r.precio)}</b>` : ''}
+            ${r.falta > 0 && r.cobrado > 0 ? ` · falta <b>${fmt(r.falta)}</b>` : ''}
             ${tareas.length ? ` · cargado <b>${hechas}/${tareas.length}</b>` : ''}
           </div>
         </div>`;
@@ -1983,11 +1859,12 @@
     if(escribiendoEn(cont)) return;
 
     const sabores = ev.sabores || [];
-    const ingredientes = ev.ingredientes || [];
     const tareas = itemsDe(ev);
     const ratio = pizzasPorPersona(ev);
-    const cerrado = !!ev.cerrado;
-    const bloq = cerrado ? 'disabled' : '';   // un evento cerrado no deja tocar cantidades ni precios
+    const r = resumenEvento(ev);
+    const cobros = cobrosDe(ev);
+    const personal = personalDe(ev);
+    const sinPasar = personal.filter(p => !gastoDePersonal(p) && Number(p.monto) > 0);
     const asignadas = sabores.reduce((s,x) => s + (Number(x.cantidad) || 0), 0);
     const objetivo = Number(ev.pizzas) || 0;
     const nombresStock = pizzas.stock.map(s => s.nombre);
@@ -2028,6 +1905,65 @@
       </div>
 
       <div class="card">
+        <div class="card-titulo">Cobro</div>
+        <div class="card-nota" style="margin:-8px 0 8px">Precio total del evento</div>
+        <div class="pedido-campos">
+          <input type="number" data-campo="precio" min="0" step="any" inputmode="decimal" value="${ev.precio || ''}" placeholder="$">
+        </div>
+        <div class="lista">
+          ${cobros.length === 0 ? '<div class="vacio">Todavía no se cobró nada.</div>' : cobros.map(c => `
+            <div class="item">
+              <div class="item-info">
+                <div class="item-desc">${c.tipo === 'seña' ? 'Seña' : c.tipo === 'saldo' ? 'Saldo' : 'Pago'}</div>
+                <div class="item-fecha">${formatoFecha(c.fecha)}</div>
+              </div>
+              <div class="item-monto">${fmt(c.monto)}</div>
+              <button type="button" class="item-del" data-cobro-del="${c.id}" title="Eliminar cobro">✕</button>
+            </div>`).join('')}
+        </div>
+        <div class="cobro-acciones">
+          <input type="number" id="cobroMonto" min="0" step="any" inputmode="decimal" placeholder="Monto $">
+          <button type="button" class="btn btn-fuego" id="btnSena">Registrar seña</button>
+        </div>
+        ${r.falta > 0 ? `
+          <button type="button" class="btn-cerrar" id="btnSaldo">✓ Cobrar saldo · ${fmt(r.falta)}</button>` : ''}
+        <div class="costo-totales">
+          <div><div class="label">Cobrado</div><div class="val">${fmt(r.cobrado)}</div></div>
+          <div><div class="label">Falta cobrar</div><div class="val">${fmt(r.falta)}</div></div>
+          <div><div class="label">Personal</div><div class="val">${fmt(r.personal)}</div></div>
+          <div><div class="label">Ganancia</div><div class="val plata" style="${r.ganancia < 0 ? 'color:var(--fuego-claro)' : ''}">${fmt(r.ganancia)}</div></div>
+        </div>
+        <div class="card-nota" style="margin:12px 0 0">Cada cobro se suma solo a los ingresos de Objetivo.</div>
+      </div>
+
+      <div class="card">
+        <div class="card-titulo">Personal <span class="item-fecha">· ${personal.length} ${personal.length === 1 ? 'persona' : 'personas'}</span></div>
+        <div class="lista">
+          ${personal.length === 0 ? '<div class="vacio">Anotá quién va a trabajar y cuánto se le paga.</div>' : personal.map(pp => {
+            const g = gastoDePersonal(pp);
+            return `
+            <div class="item">
+              <div class="item-info">
+                <div class="item-desc">${escapeHtml(pp.nombre || 'Sin nombre')}</div>
+                <div class="item-fecha">${g ? '<span class="tag-ok">✓ anotado en gastos</span>' : 'sin anotar en gastos'}</div>
+              </div>
+              <div class="item-monto gasto">${fmt(Number(pp.monto) || 0)}</div>
+              <button type="button" class="item-del" data-pers-del="${pp.id}" title="Quitar">✕</button>
+            </div>`;
+          }).join('')}
+        </div>
+        <form id="formPersonal" class="item-nuevo">
+          <input type="text" id="persNombre" placeholder="Nombre o rol (ej: Mozo)">
+          <input type="number" id="persMonto" min="0" step="any" inputmode="decimal" placeholder="$" style="flex:0 0 104px">
+          <button type="submit" class="btn btn-fuego">+</button>
+        </form>
+        ${sinPasar.length ? `
+          <button type="button" class="btn-cerrar" id="btnPersonalAGastos">
+            Anotar ${sinPasar.length === 1 ? 'el pago' : `los ${sinPasar.length} pagos`} en gastos · ${fmt(sinPasar.reduce((s,p) => s + Number(p.monto), 0))}
+          </button>` : ''}
+      </div>
+
+      <div class="card">
         <div class="card-titulo">Sabores a llevar</div>
         <div id="evSabores">
           ${sabores.length === 0 ? '<div class="vacio">Todavía no cargaste sabores.</div>' : sabores.map((s, i) => `
@@ -2041,50 +1977,6 @@
         <div class="footer-row" style="justify-content:flex-start;margin-top:14px">
           <button type="button" class="link-btn" id="btnAgregarSaborEv">+ Agregar sabor</button>
         </div>
-      </div>
-
-      <div class="card">
-        <div class="card-titulo">Insumos del evento</div>
-        ${cerrado
-          ? `<div class="cerrado-aviso">
-               <span>✓ Cerrado el ${formatoFecha(ev.cerradoEl || ev.fecha)} · precios congelados</span>
-               <button type="button" class="link-btn" id="btnReabrirEvento">reabrir</button>
-             </div>`
-          : `<div class="card-nota">
-               Por cada ingrediente: cuántas de las ${objetivo || '—'} pizzas lo llevan, y cuántos gramos va en cada una.
-             </div>`}
-        <div id="evIngredientes">
-          ${ingredientes.length === 0 ? '<div class="vacio">Todavía no cargaste ingredientes.</div>' : ingredientes.map((g, i) => `
-            <div class="ing-fila">
-              <div class="ing-top">
-                <input type="text" list="ingredientesConocidos" data-ing="${i}" value="${escapeHtml(g.nombre || '')}" placeholder="Ingrediente (ej: Mozzarella)" ${bloq}>
-                ${cerrado ? '' : `<button type="button" class="item-del" data-ing-del="${i}">✕</button>`}
-              </div>
-              <div class="ing-calc">
-                <input type="number" min="0" data-ing-pizzas="${i}" value="${g.pizzas || 0}" ${bloq}>
-                <span class="ing-x">pizzas ×</span>
-                <input type="number" min="0" data-ing-gramos="${i}" value="${g.gramos || 0}" ${bloq}>
-                <span class="ing-x">g</span>
-                <span class="ing-total" data-ing-total="${i}">${fmtGramos(totalIngrediente(g))}</span>
-              </div>
-              <div class="ing-porpersona" data-ing-pp="${i}">${porPersona(g, ev)}</div>
-              <div class="ing-precio">
-                <span class="ing-x">$</span>
-                <input type="number" min="0" step="any" data-ing-precio="${i}" value="${precioIng(g, ev) || ''}" placeholder="precio" ${bloq}>
-                <span class="ing-x">/kg</span>
-                <span class="ing-costo ${precioIng(g, ev) ? '' : 'falta'}" data-ing-costo="${i}">${textoCosto(g, ev)}</span>
-              </div>
-            </div>`).join('')}
-        </div>
-        ${cerrado ? '' : `
-          <div class="footer-row" style="justify-content:flex-start;margin-top:14px">
-            <button type="button" class="link-btn" id="btnAgregarIngrediente">+ Agregar ingrediente</button>
-          </div>`}
-        <div id="evCostos">${htmlCostos(ev)}</div>
-        ${cerrado ? '' : `
-          <button type="button" class="btn-cerrar" id="btnCerrarEvento">
-            ✓ Cerrar evento y congelar costos
-          </button>`}
       </div>
 
       <div class="card">
@@ -2123,7 +2015,7 @@
     });
 
     document.getElementById('btnBorrarEvento').addEventListener('click', () => {
-      if(!confirm(`¿Borrar el evento "${ev.nombre}"? Se pierde su checklist e insumos.`)) return;
+      if(!confirm(`¿Borrar el evento "${ev.nombre}"? Se pierde su checklist y personal.\n\nLos cobros y gastos ya anotados quedan en Objetivo y Gastos.`)) return;
       catering = catering.filter(e => e.id !== ev.id);
       eventoAbierto = null;
       persistirCatering();
@@ -2163,80 +2055,66 @@
       persistirCatering();
     });
 
-    // ingredientes: recalculamos en vivo sin re-renderizar, y guardamos al salir del campo
-    const recalcular = () => {
-      (ev.ingredientes || []).forEach((g, i) => {
-        const celda = cont.querySelector(`[data-ing-total="${i}"]`);
-        if(celda) celda.textContent = fmtGramos(totalIngrediente(g));
-        const pp = cont.querySelector(`[data-ing-pp="${i}"]`);
-        if(pp) pp.textContent = porPersona(g, ev);
-        const costo = cont.querySelector(`[data-ing-costo="${i}"]`);
-        if(costo){
-          costo.textContent = textoCosto(g, ev);
-          costo.classList.toggle('falta', !precioIng(g, ev));
-        }
-      });
-      document.getElementById('evCostos').innerHTML = htmlCostos(ev);
+    // cobros: cada uno es un ingreso enlazado al evento
+    const registrarCobro = (monto, tipo) => {
+      items.push({ id: Date.now(), fecha: hoyISO(), monto, tipo, eventoId: ev.id,
+                   desc: `${tipo === 'seña' ? 'Seña' : 'Saldo'} · ${ev.nombre}` });
+      persistirIngresos();
     };
-
-    // el precio es por ingrediente y compartido: se guarda en la lista de precios,
-    // así lo usan este y todos los demás eventos
-    cont.querySelectorAll('[data-ing-precio]').forEach(inp => {
-      const g = () => ev.ingredientes[+inp.getAttribute('data-ing-precio')];
-      inp.addEventListener('input', () => {
-        if(!normal(g().nombre)) return;
-        setPrecioKg(g().nombre, parseFloat(inp.value) || 0);
-        recalcular();
-      });
-      inp.addEventListener('change', () => {
-        if(!normal(g().nombre)){
-          alert('Poné primero el nombre del ingrediente, así el precio queda guardado para él.');
-          inp.value = '';
-          return;
-        }
-        setPrecioKg(g().nombre, parseFloat(inp.value) || 0);
-        persistirPrecios();
-      });
+    document.getElementById('btnSena').addEventListener('click', () => {
+      const monto = parseFloat(document.getElementById('cobroMonto').value);
+      if(!monto || monto <= 0){ alert('Poné el monto de la seña.'); return; }
+      document.getElementById('cobroMonto').value = '';
+      document.activeElement.blur();
+      registrarCobro(monto, 'seña');
     });
-
-    cont.querySelectorAll('[data-ing]').forEach(inp => {
-      inp.addEventListener('change', () => {
-        ev.ingredientes[+inp.getAttribute('data-ing')].nombre = inp.value.trim();
-        persistirCatering();
-      });
+    const btnSaldo = document.getElementById('btnSaldo');
+    if(btnSaldo) btnSaldo.addEventListener('click', () => {
+      const { falta } = resumenEvento(ev);
+      if(!confirm(`¿Registrar el cobro del saldo de ${fmt(falta)}?`)) return;
+      registrarCobro(falta, 'saldo');
     });
-    cont.querySelectorAll('[data-ing-pizzas]').forEach(inp => {
-      inp.addEventListener('input', () => {
-        ev.ingredientes[+inp.getAttribute('data-ing-pizzas')].pizzas = parseInt(inp.value) || 0;
-        recalcular();
-      });
-      inp.addEventListener('change', persistirCatering);
-    });
-    cont.querySelectorAll('[data-ing-gramos]').forEach(inp => {
-      inp.addEventListener('input', () => {
-        ev.ingredientes[+inp.getAttribute('data-ing-gramos')].gramos = parseFloat(inp.value) || 0;
-        recalcular();
-      });
-      inp.addEventListener('change', persistirCatering);
-    });
-    cont.querySelectorAll('[data-ing-del]').forEach(btn => {
+    cont.querySelectorAll('[data-cobro-del]').forEach(btn => {
       btn.addEventListener('click', () => {
-        ev.ingredientes.splice(+btn.getAttribute('data-ing-del'), 1);
+        if(!confirm('¿Eliminar este cobro? También se saca de los ingresos.')) return;
+        items = items.filter(i => i.id !== Number(btn.getAttribute('data-cobro-del')));
+        persistirIngresos();
+      });
+    });
+
+    // personal
+    document.getElementById('formPersonal').addEventListener('submit', e => {
+      e.preventDefault();
+      const nombre = document.getElementById('persNombre').value.trim();
+      const monto = parseFloat(document.getElementById('persMonto').value) || 0;
+      if(!nombre && !monto) return;
+      ev.personal = personalDe(ev);
+      ev.personal.push({ id: Date.now(), nombre, monto });
+      document.activeElement.blur();
+      persistirCatering();
+      document.getElementById('persNombre').focus();
+    });
+    cont.querySelectorAll('[data-pers-del]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const pp = personalDe(ev).find(x => x.id === Number(btn.getAttribute('data-pers-del')));
+        if(!pp) return;
+        const g = gastoDePersonal(pp);
+        if(g && !confirm(`"${pp.nombre}" ya está anotado en gastos. ¿Lo saco también de gastos?`)) return;
+        ev.personal = personalDe(ev).filter(x => x !== pp);
+        if(g){ gastos.movs = gastos.movs.filter(x => x !== g); persistirGastos(); }
         persistirCatering();
       });
     });
-    const btnAgregarIng = document.getElementById('btnAgregarIngrediente');
-    if(btnAgregarIng) btnAgregarIng.addEventListener('click', () => {
-      ev.ingredientes = ev.ingredientes || [];
-      // por defecto el ingrediente va en todas las pizzas del evento
-      ev.ingredientes.push({ nombre: '', pizzas: Number(ev.pizzas) || 0, gramos: 0 });
-      persistirCatering();
+    const btnAGastos = document.getElementById('btnPersonalAGastos');
+    if(btnAGastos) btnAGastos.addEventListener('click', () => {
+      const pendientes = personalDe(ev).filter(pp => !gastoDePersonal(pp) && Number(pp.monto) > 0);
+      // el gasto va con la fecha del evento, así cae en el mes en que se trabajó
+      pendientes.forEach((pp, i) => gastos.movs.push({
+        id: Date.now() + i, fecha: ev.fecha || hoyISO(), cat: 'personal', monto: Number(pp.monto),
+        desc: `${pp.nombre || 'Personal'} · ${ev.nombre}`, personalId: pp.id, eventoId: ev.id
+      }));
+      persistirGastos();
     });
-
-    const btnCerrar = document.getElementById('btnCerrarEvento');
-    if(btnCerrar) btnCerrar.addEventListener('click', () => cerrarEvento(ev));
-    const btnReabrir = document.getElementById('btnReabrirEvento');
-    if(btnReabrir) btnReabrir.addEventListener('click', () => reabrirEvento(ev));
 
     // checklist de ítems: normalizamos al formato {nombre, cantidad, hecho} antes de tocarla
     ev.checklist = itemsDe(ev);
@@ -2650,20 +2528,6 @@
     renderProduccion();
   });
 
-  document.getElementById('formPrecio').addEventListener('submit', e => {
-    e.preventDefault();
-    const inpNombre = document.getElementById('nuevoPrecioNombre');
-    const inpValor = document.getElementById('nuevoPrecioValor');
-    const valor = parseFloat(inpValor.value);
-    if(!inpNombre.value.trim()){ alert('Poné el nombre del ingrediente.'); return; }
-    if(!valor || valor <= 0){ alert('Poné el precio por kilo.'); return; }
-    setPrecioKg(inpNombre.value, valor);
-    inpNombre.value = '';
-    inpValor.value = '';
-    document.activeElement.blur();   // para que la lista se redibuje
-    persistirPrecios();
-  });
-
   document.getElementById('btnCrearEvento').addEventListener('click', () => {
     const nombre = document.getElementById('evNombre').value.trim();
     const fecha = document.getElementById('evFecha').value;
@@ -2691,20 +2555,10 @@
       pizzas: pizzasEv,
       notas: '',
       sabores: [],
-      // copiamos ingredientes y checklist del evento elegido. Las pizzas que lleva
-      // cada ingrediente se reescalan manteniendo la proporción del evento base
-      // (si 105 de 120 llevaban muzza, en uno de 60 van 53), redondeando para arriba.
-      ingredientes: base
-        ? (base.ingredientes || []).map(g => ({
-            nombre: g.nombre,
-            pizzas: (base.pizzas > 0 && pizzasEv > 0)
-              ? Math.min(pizzasEv, Math.ceil(g.pizzas / base.pizzas * pizzasEv))
-              : (pizzasEv || g.pizzas),
-            gramos: g.gramos
-          }))
-        : [{ nombre: 'Masa', pizzas: pizzasEv, gramos: 0 },
-           { nombre: 'Salsa de tomate', pizzas: pizzasEv, gramos: 0 },
-           { nombre: 'Mozzarella', pizzas: pizzasEv, gramos: 0 }],
+      // del evento elegido copiamos el personal (nombres y montos) y la checklist
+      personal: base
+        ? personalDe(base).map((pp, i) => ({ id: Date.now() + 1 + i, nombre: pp.nombre, monto: pp.monto }))
+        : [],
       checklist: base
         ? itemsDe(base).map(t => ({ nombre: t.nombre, cantidad: t.cantidad, hecho: false }))
         : []
