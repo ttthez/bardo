@@ -35,6 +35,9 @@ Campos viejos que la app ya no muestra (`ingredientes`, `cerrado`, `cerradoEl`):
 - `movs`: `{ id, fecha, cat, monto, desc }`. El pago de personal de un evento lleva además `personalId` y `eventoId`, con `desc` tipo `"Mozo Juan · Casamiento Pérez"` y la fecha del evento.
 - Categorías (`cat`): `insumos`, `packaging`, `impuestos`, `auto`, `servicios`, `equipo`, `publicidad`, `personal`, `otros`.
 
+**Medio de pago** (`medio`, opcional en ingresos de `datos` y en `gastos.movs`): `efectivo`, `mp` (Mercado Pago),
+`transferencia` (otra cuenta) o `tarjeta`. Al cargar desde un extracto, poné el medio que corresponde.
+
 **`pedidos`**: `{ id, cliente, fecha, hora, direccion, notas, items: [{nombre, cantidad}] }` (pendientes de entrega).
 
 **`pizzas`**: `{ stock: [{nombre, cantidad}], ventas: [{id, fecha, cliente?, items: [{nombre, cantidad}]}] }`.

@@ -540,6 +540,7 @@
   .fijo-item.pagado .item-desc{color:var(--gris);text-decoration:line-through}
   .fijo-item .badge{margin-left:6px;font-size:.6rem;padding:2px 7px}
   #formGasto input#gastoMonto{flex:1 1 120px}
+  .sel-medio{flex:1 1 150px}
   #formFijo select{flex:1 1 140px}
   #formFijo input[type="number"]{flex:1 1 110px}
   #formFijo input#fijoDia{flex:0 0 76px;min-width:0}
@@ -729,6 +730,7 @@
         <input type="date" id="fecha" required>
         <input type="text" id="desc" placeholder="Descripción (ej: Catering Pérez)" required>
         <input type="number" id="monto" placeholder="Monto $" min="1" step="1" required>
+        <select id="medio" class="sel-medio" title="Medio de cobro"></select>
         <button type="submit" class="btn btn-fuego" id="btnAnotar">Anotar</button>
       </form>
     </div>
@@ -757,6 +759,7 @@
           <div class="val plata" id="gastoGanancia">$0</div>
         </div>
       </div>
+      <div class="card-nota" id="gastoEfectivo" style="margin:14px 0 0"></div>
       <div id="gastoPorCat" style="margin-top:18px"></div>
     </div>
 
@@ -766,6 +769,7 @@
       <form id="formGasto">
         <input type="date" id="gastoFecha" required>
         <input type="number" id="gastoMonto" inputmode="decimal" min="0" step="any" placeholder="Monto $" required>
+        <select id="gastoMedio" class="sel-medio" title="Medio de pago"></select>
         <input type="text" id="gastoDesc" class="input-full" placeholder="Detalle (opcional): mozzarella 5kg, cajas…" style="margin-bottom:0">
         <button type="submit" class="btn btn-fuego" style="width:100%">Anotar gasto</button>
       </form>
@@ -897,6 +901,15 @@
     { id: 'personal',  nombre: 'Personal',    emoji: '👥' },
     { id: 'otros',     nombre: 'Otros',       emoji: '•' }
   ];
+
+  // con qué se pagó o cobró: sirve para saber cuánto efectivo hay y para controlar contra los extractos
+  const MEDIOS = [
+    { id: 'efectivo',      nombre: 'Efectivo',      emoji: '💵' },
+    { id: 'mp',            nombre: 'Mercado Pago',  emoji: '📱' },
+    { id: 'transferencia', nombre: 'Transferencia', emoji: '🏦' },
+    { id: 'tarjeta',       nombre: 'Tarjeta',       emoji: '💳' }
+  ];
+  const CACHE_KEY_MEDIO = 'lasinergia_medio';
 
   let items    = [];
   let pizzas   = { stock: [], ventas: [] };
@@ -1317,7 +1330,7 @@
       <div class="item">
         <div class="item-info">
           <div class="item-desc">${escapeHtml(i.desc)}</div>
-          <div class="item-fecha">${formatoFecha(i.fecha)}</div>
+          <div class="item-fecha">${formatoFecha(i.fecha)}${medioTexto(i.medio)}</div>
         </div>
         <div class="item-monto">${fmt(i.monto)}</div>
         <button class="item-del" data-id="${i.id}" title="Eliminar">✕</button>
@@ -1435,6 +1448,24 @@
   // ---------- gastos del negocio ----------
 
   function catGastoDe(id){ return CATS_GASTO.find(c => c.id === id) || CATS_GASTO[CATS_GASTO.length - 1]; }
+
+  // cada carga nueva arranca con el último medio que elegiste
+  function medioUltimo(){
+    const m = leerCache(CACHE_KEY_MEDIO, 'mp');
+    return MEDIOS.some(x => x.id === m) ? m : 'mp';
+  }
+  function elegirMedio(id){
+    guardarCache(CACHE_KEY_MEDIO, id);
+    document.querySelectorAll('.sel-medio').forEach(sel => sel.value = id);
+    return id;
+  }
+  function opcionesMedio(sel){
+    return MEDIOS.map(m => `<option value="${m.id}" ${m.id === sel ? 'selected' : ''}>${m.emoji} ${m.nombre}</option>`).join('');
+  }
+  function medioTexto(id){
+    const m = MEDIOS.find(x => x.id === id);
+    return m ? ` · ${m.emoji} ${m.nombre}` : '';
+  }
   function fijosDe(ym){ return gastos.fijos.filter(f => f.desde <= ym && (!f.hasta || f.hasta >= ym)); }
   function movsDe(ym){ return gastos.movs.filter(g => mesDe(g.fecha) === ym); }
   function totalGastosDe(ym){
@@ -1469,6 +1500,17 @@
     const elGan = document.getElementById('gastoGanancia');
     elGan.textContent = fmt(ganancia);
     elGan.classList.toggle('negativo', ganancia < 0);
+
+    // efectivo del mes: lo que entró y salió en billetes (los fijos no tienen medio)
+    const entroEf = items.filter(i => mesDe(i.fecha) === mesSel && i.medio === 'efectivo').reduce((s,i) => s + i.monto, 0);
+    const salioEf = movs.filter(g => g.medio === 'efectivo').reduce((s,g) => s + g.monto, 0);
+    document.getElementById('gastoEfectivo').innerHTML = entroEf || salioEf
+      ? `💵 Efectivo del mes: entró <b>${fmt(entroEf)}</b> · salió <b>${fmt(salioEf)}</b> · neto <b>${fmt(entroEf - salioEf)}</b>`
+      : '';
+    for(const id of ['gastoMedio', 'medio']){
+      const sel = document.getElementById(id);
+      if(!sel.options.length) sel.innerHTML = opcionesMedio(medioUltimo());
+    }
 
     // por categoría
     const porCat = {};
@@ -1518,7 +1560,7 @@
       return `<div class="item">
         <div class="item-info">
           <div class="item-desc">${c.emoji} ${g.desc ? escapeHtml(g.desc) : c.nombre}</div>
-          <div class="item-fecha">${formatoFecha(g.fecha)}${g.desc ? ' · ' + c.nombre : ''}</div>
+          <div class="item-fecha">${formatoFecha(g.fecha)}${g.desc ? ' · ' + c.nombre : ''}${medioTexto(g.medio)}</div>
         </div>
         <div class="item-monto gasto">${fmt(g.monto)}</div>
         <button class="item-del" data-borrar="${g.id}" title="Eliminar">✕</button>
@@ -1718,7 +1760,8 @@
           ventaId: ventaId,          // enlaza el ingreso con su venta en el historial
           fecha: hoyISO(),
           desc: `${p.cliente} x${totalPizzas}`,
-          monto
+          monto,
+          medio: medioUltimo()
         });
         persistirIngresos();
       }
@@ -2150,7 +2193,7 @@
             <div class="item">
               <div class="item-info">
                 <div class="item-desc">${c.tipo === 'seña' ? 'Seña' : c.tipo === 'saldo' ? 'Saldo' : 'Pago'}</div>
-                <div class="item-fecha">${formatoFecha(c.fecha)}</div>
+                <div class="item-fecha">${formatoFecha(c.fecha)}${medioTexto(c.medio)}</div>
               </div>
               <div class="item-monto">${fmt(c.monto)}</div>
               <button type="button" class="item-del" data-cobro-del="${c.id}" title="Eliminar cobro">✕</button>
@@ -2158,6 +2201,7 @@
         </div>
         <div class="cobro-acciones">
           <input type="number" id="cobroMonto" min="0" step="any" inputmode="decimal" placeholder="Monto $">
+          <select id="cobroMedio" class="sel-medio" title="Medio de cobro">${opcionesMedio(medioUltimo())}</select>
           <button type="button" class="btn btn-fuego" id="btnSena">Registrar seña</button>
         </div>
         ${r.falta > 0 ? `
@@ -2292,7 +2336,8 @@
 
     // cobros: cada uno es un ingreso enlazado al evento
     const registrarCobro = (monto, tipo) => {
-      items.push({ id: Date.now(), fecha: hoyISO(), monto, tipo, eventoId: ev.id,
+      const medio = elegirMedio(document.getElementById('cobroMedio').value);
+      items.push({ id: Date.now(), fecha: hoyISO(), monto, tipo, eventoId: ev.id, medio,
                    desc: `${tipo === 'seña' ? 'Seña' : 'Saldo'} · ${ev.nombre}` });
       persistirIngresos();
     };
@@ -2346,7 +2391,8 @@
       // el gasto va con la fecha del evento, así cae en el mes en que se trabajó
       pendientes.forEach((pp, i) => gastos.movs.push({
         id: Date.now() + i, fecha: ev.fecha || hoyISO(), cat: 'personal', monto: Number(pp.monto),
-        desc: `${pp.nombre || 'Personal'} · ${ev.nombre}`, personalId: pp.id, eventoId: ev.id
+        desc: `${pp.nombre || 'Personal'} · ${ev.nombre}`, personalId: pp.id, eventoId: ev.id,
+        medio: medioUltimo()
       }));
       persistirGastos();
     });
@@ -2631,7 +2677,8 @@
     const monto = parseFloat(document.getElementById('monto').value);
     if(!fecha || !desc || !monto || monto <= 0) return;
 
-    items.push({ id: Date.now(), fecha, desc, monto });
+    const medio = elegirMedio(document.getElementById('medio').value);
+    items.push({ id: Date.now(), fecha, desc, monto, medio });
 
     // si anotás un ingreso de otro mes, saltamos a ese mes para que lo veas
     if(mesDe(fecha) !== mesSel) mesSel = mesDe(fecha);
@@ -2654,7 +2701,8 @@
     const monto = parseFloat(document.getElementById('gastoMonto').value);
     if(!monto || monto <= 0) return;
     gastos.movs.push({ id: Date.now(), fecha, cat: catGasto, monto,
-      desc: document.getElementById('gastoDesc').value.trim() });
+      desc: document.getElementById('gastoDesc').value.trim(),
+      medio: elegirMedio(document.getElementById('gastoMedio').value) });
     if(mesDe(fecha) !== mesSel) mesSel = mesDe(fecha);
     document.getElementById('gastoMonto').value = '';
     document.getElementById('gastoDesc').value = '';
