@@ -46,6 +46,9 @@ Campos viejos que la app ya no muestra (`ingredientes`, `cerrado`, `cerradoEl`):
 
 **`precios`**: precios por kilo de ingredientes (ya no se usan en la app).
 
+**`caja`**: `{ monto, fecha: 'YYYY-MM-DD', ts }`, último conteo de efectivo. La app suma y resta los movimientos con
+`medio: 'efectivo'` posteriores (fecha mayor, o misma fecha e `id` mayor que `ts`) para mostrar el efectivo en caja.
+
 **`titulares`** (no lo usa la app): `{ reglas: [texto], lista: [{ titular, es, tipo, cat?, nota? }] }`.
 Cómo clasificar los movimientos de los extractos (Mercado Pago, tarjetas): `tipo` es `empresa`, `personal`,
 `no es gasto` o `dudoso`, y `cat` la categoría de gasto. Leelo antes de procesar un extracto y sumá ahí

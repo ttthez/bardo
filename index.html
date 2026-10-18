@@ -876,6 +876,7 @@
   const CATERING_URL = FIREBASE_BASE + 'catering.json';
   const PRECIOS_URL  = FIREBASE_BASE + 'precios.json';
   const GASTOS_URL   = FIREBASE_BASE + 'gastos.json';
+  const CAJA_URL     = FIREBASE_BASE + 'caja.json';
 
   const CACHE_KEY_INGRESOS = 'lasinergia_cache_ingresos';
   const CACHE_KEY_PIZZAS   = 'lasinergia_cache_pizzas';
@@ -884,6 +885,7 @@
   const CACHE_KEY_CATERING = 'lasinergia_cache_catering';
   const CACHE_KEY_PRECIOS  = 'lasinergia_cache_precios';
   const CACHE_KEY_GASTOS   = 'lasinergia_cache_gastos';
+  const CACHE_KEY_CAJA     = 'lasinergia_cache_caja';
   const CACHE_KEY_TAB      = 'lasinergia_tab';
 
   const SABORES_DEFAULT = ['Margarita','Honey pesto','Diavola','Di patate','Caramellata','4 Formaggi'];
@@ -912,6 +914,8 @@
   const CACHE_KEY_MEDIO = 'lasinergia_medio';
 
   let items    = [];
+  // último conteo de billetes: { monto, fecha, ts }; desde ahí se suman y restan los movimientos en efectivo
+  let caja     = null;
   let pizzas   = { stock: [], ventas: [] };
   let pedidos  = [];
   let metas    = {};
@@ -1089,16 +1093,16 @@
     const rev = revLocal;
     if(mostrarCarga) setEstado('Actualizando…', true);
 
-    const [rIng, rPiz, rPed, rMet, rCat, rPre, rGas] = await Promise.allSettled([
+    const [rIng, rPiz, rPed, rMet, rCat, rPre, rGas, rCaja] = await Promise.allSettled([
       fetchJSON(INGRESOS_URL), fetchJSON(PIZZAS_URL), fetchJSON(PEDIDOS_URL),
       fetchJSON(METAS_URL), fetchJSON(CATERING_URL), fetchJSON(PRECIOS_URL),
-      fetchJSON(GASTOS_URL)
+      fetchJSON(GASTOS_URL), fetchJSON(CAJA_URL)
     ]);
 
     // si mientras traíamos datos tocaste algo acá, descartamos lo del servidor
     if(revLocal !== rev || escrituras > 0) return;
 
-    const ok = [rIng, rPiz, rPed, rMet, rCat, rPre, rGas].every(r => r.status === 'fulfilled');
+    const ok = [rIng, rPiz, rPed, rMet, rCat, rPre, rGas, rCaja].every(r => r.status === 'fulfilled');
 
     items = rIng.status === 'fulfilled'
       ? (rIng.value || [])
@@ -1135,6 +1139,9 @@
       : leerCache(CACHE_KEY_GASTOS, null));
     guardarCache(CACHE_KEY_GASTOS, gastos);
 
+    caja = rCaja.status === 'fulfilled' ? rCaja.value : leerCache(CACHE_KEY_CAJA, null);
+    guardarCache(CACHE_KEY_CAJA, caja);
+
     guardarCache(CACHE_KEY_INGRESOS, items);
     guardarCache(CACHE_KEY_PIZZAS, pizzas);
     guardarCache(CACHE_KEY_PEDIDOS, pedidos);
@@ -1166,6 +1173,7 @@
   const persistirCatering = hacerPersistidor(CATERING_URL, CACHE_KEY_CATERING, () => catering);
   const persistirPrecios  = hacerPersistidor(PRECIOS_URL,  CACHE_KEY_PRECIOS,  () => precios);
   const persistirGastos   = hacerPersistidor(GASTOS_URL,   CACHE_KEY_GASTOS,   () => gastos);
+  const persistirCaja     = hacerPersistidor(CAJA_URL,     CACHE_KEY_CAJA,     () => caja);
 
   // Firebase no guarda listas vacías, así que al leer completamos lo que falte
   function normalizarGastos(v){
@@ -1462,6 +1470,16 @@
   function opcionesMedio(sel){
     return MEDIOS.map(m => `<option value="${m.id}" ${m.id === sel ? 'selected' : ''}>${m.emoji} ${m.nombre}</option>`).join('');
   }
+  // efectivo que debería haber: el último conteo más lo que entró y salió en efectivo después
+  function efectivoEnCaja(){
+    if(!caja || typeof caja.monto !== 'number') return null;
+    const despues = x => x.medio === 'efectivo' &&
+      (x.fecha > caja.fecha || (x.fecha === caja.fecha && Number(x.id) > caja.ts));
+    const entro = items.filter(despues).reduce((s,i) => s + i.monto, 0);
+    const salio = gastos.movs.filter(despues).reduce((s,g) => s + g.monto, 0);
+    return caja.monto + entro - salio;
+  }
+
   function medioTexto(id){
     const m = MEDIOS.find(x => x.id === id);
     return m ? ` · ${m.emoji} ${m.nombre}` : '';
@@ -1504,9 +1522,15 @@
     // efectivo del mes: lo que entró y salió en billetes (los fijos no tienen medio)
     const entroEf = items.filter(i => mesDe(i.fecha) === mesSel && i.medio === 'efectivo').reduce((s,i) => s + i.monto, 0);
     const salioEf = movs.filter(g => g.medio === 'efectivo').reduce((s,g) => s + g.monto, 0);
-    document.getElementById('gastoEfectivo').innerHTML = entroEf || salioEf
-      ? `💵 Efectivo del mes: entró <b>${fmt(entroEf)}</b> · salió <b>${fmt(salioEf)}</b> · neto <b>${fmt(entroEf - salioEf)}</b>`
-      : '';
+    const enCaja = efectivoEnCaja();
+    document.getElementById('gastoEfectivo').innerHTML =
+      (enCaja !== null
+        ? `💵 Efectivo en caja: <b>${fmt(enCaja)}</b> <span class="item-fecha">· contado ${fmt(caja.monto)} el ${formatoFecha(caja.fecha).slice(0, 5)}</span>`
+        : '💵 Todavía no contaste la caja.') +
+      ` <button type="button" class="link-btn" id="btnContarCaja">contar caja</button>` +
+      (entroEf || salioEf
+        ? `<br>Efectivo del mes: entró <b>${fmt(entroEf)}</b> · salió <b>${fmt(salioEf)}</b>`
+        : '');
     for(const id of ['gastoMedio', 'medio']){
       const sel = document.getElementById(id);
       if(!sel.options.length) sel.innerHTML = opcionesMedio(medioUltimo());
@@ -2754,6 +2778,17 @@
       f.monto = num;
       persistirGastos();
     }
+  });
+
+  document.getElementById('gastoEfectivo').addEventListener('click', e => {
+    if(!e.target.closest('#btnContarCaja')) return;
+    const actual = efectivoEnCaja();
+    const val = prompt('¿Cuánto efectivo hay en caja ahora? Contá los billetes.', actual !== null ? actual : '');
+    if(val === null) return;
+    const num = parseFloat(String(val).replace(/[^\d.]/g, ''));
+    if(isNaN(num) || num < 0) return;
+    caja = { monto: num, fecha: hoyISO(), ts: Date.now() };
+    persistirCaja();
   });
 
   document.getElementById('listaGastos').addEventListener('click', e => {
