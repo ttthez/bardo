@@ -42,3 +42,18 @@ Campos viejos que la app ya no muestra (`ingredientes`, `cerrado`, `cerradoEl`):
 **`metas`**: `{ 'YYYY-MM': monto }`, objetivo de ingresos de cada mes.
 
 **`precios`**: precios por kilo de ingredientes (ya no se usan en la app).
+
+**`titulares`** (no lo usa la app): `{ reglas: [texto], lista: [{ titular, es, tipo, cat?, nota? }] }`.
+Cómo clasificar los movimientos de los extractos (Mercado Pago, tarjetas): `tipo` es `empresa`, `personal`,
+`no es gasto` o `dudoso`, y `cat` la categoría de gasto. Leelo antes de procesar un extracto y sumá ahí
+los titulares nuevos que el usuario aclare.
+
+## Cargar gastos desde extractos
+
+- Todo lo de Mercado Pago (cuenta y tarjeta) es de la empresa; la tarjeta Visa Santander es personal. Ante la duda, preguntar.
+- Los dueños no cobran como personal de eventos. Sus gastos personales no se cargan en Bardo: se arma un texto aparte para descontarlos de su parte a fin de mes.
+- Personal de eventos: $40.000 por persona salvo que se indique otro monto.
+- No son gastos: pagos de resumen de tarjeta, transferencias entre cuentas propias o a socios para liquidez, reservas de dinero.
+- Compras en cuotas: cada cuota en el mes del resumen en que aparece; las largas, como gasto fijo con `desde`/`hasta`.
+- Compras en dólares: al tipo de cambio del resumen; percepciones e IVA de las compras de la empresa van en `impuestos`.
+- Antes de cargar, revisar que no esté ya en `gastos` (pagos de personal de eventos, fijos como alquiler o cuotas).
