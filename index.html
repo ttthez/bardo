@@ -577,16 +577,16 @@
     </div>
 
     <div class="card home-objetivo" id="homeObjetivo">
-      <div class="home-label" id="homeObjLabel">Objetivo del mes</div>
+      <div class="home-label" id="homeObjLabel">Ganancia del mes</div>
       <div class="home-monto" id="homeIngresos">$0</div>
       <div class="home-meta" id="homeMeta"></div>
       <div class="barra-ext"><div class="barra-int" id="homeBarra" style="width:0%"></div></div>
       <div class="home-kpis">
         <div><div class="home-label">Gastos</div><div class="val" id="homeGastos">$0</div></div>
-        <div><div class="home-label">Ganancia</div><div class="val" id="homeGanancia">$0</div></div>
+        <div><div class="home-label">Facturado</div><div class="val" id="homeFacturado">$0</div></div>
         <div><div class="home-label">Pizzas</div><div class="val" id="homePizzas">0</div></div>
       </div>
-      <div class="home-ver">Ver ingresos y objetivo ›</div>
+      <div class="home-ver">Ver ingresos y meta ›</div>
     </div>
 
     <div class="home-acciones">
@@ -680,8 +680,8 @@
     <div class="titulo-objetivo">
       <h1>Objetivo <b id="metaTitulo">$0</b></h1>
       <div class="sub">
-        Ingresos de La Sinergia ·
-        <button class="link-btn" id="btnEditarMeta">cambiar objetivo</button>
+        Meta de ganancia (ingresos − gastos) ·
+        <button class="link-btn" id="btnEditarMeta">cambiar meta</button>
       </div>
     </div>
 
@@ -701,8 +701,12 @@
           <div class="val" id="statFalta">$0</div>
         </div>
         <div class="stat">
-          <div class="label">Ingresos</div>
-          <div class="val" id="statCant">0</div>
+          <div class="label">Facturado</div>
+          <div class="val" id="statFacturado">$0</div>
+        </div>
+        <div class="stat">
+          <div class="label">Gastos</div>
+          <div class="val" id="statGastos">$0</div>
         </div>
         <div class="stat">
           <div class="label">Pedidos</div>
@@ -713,12 +717,8 @@
           <div class="val" id="statPizzas">0</div>
         </div>
         <div class="stat">
-          <div class="label">Gastos</div>
-          <div class="val" id="statGastos">$0</div>
-        </div>
-        <div class="stat">
-          <div class="label">Ganancia</div>
-          <div class="val" id="statGanancia">$0</div>
+          <div class="label">Cobros</div>
+          <div class="val" id="statCant">0</div>
         </div>
       </div>
       <div class="motivo" id="motivo"></div>
@@ -1205,8 +1205,9 @@
     return venta.items.reduce((s,i) => s + i.cantidad, 0);
   }
 
-  function mensajeMotivo(pct, total){
-    if(total <= 0) return 'Anotá tu primer ingreso del mes y arrancamos a sumar 💪';
+  function mensajeMotivo(pct, facturado, ganancia){
+    if(facturado <= 0) return 'Anotá tu primer ingreso del mes y arrancamos a sumar 💪';
+    if(ganancia <= 0) return 'Por ahora los gastos del mes superan a los ingresos. Cada cobro suma.';
     if(pct >= 100) return `¡Objetivo cumplido! 🎉 Superaste la meta de ${nombreMes(mesSel)}. Grande el equipo.`;
     if(pct >= 75) return `Estás en la recta final: ${pct.toFixed(0)}% del objetivo. ¡Sigue así!`;
     if(pct >= 50) return `Vas por la mitad del camino (${pct.toFixed(0)}%). ¡A no aflojar!`;
@@ -1280,29 +1281,31 @@
     const delMes = items.filter(i => mesDe(i.fecha) === mesSel);
     const ordenados = delMes.slice().sort((a,b) => b.fecha.localeCompare(a.fecha));
     const total = delMes.reduce((s,i) => s + i.monto, 0);
-    const pctReal = (total / meta) * 100;
-    const pct = Math.min(pctReal, 100);
+    const gastoMes = totalGastosDe(mesSel);
+    // la meta se mide sobre la ganancia del mes, no sobre lo facturado
+    const ganancia = total - gastoMes;
+    const pctReal = (ganancia / meta) * 100;
+    const pct = Math.min(Math.max(pctReal, 0), 100);
 
     const ventasMes = ventasDe('mes');
     const pizzasMes = ventasMes.reduce((s,v) => s + totalPizzasDe(v), 0);
 
-    document.getElementById('totalActual').textContent = fmt(total);
-    document.getElementById('statFalta').textContent = fmt(Math.max(meta - total, 0));
+    const elGan = document.getElementById('totalActual');
+    elGan.textContent = fmt(ganancia);
+    elGan.style.color = ganancia < 0 ? 'var(--fuego-claro)' : '';
+    document.getElementById('statFalta').textContent = fmt(Math.max(meta - ganancia, 0));
+    document.getElementById('statFacturado').textContent = fmt(total);
+    document.getElementById('statGastos').textContent = fmt(gastoMes);
     document.getElementById('statCant').textContent = delMes.length;
     document.getElementById('statPedidos').textContent = ventasMes.length;
     document.getElementById('statPizzas').textContent = pizzasMes;
-    const gastoMes = totalGastosDe(mesSel);
-    const elGan = document.getElementById('statGanancia');
-    document.getElementById('statGastos').textContent = fmt(gastoMes);
-    elGan.textContent = fmt(total - gastoMes);
-    elGan.style.color = total - gastoMes < 0 ? 'var(--fuego-claro)' : 'var(--verde)';
 
     const barra = document.getElementById('barraInt');
     barra.style.width = pct + '%';
     barra.classList.toggle('completo', pctReal >= 100);
     document.getElementById('barraPct').textContent = pct > 8 ? pctReal.toFixed(0) + '%' : '';
 
-    document.getElementById('motivo').textContent = mensajeMotivo(pctReal, total);
+    document.getElementById('motivo').textContent = mensajeMotivo(pctReal, total, ganancia);
     document.getElementById('motivo').classList.toggle('completo', pctReal >= 100);
 
     const lista = document.getElementById('lista');
@@ -1358,19 +1361,20 @@
     const ingresos = items.filter(i => mesDe(i.fecha) === ym).reduce((s,i) => s + i.monto, 0);
     const gastado = totalGastosDe(ym);
     const meta = metaDe(ym);
-    const pct = Math.min(ingresos / meta * 100, 100);
+    const ganancia = ingresos - gastado;
+    const pct = Math.min(Math.max(ganancia / meta * 100, 0), 100);
     const pizzasMes = pizzas.ventas.filter(v => mesDe(v.fecha) === ym).reduce((s,v) => s + totalPizzasDe(v), 0);
-    document.getElementById('homeObjLabel').textContent = `Ingresos de ${MESES[+ym.slice(5) - 1].toLowerCase()}`;
-    document.getElementById('homeIngresos').textContent = fmt(ingresos);
+    document.getElementById('homeObjLabel').textContent = `Ganancia de ${MESES[+ym.slice(5) - 1].toLowerCase()}`;
+    const elGan = document.getElementById('homeIngresos');
+    elGan.textContent = fmt(ganancia);
+    elGan.style.color = ganancia < 0 ? 'var(--fuego-claro)' : '';
     document.getElementById('homeMeta').textContent =
-      `${(ingresos / meta * 100).toFixed(0)}% del objetivo de ${fmt(meta)}`;
+      `${Math.max(ganancia / meta * 100, 0).toFixed(0)}% de la meta de ganancia de ${fmt(meta)}`;
     const barra = document.getElementById('homeBarra');
     barra.style.width = pct + '%';
     barra.classList.toggle('completo', pct >= 100);
     document.getElementById('homeGastos').textContent = fmt(gastado);
-    const elGan = document.getElementById('homeGanancia');
-    elGan.textContent = fmt(ingresos - gastado);
-    elGan.style.color = ingresos - gastado < 0 ? 'var(--fuego-claro)' : 'var(--verde)';
+    document.getElementById('homeFacturado').textContent = fmt(ingresos);
     document.getElementById('homePizzas').textContent = pizzasMes;
 
     // para hoy: pedidos de hoy o atrasados, eventos de hoy, fijos vencidos o por vencer
@@ -1953,7 +1957,7 @@
   function borrarFilaHistorial(f){
     if(!f) return;
     const partes = [];
-    if(f.monto != null) partes.push(`${fmt(f.monto)} del objetivo del mes`);
+    if(f.monto != null) partes.push(`${fmt(f.monto)} de los ingresos del mes`);
     if(f.ventaId != null) partes.push(`${f.pizzas} pizzas (se reponen al stock)`);
 
     if(!confirm(`¿Borrar "${f.titulo}"?\n\nSe descuenta ${partes.join(' y ')}.`)) return;
@@ -2603,7 +2607,7 @@
   });
 
   document.getElementById('btnEditarMeta').addEventListener('click', () => {
-    const val = prompt(`Objetivo de ingresos para ${nombreMes(mesSel)}:`, metaDe(mesSel));
+    const val = prompt(`Meta de ganancia (ingresos − gastos) para ${nombreMes(mesSel)}:`, metaDe(mesSel));
     if(val === null) return;
     const num = parseFloat(String(val).replace(/[^\d.]/g, ''));
     if(!num || num <= 0) return;

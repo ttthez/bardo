@@ -21,7 +21,7 @@ node scripts/bardo.mjs put gastos /tmp/gastos.json
 
 ## Modelo de datos
 
-**`datos`**: ingresos (lo que suma al Objetivo del mes). Lista de
+**`datos`**: ingresos (lo facturado; la meta del mes se mide sobre ingresos − gastos). Lista de
 `{ id, fecha, desc, monto }`. Los cobros de catering llevan además `eventoId` y `tipo` (`'seña'` | `'saldo'`),
 con `desc` tipo `"Seña · Casamiento Pérez"`. El evento calcula lo cobrado sumando los ingresos con su `eventoId`.
 
@@ -39,7 +39,7 @@ Campos viejos que la app ya no muestra (`ingredientes`, `cerrado`, `cerradoEl`):
 
 **`pizzas`**: `{ stock: [{nombre, cantidad}], ventas: [{id, fecha, cliente?, items: [{nombre, cantidad}]}] }`.
 
-**`metas`**: `{ 'YYYY-MM': monto }`, objetivo de ingresos de cada mes.
+**`metas`**: `{ 'YYYY-MM': monto }`, meta de ganancia (ingresos − gastos) de cada mes.
 
 **`precios`**: precios por kilo de ingredientes (ya no se usan en la app).
 
