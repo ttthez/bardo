@@ -40,6 +40,9 @@ Campos viejos que la app ya no muestra (`ingredientes`, `cerrado`, `cerradoEl`):
 Los ingresos que no son en efectivo llevan además `cuenta`: `thiago` o `juan`, la cuenta que recibió el cobro
 (cada socio factura con su monotributo; la app muestra lo facturado por cuenta en el año).
 
+**Dólares**: un ingreso o gasto en dólares lleva `moneda: 'USD'`, `usd` (lo que fue en dólares) y `tc` (pesos por US$);
+`monto` sigue en pesos (`usd × tc`, redondeado) para que todos los totales sigan en pesos.
+
 **`pedidos`**: `{ id, cliente, fecha, hora, direccion, notas, items: [{nombre, cantidad}] }` (pendientes de entrega).
 
 **`pizzas`**: `{ stock: [{nombre, cantidad}], ventas: [{id, fecha, cliente?, items: [{nombre, cantidad}]}] }`.
@@ -48,8 +51,9 @@ Los ingresos que no son en efectivo llevan además `cuenta`: `thiago` o `juan`, 
 
 **`precios`**: precios por kilo de ingredientes (ya no se usan en la app).
 
-**`caja`**: `{ monto, fecha: 'YYYY-MM-DD', ts }`, último conteo de efectivo. La app suma y resta los movimientos con
-`medio: 'efectivo'` posteriores (fecha mayor, o misma fecha e `id` mayor que `ts`) para mostrar el efectivo en caja.
+**`caja`**: `{ monto, usd?, fecha: 'YYYY-MM-DD', ts }`, último conteo de efectivo (`monto` en pesos, `usd` en billetes de dólar).
+La app suma y resta los movimientos con `medio: 'efectivo'` posteriores (fecha mayor, o misma fecha e `id` mayor que `ts`)
+para mostrar el efectivo en caja; los que tienen `moneda: 'USD'` mueven la caja en dólares.
 
 **`titulares`** (no lo usa la app): `{ reglas: [texto], lista: [{ titular, es, tipo, cat?, nota? }] }`.
 Cómo clasificar los movimientos de los extractos (Mercado Pago, tarjetas): `tipo` es `empresa`, `personal`,

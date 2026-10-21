@@ -540,7 +540,7 @@
   .fijo-item.pagado .item-desc{color:var(--gris);text-decoration:line-through}
   .fijo-item .badge{margin-left:6px;font-size:.6rem;padding:2px 7px}
   #formGasto input#gastoMonto{flex:1 1 120px}
-  .sel-medio, .sel-cuenta{flex:1 1 150px}
+  .sel-medio, .sel-cuenta, .sel-moneda, .inp-tc{flex:1 1 150px}
   #formFijo select{flex:1 1 140px}
   #formFijo input[type="number"]{flex:1 1 110px}
   #formFijo input#fijoDia{flex:0 0 76px;min-width:0}
@@ -730,7 +730,9 @@
       <form id="form">
         <input type="date" id="fecha" required>
         <input type="text" id="desc" placeholder="Descripción (ej: Catering Pérez)" required>
-        <input type="number" id="monto" placeholder="Monto $" min="1" step="1" required>
+        <input type="number" id="monto" class="inp-monto" placeholder="Monto $" min="0" step="any" inputmode="decimal" required>
+        <select id="monedaIng" class="sel-moneda" title="Moneda"></select>
+        <input type="number" id="tcIng" class="inp-tc" placeholder="Cotización $ por US$" min="0" step="any" inputmode="decimal" hidden>
         <select id="medio" class="sel-medio" title="Medio de cobro"></select>
         <select id="cuenta" class="sel-cuenta" title="Cuenta que recibe"></select>
         <button type="submit" class="btn btn-fuego" id="btnAnotar">Anotar</button>
@@ -770,7 +772,9 @@
       <div class="toggle gasto-cats" id="gastoCats"></div>
       <form id="formGasto">
         <input type="date" id="gastoFecha" required>
-        <input type="number" id="gastoMonto" inputmode="decimal" min="0" step="any" placeholder="Monto $" required>
+        <input type="number" id="gastoMonto" class="inp-monto" inputmode="decimal" min="0" step="any" placeholder="Monto $" required>
+        <select id="gastoMoneda" class="sel-moneda" title="Moneda"></select>
+        <input type="number" id="gastoTc" class="inp-tc" placeholder="Cotización $ por US$" min="0" step="any" inputmode="decimal" hidden>
         <select id="gastoMedio" class="sel-medio" title="Medio de pago"></select>
         <input type="text" id="gastoDesc" class="input-full" placeholder="Detalle (opcional): mozzarella 5kg, cajas…" style="margin-bottom:0">
         <button type="submit" class="btn btn-fuego" style="width:100%">Anotar gasto</button>
@@ -920,6 +924,9 @@
     { id: 'juan',   nombre: 'Juan' }
   ];
   const CACHE_KEY_CUENTA = 'lasinergia_cuenta';
+  // pagos en dólares: se guarda lo que fue en USD (`usd`) y la cotización (`tc`); `monto` sigue en pesos para los totales
+  const CACHE_KEY_MONEDA = 'lasinergia_moneda';
+  const CACHE_KEY_TC     = 'lasinergia_tc';
 
   let items    = [];
   // último conteo de billetes: { monto, fecha, ts }; desde ahí se suman y restan los movimientos en efectivo
@@ -1370,7 +1377,7 @@
           <div class="item-desc">${escapeHtml(i.desc)}</div>
           <div class="item-fecha">${formatoFecha(i.fecha)}${medioTexto(i.medio, i.cuenta)}</div>
         </div>
-        <div class="item-monto">${fmt(i.monto)}</div>
+        <div class="item-monto">${montoTexto(i)}</div>
         <button class="item-del" data-id="${i.id}" title="Eliminar">✕</button>
       </div>
     `).join('');
@@ -1512,6 +1519,40 @@
   function opcionesCuenta(sel){
     return CUENTAS.map(c => `<option value="${c.id}" ${c.id === sel ? 'selected' : ''}>👤 Cuenta de ${c.nombre}</option>`).join('');
   }
+  function monedaUltima(){ return leerCache(CACHE_KEY_MONEDA, 'ARS') === 'USD' ? 'USD' : 'ARS'; }
+  function tcUltimo(){ const t = Number(leerCache(CACHE_KEY_TC, 0)); return t > 0 ? t : ''; }
+  function elegirMoneda(m){
+    guardarCache(CACHE_KEY_MONEDA, m);
+    document.querySelectorAll('.sel-moneda').forEach(sel => sel.value = m);
+    mostrarMonedas();
+    return m;
+  }
+  function opcionesMoneda(sel){
+    return [['ARS', '$ Pesos'], ['USD', 'US$ Dólares']]
+      .map(([id, txt]) => `<option value="${id}" ${id === sel ? 'selected' : ''}>${txt}</option>`).join('');
+  }
+  // con dólares aparece la cotización y el monto se pide en US$
+  function mostrarMonedas(){
+    const usd = monedaUltima() === 'USD';
+    document.querySelectorAll('.inp-tc').forEach(inp => { inp.hidden = !usd; if(usd && !inp.value) inp.value = tcUltimo(); });
+    document.querySelectorAll('.inp-monto').forEach(inp => inp.placeholder = usd ? 'Monto US$' : 'Monto $');
+  }
+  // lee monto, moneda y cotización de un formulario; en dólares guarda usd y tc, y monto en pesos
+  function leerMonto(idMonto, idMoneda, idTc){
+    const valor = parseFloat(document.getElementById(idMonto).value);
+    if(!valor || valor <= 0) return null;
+    if(elegirMoneda(document.getElementById(idMoneda).value) !== 'USD') return { monto: valor };
+    const tc = parseFloat(document.getElementById(idTc).value);
+    if(!tc || tc <= 0){ alert('Poné la cotización del dólar (cuántos pesos vale 1 US$).'); return null; }
+    guardarCache(CACHE_KEY_TC, tc);
+    return { monto: Math.round(valor * tc), moneda: 'USD', usd: valor, tc };
+  }
+  function fmtUsd(n){ return 'US$ ' + Number(n).toLocaleString('es-AR', { maximumFractionDigits: 2 }); }
+  function montoTexto(x){
+    return x.moneda === 'USD' && x.usd != null
+      ? `${fmtUsd(x.usd)} <span class="item-fecha">${fmt(x.monto)}</span>` : fmt(x.monto);
+  }
+
   function mostrarCuentas(){
     const ef = medioUltimo() === 'efectivo';
     document.querySelectorAll('.sel-cuenta').forEach(sel => sel.hidden = ef);
@@ -1520,13 +1561,17 @@
     return MEDIOS.map(m => `<option value="${m.id}" ${m.id === sel ? 'selected' : ''}>${m.emoji} ${m.nombre}</option>`).join('');
   }
   // efectivo que debería haber: el último conteo más lo que entró y salió en efectivo después
+  // los billetes en dólares se cuentan aparte: { pesos, usd }
   function efectivoEnCaja(){
     if(!caja || typeof caja.monto !== 'number') return null;
     const despues = x => x.medio === 'efectivo' &&
       (x.fecha > caja.fecha || (x.fecha === caja.fecha && Number(x.id) > caja.ts));
-    const entro = items.filter(despues).reduce((s,i) => s + i.monto, 0);
-    const salio = gastos.movs.filter(despues).reduce((s,g) => s + g.monto, 0);
-    return caja.monto + entro - salio;
+    const sumar = (lista, enUsd) => lista.filter(despues).filter(x => (x.moneda === 'USD') === enUsd)
+      .reduce((s,x) => s + (enUsd ? Number(x.usd) || 0 : x.monto), 0);
+    return {
+      pesos: caja.monto + sumar(items, false) - sumar(gastos.movs, false),
+      usd: (Number(caja.usd) || 0) + sumar(items, true) - sumar(gastos.movs, true)
+    };
   }
 
   function medioTexto(id, cuenta){
@@ -1570,12 +1615,15 @@
     elGan.classList.toggle('negativo', ganancia < 0);
 
     // efectivo del mes: lo que entró y salió en billetes (los fijos no tienen medio)
-    const entroEf = items.filter(i => mesDe(i.fecha) === mesSel && i.medio === 'efectivo').reduce((s,i) => s + i.monto, 0);
-    const salioEf = movs.filter(g => g.medio === 'efectivo').reduce((s,g) => s + g.monto, 0);
+    const efPesos = x => x.medio === 'efectivo' && x.moneda !== 'USD';
+    const entroEf = items.filter(i => mesDe(i.fecha) === mesSel && efPesos(i)).reduce((s,i) => s + i.monto, 0);
+    const salioEf = movs.filter(efPesos).reduce((s,g) => s + g.monto, 0);
     const enCaja = efectivoEnCaja();
     document.getElementById('gastoEfectivo').innerHTML =
       (enCaja !== null
-        ? `💵 Efectivo en caja: <b>${fmt(enCaja)}</b> <span class="item-fecha">· contado ${fmt(caja.monto)} el ${formatoFecha(caja.fecha).slice(0, 5)}</span>`
+        ? `💵 Efectivo en caja: <b>${fmt(enCaja.pesos)}</b>` +
+          (enCaja.usd || caja.usd ? ` · <b>${fmtUsd(enCaja.usd)}</b>` : '') +
+          ` <span class="item-fecha">· contado el ${formatoFecha(caja.fecha).slice(0, 5)}</span>`
         : '💵 Todavía no contaste la caja.') +
       ` <button type="button" class="link-btn" id="btnContarCaja">contar caja</button>` +
       (entroEf || salioEf
@@ -1585,6 +1633,11 @@
       const sel = document.getElementById(id);
       if(!sel.options.length) sel.innerHTML = opcionesMedio(medioUltimo());
     }
+    for(const id of ['gastoMoneda', 'monedaIng']){
+      const sel = document.getElementById(id);
+      if(!sel.options.length) sel.innerHTML = opcionesMoneda(monedaUltima());
+    }
+    mostrarMonedas();
 
     // por categoría
     const porCat = {};
@@ -1636,7 +1689,7 @@
           <div class="item-desc">${c.emoji} ${g.desc ? escapeHtml(g.desc) : c.nombre}</div>
           <div class="item-fecha">${formatoFecha(g.fecha)}${g.desc ? ' · ' + c.nombre : ''}${medioTexto(g.medio)}</div>
         </div>
-        <div class="item-monto gasto">${fmt(g.monto)}</div>
+        <div class="item-monto gasto">${montoTexto(g)}</div>
         <button class="item-del" data-borrar="${g.id}" title="Eliminar">✕</button>
       </div>`;
     }).join('') : `<div class="vacio">No hay gastos anotados en ${nombreMes(mesSel)}.</div>`;
@@ -2270,12 +2323,14 @@
                 <div class="item-desc">${c.tipo === 'seña' ? 'Seña' : c.tipo === 'saldo' ? 'Saldo' : 'Pago'}</div>
                 <div class="item-fecha">${formatoFecha(c.fecha)}${medioTexto(c.medio, c.cuenta)}</div>
               </div>
-              <div class="item-monto">${fmt(c.monto)}</div>
+              <div class="item-monto">${montoTexto(c)}</div>
               <button type="button" class="item-del" data-cobro-del="${c.id}" title="Eliminar cobro">✕</button>
             </div>`).join('')}
         </div>
         <div class="cobro-acciones">
-          <input type="number" id="cobroMonto" min="0" step="any" inputmode="decimal" placeholder="Monto $">
+          <input type="number" id="cobroMonto" class="inp-monto" min="0" step="any" inputmode="decimal" placeholder="${monedaUltima() === 'USD' ? 'Monto US$' : 'Monto $'}">
+          <select id="cobroMoneda" class="sel-moneda" title="Moneda">${opcionesMoneda(monedaUltima())}</select>
+          <input type="number" id="cobroTc" class="inp-tc" placeholder="Cotización $ por US$" min="0" step="any" inputmode="decimal" value="${tcUltimo()}" ${monedaUltima() === 'USD' ? '' : 'hidden'}>
           <select id="cobroMedio" class="sel-medio" title="Medio de cobro">${opcionesMedio(medioUltimo())}</select>
           <select id="cobroCuenta" class="sel-cuenta" title="Cuenta que recibe" ${medioUltimo() === 'efectivo' ? 'hidden' : ''}>${opcionesCuenta(cuentaUltima())}</select>
           <button type="button" class="btn btn-fuego" id="btnSena">Registrar seña</button>
@@ -2411,25 +2466,36 @@
     });
 
     // cobros: cada uno es un ingreso enlazado al evento
-    const registrarCobro = (monto, tipo) => {
+    const registrarCobro = (m, tipo) => {
       const medio = elegirMedio(document.getElementById('cobroMedio').value);
       const cuenta = cuentaPara(medio, elegirCuenta(document.getElementById('cobroCuenta').value));
-      items.push({ id: Date.now(), fecha: hoyISO(), monto, tipo, eventoId: ev.id, medio, cuenta,
+      items.push({ id: Date.now(), fecha: hoyISO(), ...m, tipo, eventoId: ev.id, medio, cuenta,
                    desc: `${tipo === 'seña' ? 'Seña' : 'Saldo'} · ${ev.nombre}` });
       persistirIngresos();
     };
     document.getElementById('btnSena').addEventListener('click', () => {
-      const monto = parseFloat(document.getElementById('cobroMonto').value);
-      if(!monto || monto <= 0){ alert('Poné el monto de la seña.'); return; }
+      if(!(parseFloat(document.getElementById('cobroMonto').value) > 0)){ alert('Poné el monto de la seña.'); return; }
+      const m = leerMonto('cobroMonto', 'cobroMoneda', 'cobroTc');
+      if(!m) return;
       document.getElementById('cobroMonto').value = '';
       document.activeElement.blur();
-      registrarCobro(monto, 'seña');
+      registrarCobro(m, 'seña');
     });
     const btnSaldo = document.getElementById('btnSaldo');
     if(btnSaldo) btnSaldo.addEventListener('click', () => {
       const { falta } = resumenEvento(ev);
+      // el saldo se calcula en pesos; si lo cobrás en dólares, se pasa a US$ con la cotización
+      if(elegirMoneda(document.getElementById('cobroMoneda').value) === 'USD'){
+        const tc = parseFloat(document.getElementById('cobroTc').value);
+        if(!tc || tc <= 0){ alert('Poné la cotización del dólar (cuántos pesos vale 1 US$).'); return; }
+        guardarCache(CACHE_KEY_TC, tc);
+        const usd = Math.round(falta / tc * 100) / 100;
+        if(!confirm(`¿Registrar el cobro del saldo de ${fmtUsd(usd)} (${fmt(falta)})?`)) return;
+        registrarCobro({ monto: falta, moneda: 'USD', usd, tc }, 'saldo');
+        return;
+      }
       if(!confirm(`¿Registrar el cobro del saldo de ${fmt(falta)}?`)) return;
-      registrarCobro(falta, 'saldo');
+      registrarCobro({ monto: falta }, 'saldo');
     });
     cont.querySelectorAll('[data-cobro-del]').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -2751,12 +2817,13 @@
     e.preventDefault();
     const fecha = document.getElementById('fecha').value;
     const desc = document.getElementById('desc').value.trim();
-    const monto = parseFloat(document.getElementById('monto').value);
-    if(!fecha || !desc || !monto || monto <= 0) return;
+    if(!fecha || !desc) return;
+    const m = leerMonto('monto', 'monedaIng', 'tcIng');
+    if(!m) return;
 
     const medio = elegirMedio(document.getElementById('medio').value);
     const cuenta = cuentaPara(medio, elegirCuenta(document.getElementById('cuenta').value));
-    items.push({ id: Date.now(), fecha, desc, monto, medio, cuenta });
+    items.push({ id: Date.now(), fecha, desc, ...m, medio, cuenta });
 
     // si anotás un ingreso de otro mes, saltamos a ese mes para que lo veas
     if(mesDe(fecha) !== mesSel) mesSel = mesDe(fecha);
@@ -2776,9 +2843,9 @@
   document.getElementById('formGasto').addEventListener('submit', e => {
     e.preventDefault();
     const fecha = document.getElementById('gastoFecha').value || hoyISO();
-    const monto = parseFloat(document.getElementById('gastoMonto').value);
-    if(!monto || monto <= 0) return;
-    gastos.movs.push({ id: Date.now(), fecha, cat: catGasto, monto,
+    const m = leerMonto('gastoMonto', 'gastoMoneda', 'gastoTc');
+    if(!m) return;
+    gastos.movs.push({ id: Date.now(), fecha, cat: catGasto, ...m,
       desc: document.getElementById('gastoDesc').value.trim(),
       medio: elegirMedio(document.getElementById('gastoMedio').value) });
     if(mesDe(fecha) !== mesSel) mesSel = mesDe(fecha);
@@ -2838,16 +2905,23 @@
   document.addEventListener('change', e => {
     if(e.target.matches('.sel-medio')) elegirMedio(e.target.value);
     else if(e.target.matches('.sel-cuenta')) elegirCuenta(e.target.value);
+    else if(e.target.matches('.sel-moneda')) elegirMoneda(e.target.value);
   });
 
   document.getElementById('gastoEfectivo').addEventListener('click', e => {
     if(!e.target.closest('#btnContarCaja')) return;
     const actual = efectivoEnCaja();
-    const val = prompt('¿Cuánto efectivo hay en caja ahora? Contá los billetes.', actual !== null ? actual : '');
-    if(val === null) return;
-    const num = parseFloat(String(val).replace(/[^\d.]/g, ''));
-    if(isNaN(num) || num < 0) return;
-    caja = { monto: num, fecha: hoyISO(), ts: Date.now() };
+    const leer = (texto, previo) => {
+      const val = prompt(texto, previo);
+      if(val === null) return null;
+      const num = parseFloat(String(val).replace(/[^\d.]/g, ''));
+      return isNaN(num) || num < 0 ? null : num;
+    };
+    const pesos = leer('¿Cuántos PESOS en efectivo hay en caja ahora? Contá los billetes.', actual ? actual.pesos : '');
+    if(pesos === null) return;
+    const usd = leer('¿Y cuántos DÓLARES en billetes? (0 si no hay)', actual ? actual.usd : 0);
+    if(usd === null) return;
+    caja = { monto: pesos, usd, fecha: hoyISO(), ts: Date.now() };
     persistirCaja();
   });
 
