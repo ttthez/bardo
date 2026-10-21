@@ -56,6 +56,12 @@ Cómo clasificar los movimientos de los extractos (Mercado Pago, tarjetas): `tip
 `no es gasto` o `dudoso`, y `cat` la categoría de gasto. Leelo antes de procesar un extracto y sumá ahí
 los titulares nuevos que el usuario aclare.
 
+## Calendario de eventos
+
+Los eventos de catering también se anotan en Google Calendar ("La Sinergia | Eventos"), con cliente, PAX, menú,
+dirección, llegada, servicio, equipo y notas. **El calendario no lleva cobros**: ni total, ni seña, ni saldo, ni forma
+de pago. Esos datos van solo en Bardo (`catering.precio`, notas del evento e ingresos en `datos`).
+
 ## Cargar gastos desde extractos
 
 - Todo lo de Mercado Pago (cuenta y tarjeta) es de la empresa; la tarjeta Visa Santander es personal. Ante la duda, preguntar.
