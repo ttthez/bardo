@@ -540,7 +540,7 @@
   .fijo-item.pagado .item-desc{color:var(--gris);text-decoration:line-through}
   .fijo-item .badge{margin-left:6px;font-size:.6rem;padding:2px 7px}
   #formGasto input#gastoMonto{flex:1 1 120px}
-  .sel-medio{flex:1 1 150px}
+  .sel-medio, .sel-cuenta{flex:1 1 150px}
   #formFijo select{flex:1 1 140px}
   #formFijo input[type="number"]{flex:1 1 110px}
   #formFijo input#fijoDia{flex:0 0 76px;min-width:0}
@@ -723,6 +723,7 @@
         </div>
       </div>
       <div class="motivo" id="motivo"></div>
+      <div class="card-nota" id="facturadoCuentas" style="margin:12px 0 0"></div>
     </div>
 
     <div class="card">
@@ -731,6 +732,7 @@
         <input type="text" id="desc" placeholder="Descripción (ej: Catering Pérez)" required>
         <input type="number" id="monto" placeholder="Monto $" min="1" step="1" required>
         <select id="medio" class="sel-medio" title="Medio de cobro"></select>
+        <select id="cuenta" class="sel-cuenta" title="Cuenta que recibe"></select>
         <button type="submit" class="btn btn-fuego" id="btnAnotar">Anotar</button>
       </form>
     </div>
@@ -912,6 +914,12 @@
     { id: 'tarjeta',       nombre: 'Tarjeta',       emoji: '💳' }
   ];
   const CACHE_KEY_MEDIO = 'lasinergia_medio';
+  // a qué cuenta entra un cobro por Mercado Pago o transferencia: cada socio factura con su monotributo
+  const CUENTAS = [
+    { id: 'thiago', nombre: 'Thiago' },
+    { id: 'juan',   nombre: 'Juan' }
+  ];
+  const CACHE_KEY_CUENTA = 'lasinergia_cuenta';
 
   let items    = [];
   // último conteo de billetes: { monto, fecha, ts }; desde ahí se suman y restan los movimientos en efectivo
@@ -1329,6 +1337,28 @@
     document.getElementById('motivo').textContent = mensajeMotivo(pctReal, total, ganancia);
     document.getElementById('motivo').classList.toggle('completo', pctReal >= 100);
 
+    const selCuenta = document.getElementById('cuenta');
+    if(!selCuenta.options.length) selCuenta.innerHTML = opcionesCuenta(cuentaUltima());
+    mostrarCuentas();
+
+    // facturado por cuenta: lo que mira el monotributo de cada socio
+    const anio = mesSel.slice(0, 4);
+    const porCuenta = lista => {
+      const t = { efectivo: 0, sin: 0 };
+      CUENTAS.forEach(c => t[c.id] = 0);
+      lista.forEach(i => {
+        if(i.medio === 'efectivo') t.efectivo += i.monto;
+        else if(t[i.cuenta] != null) t[i.cuenta] += i.monto;
+        else t.sin += i.monto;
+      });
+      return CUENTAS.map(c => `${c.nombre} <b>${fmt(t[c.id])}</b>`)
+        .concat(`💵 Efectivo <b>${fmt(t.efectivo)}</b>`)
+        .concat(t.sin ? [`sin dato ${fmt(t.sin)}`] : []).join(' · ');
+    };
+    document.getElementById('facturadoCuentas').innerHTML =
+      `👤 Facturado ${anio}: ${porCuenta(items.filter(i => (i.fecha || '').startsWith(anio)))}` +
+      `<br>En ${nombreMes(mesSel)}: ${porCuenta(delMes)}`;
+
     const lista = document.getElementById('lista');
     if(ordenados.length === 0){
       lista.innerHTML = `<div class="vacio">No hay ingresos anotados en ${nombreMes(mesSel)}.</div>`;
@@ -1338,7 +1368,7 @@
       <div class="item">
         <div class="item-info">
           <div class="item-desc">${escapeHtml(i.desc)}</div>
-          <div class="item-fecha">${formatoFecha(i.fecha)}${medioTexto(i.medio)}</div>
+          <div class="item-fecha">${formatoFecha(i.fecha)}${medioTexto(i.medio, i.cuenta)}</div>
         </div>
         <div class="item-monto">${fmt(i.monto)}</div>
         <button class="item-del" data-id="${i.id}" title="Eliminar">✕</button>
@@ -1465,7 +1495,26 @@
   function elegirMedio(id){
     guardarCache(CACHE_KEY_MEDIO, id);
     document.querySelectorAll('.sel-medio').forEach(sel => sel.value = id);
+    mostrarCuentas();
     return id;
+  }
+  // el efectivo no entra a ninguna cuenta
+  function cuentaPara(medio, id){ return medio === 'efectivo' ? undefined : id; }
+  function cuentaUltima(){
+    const c = leerCache(CACHE_KEY_CUENTA, 'thiago');
+    return CUENTAS.some(x => x.id === c) ? c : 'thiago';
+  }
+  function elegirCuenta(id){
+    guardarCache(CACHE_KEY_CUENTA, id);
+    document.querySelectorAll('.sel-cuenta').forEach(sel => sel.value = id);
+    return id;
+  }
+  function opcionesCuenta(sel){
+    return CUENTAS.map(c => `<option value="${c.id}" ${c.id === sel ? 'selected' : ''}>👤 Cuenta de ${c.nombre}</option>`).join('');
+  }
+  function mostrarCuentas(){
+    const ef = medioUltimo() === 'efectivo';
+    document.querySelectorAll('.sel-cuenta').forEach(sel => sel.hidden = ef);
   }
   function opcionesMedio(sel){
     return MEDIOS.map(m => `<option value="${m.id}" ${m.id === sel ? 'selected' : ''}>${m.emoji} ${m.nombre}</option>`).join('');
@@ -1480,9 +1529,10 @@
     return caja.monto + entro - salio;
   }
 
-  function medioTexto(id){
+  function medioTexto(id, cuenta){
     const m = MEDIOS.find(x => x.id === id);
-    return m ? ` · ${m.emoji} ${m.nombre}` : '';
+    const c = CUENTAS.find(x => x.id === cuenta);
+    return (m ? ` · ${m.emoji} ${m.nombre}` : '') + (c && id !== 'efectivo' ? ` · ${c.nombre}` : '');
   }
   function fijosDe(ym){ return gastos.fijos.filter(f => f.desde <= ym && (!f.hasta || f.hasta >= ym)); }
   function movsDe(ym){ return gastos.movs.filter(g => mesDe(g.fecha) === ym); }
@@ -1785,7 +1835,8 @@
           fecha: hoyISO(),
           desc: `${p.cliente} x${totalPizzas}`,
           monto,
-          medio: medioUltimo()
+          medio: medioUltimo(),
+          cuenta: cuentaPara(medioUltimo(), cuentaUltima())
         });
         persistirIngresos();
       }
@@ -2217,7 +2268,7 @@
             <div class="item">
               <div class="item-info">
                 <div class="item-desc">${c.tipo === 'seña' ? 'Seña' : c.tipo === 'saldo' ? 'Saldo' : 'Pago'}</div>
-                <div class="item-fecha">${formatoFecha(c.fecha)}${medioTexto(c.medio)}</div>
+                <div class="item-fecha">${formatoFecha(c.fecha)}${medioTexto(c.medio, c.cuenta)}</div>
               </div>
               <div class="item-monto">${fmt(c.monto)}</div>
               <button type="button" class="item-del" data-cobro-del="${c.id}" title="Eliminar cobro">✕</button>
@@ -2226,6 +2277,7 @@
         <div class="cobro-acciones">
           <input type="number" id="cobroMonto" min="0" step="any" inputmode="decimal" placeholder="Monto $">
           <select id="cobroMedio" class="sel-medio" title="Medio de cobro">${opcionesMedio(medioUltimo())}</select>
+          <select id="cobroCuenta" class="sel-cuenta" title="Cuenta que recibe" ${medioUltimo() === 'efectivo' ? 'hidden' : ''}>${opcionesCuenta(cuentaUltima())}</select>
           <button type="button" class="btn btn-fuego" id="btnSena">Registrar seña</button>
         </div>
         ${r.falta > 0 ? `
@@ -2361,7 +2413,8 @@
     // cobros: cada uno es un ingreso enlazado al evento
     const registrarCobro = (monto, tipo) => {
       const medio = elegirMedio(document.getElementById('cobroMedio').value);
-      items.push({ id: Date.now(), fecha: hoyISO(), monto, tipo, eventoId: ev.id, medio,
+      const cuenta = cuentaPara(medio, elegirCuenta(document.getElementById('cobroCuenta').value));
+      items.push({ id: Date.now(), fecha: hoyISO(), monto, tipo, eventoId: ev.id, medio, cuenta,
                    desc: `${tipo === 'seña' ? 'Seña' : 'Saldo'} · ${ev.nombre}` });
       persistirIngresos();
     };
@@ -2702,7 +2755,8 @@
     if(!fecha || !desc || !monto || monto <= 0) return;
 
     const medio = elegirMedio(document.getElementById('medio').value);
-    items.push({ id: Date.now(), fecha, desc, monto, medio });
+    const cuenta = cuentaPara(medio, elegirCuenta(document.getElementById('cuenta').value));
+    items.push({ id: Date.now(), fecha, desc, monto, medio, cuenta });
 
     // si anotás un ingreso de otro mes, saltamos a ese mes para que lo veas
     if(mesDe(fecha) !== mesSel) mesSel = mesDe(fecha);
@@ -2778,6 +2832,12 @@
       f.monto = num;
       persistirGastos();
     }
+  });
+
+  // cambiar el medio o la cuenta en cualquier formulario actualiza los demás
+  document.addEventListener('change', e => {
+    if(e.target.matches('.sel-medio')) elegirMedio(e.target.value);
+    else if(e.target.matches('.sel-cuenta')) elegirCuenta(e.target.value);
   });
 
   document.getElementById('gastoEfectivo').addEventListener('click', e => {
