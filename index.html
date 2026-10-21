@@ -723,6 +723,7 @@
         </div>
       </div>
       <div class="motivo" id="motivo"></div>
+      <div class="card-nota" id="ingresosMoneda" style="margin:12px 0 0"></div>
       <div class="card-nota" id="facturadoCuentas" style="margin:12px 0 0"></div>
     </div>
 
@@ -752,6 +753,7 @@
       <div class="totales">
         <div class="actual" id="gastoTotal">$0</div>
         <div class="meta" id="gastoSub">fijos $0 · variables $0</div>
+        <div class="meta" id="gastoPorMoneda"></div>
       </div>
       <div class="hist-tot">
         <div>
@@ -1362,6 +1364,10 @@
         .concat(`💵 Efectivo <b>${fmt(t.efectivo)}</b>`)
         .concat(t.sin ? [`sin dato ${fmt(t.sin)}`] : []).join(' · ');
     };
+    const anioIng = items.filter(i => (i.fecha || '').startsWith(anio));
+    document.getElementById('ingresosMoneda').innerHTML =
+      `💱 Ingresos de ${nombreMes(mesSel)}: ${textoMonedas(porMoneda(delMes))}` +
+      `<br>En ${anio}: ${textoMonedas(porMoneda(anioIng))}`;
     document.getElementById('facturadoCuentas').innerHTML =
       `👤 Facturado ${anio}: ${porCuenta(items.filter(i => (i.fecha || '').startsWith(anio)))}` +
       `<br>En ${nombreMes(mesSel)}: ${porCuenta(delMes)}`;
@@ -1547,6 +1553,19 @@
     guardarCache(CACHE_KEY_TC, tc);
     return { monto: Math.round(valor * tc), moneda: 'USD', usd: valor, tc };
   }
+  // separa lo cobrado o pagado en pesos de lo que fue en dólares (en dólares, su valor en US$ y en pesos)
+  function porMoneda(lista){
+    const usd = lista.filter(x => x.moneda === 'USD');
+    return {
+      pesos: lista.filter(x => x.moneda !== 'USD').reduce((s,x) => s + x.monto, 0),
+      usd: usd.reduce((s,x) => s + (Number(x.usd) || 0), 0),
+      usdEnPesos: usd.reduce((s,x) => s + x.monto, 0)
+    };
+  }
+  function textoMonedas(m){
+    return `$ Pesos <b>${fmt(m.pesos)}</b> · US$ Dólares <b>${fmtUsd(m.usd)}</b>` +
+      (m.usd ? ` <span class="item-fecha">(${fmt(m.usdEnPesos)})</span>` : '');
+  }
   function fmtUsd(n){ return 'US$ ' + Number(n).toLocaleString('es-AR', { maximumFractionDigits: 2 }); }
   function montoTexto(x){
     return x.moneda === 'USD' && x.usd != null
@@ -1609,6 +1628,9 @@
 
     document.getElementById('gastoTotal').textContent = fmt(total);
     document.getElementById('gastoSub').textContent = `fijos ${fmt(totFijos)} · variables ${fmt(totMovs)}`;
+    const gm = porMoneda(movs);
+    document.getElementById('gastoPorMoneda').innerHTML = gm.usd
+      ? `variables en $ pesos ${fmt(gm.pesos)} · en US$ <b>${fmtUsd(gm.usd)}</b> (${fmt(gm.usdEnPesos)})` : '';
     document.getElementById('gastoIngresos').textContent = fmt(ingresos);
     const elGan = document.getElementById('gastoGanancia');
     elGan.textContent = fmt(ganancia);
