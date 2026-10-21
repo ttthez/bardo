@@ -28,6 +28,8 @@ con `desc` tipo `"Seña · Casamiento Pérez"`. El evento calcula lo cobrado sum
 **`catering`**: lista de eventos
 `{ id, nombre, fecha, hora, lugar, personas, pizzas, precio, notas, sabores: [{nombre, cantidad}], checklist: [{nombre, cantidad, hecho}], personal: [{id, nombre, monto}] }`.
 `personas` es la cantidad de pax. `precio` es el total del evento.
+Para estimar la ganancia del evento: `menu` (`op1` | `op2` | `papas`), `km` (ida y vuelta), `peajes` y
+`pizzasSalieron` (las que salieron, se carga después del evento; si falta se estima por persona).
 Campos viejos que la app ya no muestra (`ingredientes`, `cerrado`, `cerradoEl`): dejarlos como están.
 
 **`gastos`**: `{ fijos: [...], movs: [...], pagos: { 'YYYY-MM': [idFijo, ...] } }`
@@ -54,6 +56,10 @@ Los ingresos que no son en efectivo llevan además `cuenta`: `thiago` o `juan`, 
 **`caja`**: `{ monto, usd?, fecha: 'YYYY-MM-DD', ts }`, último conteo de efectivo (`monto` en pesos, `usd` en billetes de dólar).
 La app suma y resta los movimientos con `medio: 'efectivo'` posteriores (fecha mayor, o misma fecha e `id` mayor que `ts`)
 para mostrar el efectivo en caja; los que tienen `moneda: 'USD'` mueven la caja en dólares.
+
+**`costos`**: valores aproximados para la ganancia de cada evento, editables desde Catering:
+`{ costoPizza, pizzasPorPersona, merma (%), extras: { op1, op2, papas } ($ por persona), tanque ($ tanque lleno), kmTanque }`.
+Insumos = pizzas × costoPizza × (1 + merma) + pax × extra del menú; nafta = km × tanque / kmTanque.
 
 **`titulares`** (no lo usa la app): `{ reglas: [texto], lista: [{ titular, es, tipo, cat?, nota? }] }`.
 Cómo clasificar los movimientos de los extractos (Mercado Pago, tarjetas): `tipo` es `empresa`, `personal`,

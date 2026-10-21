@@ -541,6 +541,9 @@
   .fijo-item .badge{margin-left:6px;font-size:.6rem;padding:2px 7px}
   #formGasto input#gastoMonto{flex:1 1 120px}
   .sel-medio, .sel-cuenta, .sel-moneda, .inp-tc{flex:1 1 150px}
+  .costos-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px}
+  .costo-campo{display:flex;flex-direction:column;gap:4px;font-size:.75rem;color:var(--gris)}
+  .costo-campo input{min-width:0;width:100%}
   #formFijo select{flex:1 1 140px}
   #formFijo input[type="number"]{flex:1 1 110px}
   #formFijo input#fijoDia{flex:0 0 76px;min-width:0}
@@ -668,6 +671,12 @@
       <div class="card">
         <div class="card-titulo">Eventos agendados</div>
         <div class="lista" id="listaEventos"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-titulo">Costos para calcular la ganancia</div>
+        <div class="card-nota" style="margin:-8px 0 12px">Valores aproximados: cuando suben los precios, cambiá el costo de la pizza o usá "subir insumos".</div>
+        <div id="costosConfig"></div>
       </div>
 
     </div>
@@ -885,6 +894,7 @@
   const PRECIOS_URL  = FIREBASE_BASE + 'precios.json';
   const GASTOS_URL   = FIREBASE_BASE + 'gastos.json';
   const CAJA_URL     = FIREBASE_BASE + 'caja.json';
+  const COSTOS_URL   = FIREBASE_BASE + 'costos.json';
 
   const CACHE_KEY_INGRESOS = 'lasinergia_cache_ingresos';
   const CACHE_KEY_PIZZAS   = 'lasinergia_cache_pizzas';
@@ -894,6 +904,7 @@
   const CACHE_KEY_PRECIOS  = 'lasinergia_cache_precios';
   const CACHE_KEY_GASTOS   = 'lasinergia_cache_gastos';
   const CACHE_KEY_CAJA     = 'lasinergia_cache_caja';
+  const CACHE_KEY_COSTOS   = 'lasinergia_cache_costos';
   const CACHE_KEY_TAB      = 'lasinergia_tab';
 
   const SABORES_DEFAULT = ['Margarita','Honey pesto','Diavola','Di patate','Caramellata','4 Formaggi'];
@@ -933,6 +944,21 @@
   let items    = [];
   // último conteo de billetes: { monto, fecha, ts }; desde ahí se suman y restan los movimientos en efectivo
   let caja     = null;
+  // valores aproximados para estimar el costo de cada evento; se editan en Catering
+  const COSTOS_DEFAULT = {
+    costoPizza: 4300,          // costo promedio de una pizza (masa, salsa, quesos, toppings)
+    pizzasPorPersona: 1.05,
+    merma: 10,                 // % que se pierde de lo que se lleva
+    extras: { op1: 0, op2: 2000, papas: 500 },  // por persona, además de las pizzas
+    tanque: 100000,            // precio del tanque lleno
+    kmTanque: 600              // km que se hacen con un tanque
+  };
+  const MENUS = [
+    { id: 'op1',   nombre: 'Opción 1 · Pizza party' },
+    { id: 'op2',   nombre: 'Opción 2 · Pizza + tapeos' },
+    { id: 'papas', nombre: 'Papas y pizza' }
+  ];
+  let costos = COSTOS_DEFAULT;
   let pizzas   = { stock: [], ventas: [] };
   let pedidos  = [];
   let metas    = {};
@@ -1110,16 +1136,16 @@
     const rev = revLocal;
     if(mostrarCarga) setEstado('Actualizando…', true);
 
-    const [rIng, rPiz, rPed, rMet, rCat, rPre, rGas, rCaja] = await Promise.allSettled([
+    const [rIng, rPiz, rPed, rMet, rCat, rPre, rGas, rCaja, rCos] = await Promise.allSettled([
       fetchJSON(INGRESOS_URL), fetchJSON(PIZZAS_URL), fetchJSON(PEDIDOS_URL),
       fetchJSON(METAS_URL), fetchJSON(CATERING_URL), fetchJSON(PRECIOS_URL),
-      fetchJSON(GASTOS_URL), fetchJSON(CAJA_URL)
+      fetchJSON(GASTOS_URL), fetchJSON(CAJA_URL), fetchJSON(COSTOS_URL)
     ]);
 
     // si mientras traíamos datos tocaste algo acá, descartamos lo del servidor
     if(revLocal !== rev || escrituras > 0) return;
 
-    const ok = [rIng, rPiz, rPed, rMet, rCat, rPre, rGas, rCaja].every(r => r.status === 'fulfilled');
+    const ok = [rIng, rPiz, rPed, rMet, rCat, rPre, rGas, rCaja, rCos].every(r => r.status === 'fulfilled');
 
     items = rIng.status === 'fulfilled'
       ? (rIng.value || [])
@@ -1157,6 +1183,9 @@
     guardarCache(CACHE_KEY_GASTOS, gastos);
 
     caja = rCaja.status === 'fulfilled' ? rCaja.value : leerCache(CACHE_KEY_CAJA, null);
+    const c = rCos.status === 'fulfilled' ? rCos.value : leerCache(CACHE_KEY_COSTOS, null);
+    costos = { ...COSTOS_DEFAULT, ...(c || {}), extras: { ...COSTOS_DEFAULT.extras, ...((c && c.extras) || {}) } };
+    guardarCache(CACHE_KEY_COSTOS, costos);
     guardarCache(CACHE_KEY_CAJA, caja);
 
     guardarCache(CACHE_KEY_INGRESOS, items);
@@ -1191,6 +1220,7 @@
   const persistirPrecios  = hacerPersistidor(PRECIOS_URL,  CACHE_KEY_PRECIOS,  () => precios);
   const persistirGastos   = hacerPersistidor(GASTOS_URL,   CACHE_KEY_GASTOS,   () => gastos);
   const persistirCaja     = hacerPersistidor(CAJA_URL,     CACHE_KEY_CAJA,     () => caja);
+  const persistirCostos   = hacerPersistidor(COSTOS_URL,   CACHE_KEY_COSTOS,   () => costos);
 
   // Firebase no guarda listas vacías, así que al leer completamos lo que falte
   function normalizarGastos(v){
@@ -2199,9 +2229,27 @@
     const cobrado = cobrosDe(ev).reduce((s,i) => s + i.monto, 0);
     const personal = personalDe(ev).reduce((s,p) => s + (Number(p.monto) || 0), 0);
     const falta = Math.max(precio - cobrado, 0);
+    const c = costosEvento(ev);
     // si todavía no pusiste el precio, la ganancia se calcula sobre lo cobrado
-    const ganancia = (precio || cobrado) - personal;
-    return { precio, cobrado, personal, falta, ganancia };
+    const ganancia = (precio || cobrado) - personal - c.insumos - c.nafta - c.peajes;
+    return { precio, cobrado, personal, falta, ganancia, ...c };
+  }
+
+  // costo aproximado del evento: insumos por persona según el menú, y nafta por km.
+  // Si después del evento anotás cuántas pizzas salieron, los insumos se calculan con ese número.
+  function costosEvento(ev){
+    const pax = Number(ev.personas) || 0;
+    const salieron = Number(ev.pizzasSalieron) || 0;
+    const pizzasCalc = salieron || Math.ceil(pax * costos.pizzasPorPersona);
+    const insumos = Math.round(pizzasCalc * costos.costoPizza * (1 + costos.merma / 100) +
+      pax * (Number(costos.extras[ev.menu]) || 0));
+    const nafta = Math.round((Number(ev.km) || 0) * costoKm());
+    return { insumos, nafta, peajes: Number(ev.peajes) || 0, pizzasCalc, pizzasReales: !!salieron };
+  }
+  function costoKm(){ return costos.kmTanque > 0 ? costos.tanque / costos.kmTanque : 0; }
+  function opcionesMenu(sel){
+    return `<option value="">Menú…</option>` + MENUS.map(m =>
+      `<option value="${m.id}" ${m.id === sel ? 'selected' : ''}>${m.nombre}</option>`).join('');
   }
 
   function badgeEvento(e){
@@ -2231,7 +2279,56 @@
     else { eventoAbierto = null; renderListaEventos(); }
   }
 
+  function renderCostosConfig(){
+    const cont = document.getElementById('costosConfig');
+    if(escribiendoEn(cont)) return;
+    const campo = (clave, etiqueta, valor, paso) => `
+      <label class="costo-campo"><span>${etiqueta}</span>
+        <input type="number" data-costo="${clave}" min="0" step="${paso || 'any'}" inputmode="decimal" value="${valor}"></label>`;
+    cont.innerHTML = `
+      <div class="costos-grid">
+        ${campo('costoPizza', 'Costo de una pizza $', costos.costoPizza)}
+        ${campo('pizzasPorPersona', 'Pizzas por persona', costos.pizzasPorPersona, '0.05')}
+        ${campo('merma', 'Merma %', costos.merma)}
+        ${campo('extras.op1', 'Extra opción 1 $/pers.', costos.extras.op1)}
+        ${campo('extras.op2', 'Tapeos opción 2 $/pers.', costos.extras.op2)}
+        ${campo('extras.papas', 'Papas $/pers.', costos.extras.papas)}
+        ${campo('tanque', 'Tanque lleno de nafta $', costos.tanque)}
+        ${campo('kmTanque', 'Km por tanque', costos.kmTanque)}
+      </div>
+      <div class="card-nota" style="margin:10px 0 0">
+        Persona en opción 1 ≈ <b>${fmt(Math.round(costos.pizzasPorPersona * costos.costoPizza * (1 + costos.merma / 100) + (Number(costos.extras.op1) || 0)))}</b> ·
+        opción 2 ≈ <b>${fmt(Math.round(costos.pizzasPorPersona * costos.costoPizza * (1 + costos.merma / 100) + (Number(costos.extras.op2) || 0)))}</b> ·
+        nafta <b>${fmt(Math.round(costoKm()))}</b> por km
+      </div>
+      <button type="button" class="link-btn" id="btnSubirInsumos" style="margin-top:10px">subir insumos un %</button>`;
+    cont.querySelectorAll('[data-costo]').forEach(inp => inp.addEventListener('change', () => {
+      const v = parseFloat(inp.value);
+      if(isNaN(v) || v < 0) return;
+      const [a, b] = inp.dataset.costo.split('.');
+      if(b) costos.extras[b] = v; else costos[a] = v;
+      persistirCostos();
+    }));
+    document.getElementById('btnSubirInsumos').addEventListener('click', () => {
+      const val = prompt('¿Cuánto subieron los insumos? (en %, ej: 8)');
+      const pct = parseFloat(String(val || '').replace(',', '.'));
+      if(!pct) return;
+      const f = 1 + pct / 100;
+      costos.costoPizza = Math.round(costos.costoPizza * f);
+      Object.keys(costos.extras).forEach(k => costos.extras[k] = Math.round(costos.extras[k] * f));
+      persistirCostos();
+    });
+  }
+
+  // al salir de un campo se vuelve a dibujar, así los totales de costos y ganancia se actualizan
+  ['cateringDetalle', 'costosConfig'].forEach(id => {
+    document.getElementById(id).addEventListener('focusout', () => setTimeout(() => {
+      if(!escribiendoEn(document.getElementById(id))) renderCatering();
+    }, 0));
+  });
+
   function renderListaEventos(){
+    renderCostosConfig();
     // opción de copiar checklist y personal de un evento anterior
     const wrap = document.getElementById('evCopiarWrap');
     const previos = catering.slice().sort((a,b) => b.fecha.localeCompare(a.fecha));
@@ -2366,6 +2463,32 @@
           <div><div class="label">Ganancia</div><div class="val plata" style="${r.ganancia < 0 ? 'color:var(--fuego-claro)' : ''}">${fmt(r.ganancia)}</div></div>
         </div>
         <div class="card-nota" style="margin:12px 0 0">Cada cobro se suma solo a los ingresos de Objetivo.</div>
+      </div>
+
+      <div class="card">
+        <div class="card-titulo">Costos y ganancia</div>
+        <div class="pedido-campos">
+          <select data-campo="menu">${opcionesMenu(ev.menu)}</select>
+          <input type="number" data-campo="km" min="0" step="any" inputmode="decimal" value="${ev.km || ''}" placeholder="Km ida y vuelta">
+          <input type="number" data-campo="peajes" min="0" step="any" inputmode="decimal" value="${ev.peajes || ''}" placeholder="Peajes $">
+          <input type="number" data-campo="pizzasSalieron" min="0" value="${ev.pizzasSalieron || ''}" placeholder="Pizzas que salieron">
+        </div>
+        <div class="lista">
+          <div class="item"><div class="item-info"><div class="item-desc">Precio</div></div><div class="item-monto">${fmt(r.precio || r.cobrado)}</div></div>
+          <div class="item"><div class="item-info"><div class="item-desc">Insumos</div>
+            <div class="item-fecha">${r.pizzasCalc} pizzas ${r.pizzasReales ? 'que salieron' : 'estimadas'} × ${fmt(costos.costoPizza)} + ${costos.merma}% merma${costos.extras[ev.menu] ? ` + ${fmt(costos.extras[ev.menu])} × ${ev.personas || 0} pax` : ''}${ev.menu ? '' : ' · elegí el menú'}</div></div>
+            <div class="item-monto gasto">−${fmt(r.insumos)}</div></div>
+          <div class="item"><div class="item-info"><div class="item-desc">Personal</div></div><div class="item-monto gasto">−${fmt(r.personal)}</div></div>
+          <div class="item"><div class="item-info"><div class="item-desc">Nafta</div>
+            <div class="item-fecha">${ev.km ? `${ev.km} km × ${fmt(Math.round(costoKm()))}/km` : 'poné los km ida y vuelta'}</div></div>
+            <div class="item-monto gasto">−${fmt(r.nafta)}</div></div>
+          ${r.peajes ? `<div class="item"><div class="item-info"><div class="item-desc">Peajes</div></div><div class="item-monto gasto">−${fmt(r.peajes)}</div></div>` : ''}
+        </div>
+        <div class="costo-totales">
+          <div><div class="label">Ganancia ${r.pizzasReales ? '' : 'estimada'}</div><div class="val plata" style="${r.ganancia < 0 ? 'color:var(--fuego-claro)' : ''}">${fmt(r.ganancia)}</div></div>
+          <div><div class="label">Margen</div><div class="val">${(r.precio || r.cobrado) ? Math.round(r.ganancia / (r.precio || r.cobrado) * 100) + '%' : '—'}</div></div>
+        </div>
+        <div class="card-nota" style="margin:12px 0 0">Son costos aproximados para ver cuánto deja el evento; los gastos reales se anotan en Gastos.</div>
       </div>
 
       <div class="card">
