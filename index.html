@@ -1013,7 +1013,10 @@
     servilletasPorPizza: 12,   // se usan ~8, se calcula con margen
     servPaquete: 1000,         // servilletas por paquete...
     servPrecio: 10000,         // ...y lo que sale ese paquete
-    servOfertas: []            // precios anotados para comparar: { id, donde, medida, cantidad, precio, fecha }
+    servOfertas: [],           // precios anotados para comparar: { id, donde, medida, cantidad, precio, fecha }
+    gananciaMinima: 450000,    // por debajo de esto el evento se marca como "bajo mínimo"
+    sueldoDueno: 60000,        // lo que valdría el trabajo de cada dueño en un evento
+    duenos: 2                  // dueños que van a cada evento
   };
   const MENUS = [
     { id: 'op1',   nombre: 'Opción 1 · Pizza party' },
@@ -2304,7 +2307,10 @@
     const c = costosEvento(ev);
     // si todavía no pusiste el precio, la ganancia se calcula sobre lo cobrado
     const ganancia = (precio || cobrado) - personal - c.insumos - c.servilletas - c.nafta - c.peajes;
-    return { precio, cobrado, personal, falta, ganancia, ...c };
+    // la ganancia "real" si los dueños cobraran como personal
+    const sueldos = (Number(costos.duenos) || 0) * (Number(costos.sueldoDueno) || 0);
+    const bajoMinimo = (precio || cobrado) > 0 && ganancia < (Number(costos.gananciaMinima) || 0);
+    return { precio, cobrado, personal, falta, ganancia, sueldos, gananciaConSueldos: ganancia - sueldos, bajoMinimo, ...c };
   }
 
   // costo aproximado del evento: insumos por persona según el menú, y nafta por km.
@@ -2469,6 +2475,9 @@
         ${campo('tanque', 'Tanque lleno de nafta $', costos.tanque)}
         ${campo('kmTanque', 'Km por tanque', costos.kmTanque)}
         ${campo('servilletasPorPizza', 'Servilletas por pizza', costos.servilletasPorPizza)}
+        ${campo('gananciaMinima', 'Ganancia mínima por evento $', costos.gananciaMinima)}
+        ${campo('sueldoDueno', 'Sueldo de cada dueño por evento $', costos.sueldoDueno)}
+        ${campo('duenos', 'Dueños que van', costos.duenos, '1')}
       </div>
       ${htmlServilletas()}
       <div class="card-nota" style="margin:10px 0 0">
@@ -2632,7 +2641,7 @@
         const r = resumenEvento(e);
         return `<div class="evento" data-cal-ev="${e.id}">
           <div class="evento-top">
-            <div class="evento-nombre">${escapeHtml(e.nombre)} ${badgeEvento(e)}</div>
+            <div class="evento-nombre">${escapeHtml(e.nombre)} ${badgeEvento(e)}${r.bajoMinimo ? ' <span class="badge badge-atrasado">bajo mínimo</span>' : ''}</div>
             <div class="pedido-cuando">${ICONO_TURNO[turnoEvento(e)]} ${e.hora || 'sin hora'}</div>
           </div>
           <div class="evento-meta"><b>${e.personas || 0}</b> personas${e.lugar ? ' · ' + escapeHtml(e.lugar) : ''}
@@ -2688,7 +2697,7 @@
       return `
         <div class="evento" data-ev="${e.id}">
           <div class="evento-top">
-            <div class="evento-nombre">${escapeHtml(e.nombre)} ${badge}</div>
+            <div class="evento-nombre">${escapeHtml(e.nombre)} ${badge}${r.bajoMinimo ? ' <span class="badge badge-atrasado">bajo mínimo</span>' : ''}</div>
             <div class="pedido-cuando">${formatoFecha(e.fecha)}${e.hora ? ' · ' + e.hora : ''}</div>
           </div>
           <div class="evento-meta">
@@ -2824,6 +2833,9 @@
           <div><div class="label">Margen</div><div class="val">${(r.precio || r.cobrado) ? Math.round(r.ganancia / (r.precio || r.cobrado) * 100) + '%' : '—'}</div></div>
         </div>
         ${(() => { const sv = servilletasALlevar(ev); return sv.n ? `<div class="card-nota" style="margin:12px 0 0">🧻 Llevar <b>${sv.n} servilletas</b> (${sv.pizzas} pizzas × ${costos.servilletasPorPizza}) · ${sv.paquetes} ${sv.paquetes === 1 ? 'paquete' : 'paquetes'} de ${costos.servPaquete}</div>` : ''; })()}
+        ${r.sueldos ? `<div class="card-nota" style="margin:10px 0 0">👥 Con sueldo de los dueños (${costos.duenos} × ${fmt(costos.sueldoDueno)}):
+          <b style="${r.gananciaConSueldos < 0 ? 'color:var(--fuego-claro)' : ''}">${fmt(r.gananciaConSueldos)}</b>${(r.precio || r.cobrado) ? ` · margen ${Math.round(r.gananciaConSueldos / (r.precio || r.cobrado) * 100)}%` : ''}</div>` : ''}
+        ${r.bajoMinimo ? `<div class="alerta-sabores" style="margin:10px 0 0">⚠️ Este evento deja menos que el mínimo de ${fmt(costos.gananciaMinima)}. Revisá el precio, la logística o el personal.</div>` : ''}
         <div class="card-nota" style="margin:12px 0 0">Son costos aproximados para ver cuánto deja el evento; los gastos reales se anotan en Gastos.</div>
       </div>
 

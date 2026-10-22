@@ -62,7 +62,8 @@ para mostrar el efectivo en caja; los que tienen `moneda: 'USD'` mueven la caja 
 **`costos`**: valores aproximados para la ganancia de cada evento, editables desde Catering:
 `{ costoPizza, pizzasPorPersona, merma (%), extras: { op1, op2, papas } ($ por persona), tanque ($ tanque lleno), kmTanque,
 servilletasPorPizza, servPaquete, servPrecio, servOfertas: [{ id, donde, medida, cantidad, precio, fecha }] }`.
-`servOfertas` son precios de servilletas anotados para comparar; el que se usa queda en `servPaquete`/`servPrecio`.
+También `gananciaMinima` (aviso "bajo mínimo" si un evento deja menos), `sueldoDueno` y `duenos` (para ver la ganancia
+con el trabajo de los dueños pagado). `servOfertas` son precios de servilletas anotados para comparar; el que se usa queda en `servPaquete`/`servPrecio`.
 Insumos = pizzas × costoPizza × (1 + merma) + pax × extra del menú; nafta = km × tanque / kmTanque;
 servilletas = pizzas × servilletasPorPizza × servPrecio / servPaquete.
 
