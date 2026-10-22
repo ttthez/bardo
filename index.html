@@ -718,6 +718,7 @@
         <div class="pedido-campos">
           <input type="number" id="evPersonas" min="1" placeholder="Personas">
           <input type="number" id="evPizzas" min="1" placeholder="Pizzas a llevar">
+          <select id="evMenu"></select>
         </div>
         <div id="evCopiarWrap"></div>
         <button type="button" class="btn btn-fuego" id="btnCrearEvento" style="width:100%">Crear evento</button>
@@ -1016,7 +1017,10 @@
     servOfertas: [],           // precios anotados para comparar: { id, donde, medida, cantidad, precio, fecha }
     gananciaMinima: 450000,    // por debajo de esto el evento se marca como "bajo mínimo"
     sueldoDueno: 60000,        // lo que valdría el trabajo de cada dueño en un evento
-    duenos: 2                  // dueños que van a cada evento
+    duenos: 2,                 // dueños que van a cada evento
+    // lista de precios por persona de cada menú y logística en CABA (0 = sin precio de lista)
+    precios: { op1: 23500, op2: 29000, papas: 0, logistica: 50000 },
+    minPersonas: 25            // los términos cobran como mínimo 25 cubiertos
   };
   const MENUS = [
     { id: 'op1',   nombre: 'Opción 1 · Pizza party' },
@@ -1254,6 +1258,7 @@
     caja = rCaja.status === 'fulfilled' ? rCaja.value : leerCache(CACHE_KEY_CAJA, null);
     const c = rCos.status === 'fulfilled' ? rCos.value : leerCache(CACHE_KEY_COSTOS, null);
     costos = { ...COSTOS_DEFAULT, ...(c || {}), extras: { ...COSTOS_DEFAULT.extras, ...((c && c.extras) || {}) },
+               precios: { ...COSTOS_DEFAULT.precios, ...((c && c.precios) || {}) },
                servOfertas: Object.values((c && c.servOfertas) || {}) };
     guardarCache(CACHE_KEY_COSTOS, costos);
     const pl = (rPla.status === 'fulfilled' ? rPla.value : leerCache(CACHE_KEY_PLANTILLA, null)) || {};
@@ -2333,6 +2338,12 @@
     const n = llevar * costos.servilletasPorPizza;
     return { pizzas: llevar, n, paquetes: costos.servPaquete > 0 ? Math.ceil(n / costos.servPaquete) : 0 };
   }
+  // precio de lista de un evento: personas (mínimo 25) × precio del menú + logística
+  function precioDeLista(menu, personas){
+    const pp = Number(costos.precios[menu]) || 0;
+    if(!pp || !(personas > 0)) return 0;
+    return Math.max(personas, Number(costos.minPersonas) || 0) * pp + (Number(costos.precios.logistica) || 0);
+  }
   function costoKm(){ return costos.kmTanque > 0 ? costos.tanque / costos.kmTanque : 0; }
   function opcionesMenu(sel){
     return `<option value="">Menú…</option>` + MENUS.map(m =>
@@ -2475,6 +2486,11 @@
         ${campo('tanque', 'Tanque lleno de nafta $', costos.tanque)}
         ${campo('kmTanque', 'Km por tanque', costos.kmTanque)}
         ${campo('servilletasPorPizza', 'Servilletas por pizza', costos.servilletasPorPizza)}
+        ${campo('precios.op1', 'Precio opción 1 $/pers.', costos.precios.op1)}
+        ${campo('precios.op2', 'Precio opción 2 $/pers.', costos.precios.op2)}
+        ${campo('precios.papas', 'Precio papas y pizza $/pers.', costos.precios.papas)}
+        ${campo('precios.logistica', 'Logística CABA $', costos.precios.logistica)}
+        ${campo('minPersonas', 'Mínimo de personas', costos.minPersonas, '1')}
         ${campo('gananciaMinima', 'Ganancia mínima por evento $', costos.gananciaMinima)}
         ${campo('sueldoDueno', 'Sueldo de cada dueño por evento $', costos.sueldoDueno)}
         ${campo('duenos', 'Dueños que van', costos.duenos, '1')}
@@ -2492,7 +2508,7 @@
       const v = parseFloat(inp.value);
       if(isNaN(v) || v < 0) return;
       const [a, b] = inp.dataset.costo.split('.');
-      if(b) costos.extras[b] = v; else costos[a] = v;
+      if(b) costos[a][b] = v; else costos[a] = v;
       persistirCostos();
     }));
     document.getElementById('btnSubirInsumos').addEventListener('click', () => {
@@ -2666,6 +2682,8 @@
   document.getElementById('btnVistaEventos').addEventListener('click', () => { vistaLista = !vistaLista; renderCalendario(); });
 
   function renderListaEventos(){
+    const selMenu = document.getElementById('evMenu');
+    if(!selMenu.options.length) selMenu.innerHTML = opcionesMenu('');
     renderCalendario();
     renderPlantilla();
     renderCostosConfig();
@@ -2775,6 +2793,10 @@
         <div class="pedido-campos">
           <input type="number" data-campo="precio" min="0" step="any" inputmode="decimal" value="${ev.precio || ''}" placeholder="$">
         </div>
+        ${precioDeLista(ev.menu, Number(ev.personas)) ? `<div class="card-nota" style="margin:-4px 0 8px">Precio de lista: <b>${fmt(precioDeLista(ev.menu, Number(ev.personas)))}</b>
+          (${Math.max(Number(ev.personas), Number(costos.minPersonas) || 0)} × ${fmt(costos.precios[ev.menu])} + logística ${fmt(costos.precios.logistica)})
+          ${precioDeLista(ev.menu, Number(ev.personas)) !== Number(ev.precio) ? ' · <button type="button" class="link-btn" id="btnPrecioLista">usar este precio</button>' : ''}</div>` : ''}
+
         <div class="lista">
           ${cobros.length === 0 ? '<div class="vacio">Todavía no se cobró nada.</div>' : cobros.map(c => `
             <div class="item">
@@ -3061,6 +3083,13 @@
 
     // checklist de ítems: normalizamos al formato {nombre, cantidad, hecho, grupo} antes de tocarla
     ev.checklist = itemsDe(ev);
+    const btnLista = document.getElementById('btnPrecioLista');
+    if(btnLista) btnLista.addEventListener('click', () => {
+      const nuevo = precioDeLista(ev.menu, Number(ev.personas));
+      if(ev.precio && !confirm(`¿Cambiar el precio de ${fmt(ev.precio)} a ${fmt(nuevo)}?`)) return;
+      ev.precio = nuevo;
+      persistirCatering();
+    });
     const btnServ = document.getElementById('btnServPrecio');
     if(btnServ) btnServ.addEventListener('click', () => {
       const cant = parseInt(prompt('¿Cuántas servilletas trae el paquete?', costos.servPaquete));
@@ -3572,6 +3601,9 @@
       lugar: document.getElementById('evLugar').value.trim(),
       personas: personasEv,
       pizzas: pizzasEv,
+      menu: document.getElementById('evMenu').value || undefined,
+      // con menú y personas, el precio sale de la lista de precios (se puede cambiar después)
+      precio: precioDeLista(document.getElementById('evMenu').value, personasEv) || undefined,
       notas: '',
       // sin evento para copiar, arranca con los sabores y la checklist de la plantilla
       sabores: base ? [] : saboresPlantilla().map(n => ({ nombre: n, cantidad: 0 })),
