@@ -971,7 +971,10 @@
     merma: 10,                 // % que se pierde de lo que se lleva
     extras: { op1: 0, op2: 2000, papas: 500 },  // por persona, además de las pizzas
     tanque: 100000,            // precio del tanque lleno
-    kmTanque: 600              // km que se hacen con un tanque
+    kmTanque: 600,             // km que se hacen con un tanque
+    servilletasPorPizza: 12,   // se usan ~8, se calcula con margen
+    servPaquete: 1000,         // servilletas por paquete...
+    servPrecio: 10000          // ...y lo que sale ese paquete
   };
   const MENUS = [
     { id: 'op1',   nombre: 'Opción 1 · Pizza party' },
@@ -2260,7 +2263,7 @@
     const falta = Math.max(precio - cobrado, 0);
     const c = costosEvento(ev);
     // si todavía no pusiste el precio, la ganancia se calcula sobre lo cobrado
-    const ganancia = (precio || cobrado) - personal - c.insumos - c.nafta - c.peajes;
+    const ganancia = (precio || cobrado) - personal - c.insumos - c.servilletas - c.nafta - c.peajes;
     return { precio, cobrado, personal, falta, ganancia, ...c };
   }
 
@@ -2273,7 +2276,16 @@
     const insumos = Math.round(pizzasCalc * costos.costoPizza * (1 + costos.merma / 100) +
       pax * (Number(costos.extras[ev.menu]) || 0));
     const nafta = Math.round((Number(ev.km) || 0) * costoKm());
-    return { insumos, nafta, peajes: Number(ev.peajes) || 0, pizzasCalc, pizzasReales: !!salieron };
+    const servilletas = Math.round(pizzasCalc * costos.servilletasPorPizza * costoServilleta());
+    return { insumos, nafta, servilletas, peajes: Number(ev.peajes) || 0, pizzasCalc, pizzasReales: !!salieron };
+  }
+  function costoServilleta(){ return costos.servPaquete > 0 ? costos.servPrecio / costos.servPaquete : 0; }
+  // servilletas a llevar: por las pizzas que se llevan (sabores, o el total del evento, o la estimación)
+  function servilletasALlevar(ev){
+    const llevar = (ev.sabores || []).reduce((t, x) => t + (Number(x.cantidad) || 0), 0) ||
+      Number(ev.pizzas) || Math.ceil((Number(ev.personas) || 0) * costos.pizzasPorPersona);
+    const n = llevar * costos.servilletasPorPizza;
+    return { pizzas: llevar, n, paquetes: costos.servPaquete > 0 ? Math.ceil(n / costos.servPaquete) : 0 };
   }
   function costoKm(){ return costos.kmTanque > 0 ? costos.tanque / costos.kmTanque : 0; }
   function opcionesMenu(sel){
@@ -2353,11 +2365,15 @@
         ${campo('extras.papas', 'Papas $/pers.', costos.extras.papas)}
         ${campo('tanque', 'Tanque lleno de nafta $', costos.tanque)}
         ${campo('kmTanque', 'Km por tanque', costos.kmTanque)}
+        ${campo('servilletasPorPizza', 'Servilletas por pizza', costos.servilletasPorPizza)}
+        ${campo('servPaquete', 'Servilletas por paquete', costos.servPaquete)}
+        ${campo('servPrecio', 'Precio del paquete $', costos.servPrecio)}
       </div>
       <div class="card-nota" style="margin:10px 0 0">
         Persona en opción 1 ≈ <b>${fmt(Math.round(costos.pizzasPorPersona * costos.costoPizza * (1 + costos.merma / 100) + (Number(costos.extras.op1) || 0)))}</b> ·
         opción 2 ≈ <b>${fmt(Math.round(costos.pizzasPorPersona * costos.costoPizza * (1 + costos.merma / 100) + (Number(costos.extras.op2) || 0)))}</b> ·
-        nafta <b>${fmt(Math.round(costoKm()))}</b> por km
+        nafta <b>${fmt(Math.round(costoKm()))}</b> por km ·
+        servilletas <b>${fmt(Math.round(costoServilleta() * costos.servilletasPorPizza))}</b> por pizza
       </div>
       <button type="button" class="link-btn" id="btnSubirInsumos" style="margin-top:10px">subir insumos un %</button>`;
     cont.querySelectorAll('[data-costo]').forEach(inp => inp.addEventListener('change', () => {
@@ -2601,6 +2617,9 @@
           <div class="item"><div class="item-info"><div class="item-desc">Insumos</div>
             <div class="item-fecha">${r.pizzasCalc} pizzas ${r.pizzasReales ? 'que salieron' : 'estimadas'} × ${fmt(costos.costoPizza)} + ${costos.merma}% merma${costos.extras[ev.menu] ? ` + ${fmt(costos.extras[ev.menu])} × ${ev.personas || 0} pax` : ''}${ev.menu ? '' : ' · elegí el menú'}</div></div>
             <div class="item-monto gasto">−${fmt(r.insumos)}</div></div>
+          <div class="item"><div class="item-info"><div class="item-desc">Servilletas</div>
+            <div class="item-fecha">${r.pizzasCalc} pizzas × ${costos.servilletasPorPizza} × ${fmt(Math.round(costoServilleta() * 100) / 100)} c/u</div></div>
+            <div class="item-monto gasto">−${fmt(r.servilletas)}</div></div>
           <div class="item"><div class="item-info"><div class="item-desc">Personal</div></div><div class="item-monto gasto">−${fmt(r.personal)}</div></div>
           <div class="item"><div class="item-info"><div class="item-desc">Nafta</div>
             <div class="item-fecha">${ev.km ? `${ev.km} km × ${fmt(Math.round(costoKm()))}/km` : 'poné los km ida y vuelta'}</div></div>
@@ -2611,6 +2630,7 @@
           <div><div class="label">Ganancia ${r.pizzasReales ? '' : 'estimada'}</div><div class="val plata" style="${r.ganancia < 0 ? 'color:var(--fuego-claro)' : ''}">${fmt(r.ganancia)}</div></div>
           <div><div class="label">Margen</div><div class="val">${(r.precio || r.cobrado) ? Math.round(r.ganancia / (r.precio || r.cobrado) * 100) + '%' : '—'}</div></div>
         </div>
+        ${(() => { const sv = servilletasALlevar(ev); return sv.n ? `<div class="card-nota" style="margin:12px 0 0">🧻 Llevar <b>${sv.n} servilletas</b> (${sv.pizzas} pizzas × ${costos.servilletasPorPizza}) · ${sv.paquetes} ${sv.paquetes === 1 ? 'paquete' : 'paquetes'} de ${costos.servPaquete}</div>` : ''; })()}
         <div class="card-nota" style="margin:12px 0 0">Son costos aproximados para ver cuánto deja el evento; los gastos reales se anotan en Gastos.</div>
       </div>
 

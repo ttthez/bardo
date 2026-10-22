@@ -60,8 +60,10 @@ La app suma y resta los movimientos con `medio: 'efectivo'` posteriores (fecha m
 para mostrar el efectivo en caja; los que tienen `moneda: 'USD'` mueven la caja en dólares.
 
 **`costos`**: valores aproximados para la ganancia de cada evento, editables desde Catering:
-`{ costoPizza, pizzasPorPersona, merma (%), extras: { op1, op2, papas } ($ por persona), tanque ($ tanque lleno), kmTanque }`.
-Insumos = pizzas × costoPizza × (1 + merma) + pax × extra del menú; nafta = km × tanque / kmTanque.
+`{ costoPizza, pizzasPorPersona, merma (%), extras: { op1, op2, papas } ($ por persona), tanque ($ tanque lleno), kmTanque,
+servilletasPorPizza, servPaquete, servPrecio }`.
+Insumos = pizzas × costoPizza × (1 + merma) + pax × extra del menú; nafta = km × tanque / kmTanque;
+servilletas = pizzas × servilletasPorPizza × servPrecio / servPaquete.
 
 **`plantilla`**: lo que se lleva a cada evento, editable desde Catering: `{ sabores: [nombre], pizzaDelMes, checklist: [{ nombre, cantidad, grupo }] }`.
 Los eventos nuevos arrancan con esos sabores (más la pizza del mes) y esa checklist. Los ítems de la checklist de un evento
