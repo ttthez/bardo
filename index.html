@@ -418,6 +418,8 @@
   .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
   .chip{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;border:1px solid var(--linea);background:var(--carbon);font-size:.85rem}
   .chip button{border:0;background:none;color:var(--gris);cursor:pointer;padding:0;font-size:.8rem}
+  button.chip{cursor:pointer;color:var(--crema);font:inherit;font-size:.85rem}
+  .chip.chip-on{border-color:var(--fuego);background:rgba(226,58,22,.16)}
   .pl-check summary{cursor:pointer;font-weight:700;font-size:.9rem}
   .pl-item{flex:1;font-size:.92rem}
   /* calendario de catering */
@@ -679,8 +681,13 @@
         Para una venta que no estaba agendada. Descuenta del stock al instante.
       </div>
       <div id="ventaFilas"></div>
-      <div class="footer-row" style="justify-content:flex-start;margin:8px 0 18px">
+      <div class="footer-row" style="justify-content:flex-start;margin:8px 0 10px">
         <button type="button" class="link-btn" id="btnAgregarFila">+ Agregar otro sabor a la venta</button>
+      </div>
+      <div class="card-nota" id="ventaSugerido" style="margin:0 0 8px"></div>
+      <div class="pedido-campos">
+        <input type="text" id="ventaCliente" placeholder="Cliente (opcional)">
+        <input type="number" id="ventaCobrado" min="0" step="any" inputmode="decimal" placeholder="Cobrado $ (vacío = sin cobrar)">
       </div>
       <button type="button" class="btn btn-fuego" id="btnRegistrarVenta" style="width:100%">Registrar venta y descontar stock</button>
     </div>
@@ -1026,7 +1033,10 @@
     // lista de precios por persona de cada menú y logística en CABA (0 = sin precio de lista)
     precios: { op1: 23500, op2: 29000, papas: 0, logistica: 50000 },
     minPersonas: 25,           // los términos cobran como mínimo 25 cubiertos
-    sabores: {}                // costo por sabor con packaging (planilla de costos); el que falta usa costoPizza
+    sabores: {},               // costo por sabor con packaging (planilla de costos); el que falta usa costoPizza
+    // lista de precios de congeladas: precio por unidad, plus de los sabores premium y descuento por cantidad
+    congeladas: { unidad: 14500, premium: 1000, premiumSabores: ['diavola', '4 formaggi', 'stracciatella'],
+                  descuentos: [{ desde: 6, pct: 5 }, { desde: 12, pct: 10 }] }
   };
   const MENUS = [
     { id: 'op1',   nombre: 'Opción 1 · Pizza party' },
@@ -1266,6 +1276,7 @@
     costos = { ...COSTOS_DEFAULT, ...(c || {}), extras: { ...COSTOS_DEFAULT.extras, ...((c && c.extras) || {}) },
                precios: { ...COSTOS_DEFAULT.precios, ...((c && c.precios) || {}) },
                sabores: { ...((c && c.sabores) || {}) },
+               congeladas: { ...COSTOS_DEFAULT.congeladas, ...((c && c.congeladas) || {}) },
                servOfertas: Object.values((c && c.servOfertas) || {}) };
     guardarCache(CACHE_KEY_COSTOS, costos);
     const pl = (rPla.status === 'fulfilled' ? rPla.value : leerCache(CACHE_KEY_PLANTILLA, null)) || {};
@@ -1962,6 +1973,7 @@
             <div class="pedido-cuando">${formatoFecha(p.fecha)}${p.hora ? ' · ' + p.hora : ''}</div>
           </div>
           <div class="pedido-items"><b>${totalPizzas} pizza${totalPizzas === 1 ? '' : 's'}</b> — ${detalle}</div>
+          ${textoPrecioCongeladas(p.items) ? `<div class="pedido-items">💲 Precio de lista: <b>${textoPrecioCongeladas(p.items)}</b></div>` : ''}
           ${mapa}
           ${notas}
           <div class="pedido-acciones">
@@ -2017,7 +2029,8 @@
     persistirPizzas();
     persistirPedidos();
 
-    const montoStr = prompt(`¿Cuánto cobraste por el pedido de ${p.cliente}? (dejalo vacío si todavía no cobrás)`, '');
+    const sugerido = precioCongeladas(p.items).total;
+    const montoStr = prompt(`¿Cuánto cobraste por el pedido de ${p.cliente}? (precio de lista ${fmt(sugerido)}; dejalo vacío si todavía no cobrás)`, sugerido || '');
     if(montoStr !== null && montoStr.trim() !== ''){
       const monto = parseFloat(montoStr);
       if(monto > 0){
@@ -2117,11 +2130,16 @@
       </div>
     `).join('');
 
+    const sugerido = () => {
+      const t = textoPrecioCongeladas(ventaDraft.map(f => ({ nombre: f.sabor, cantidad: f.cantidad })));
+      document.getElementById('ventaSugerido').innerHTML = t ? `💲 Precio de lista: <b>${t}</b>` : '';
+    };
+    sugerido();
     cont.querySelectorAll('.venta-select').forEach(sel => {
-      sel.addEventListener('change', () => { ventaDraft[+sel.dataset.idx].sabor = sel.value; });
+      sel.addEventListener('change', () => { ventaDraft[+sel.dataset.idx].sabor = sel.value; sugerido(); });
     });
     cont.querySelectorAll('.venta-cantidad').forEach(inp => {
-      inp.addEventListener('input', () => { ventaDraft[+inp.dataset.idx].cantidad = parseInt(inp.value) || 1; });
+      inp.addEventListener('input', () => { ventaDraft[+inp.dataset.idx].cantidad = parseInt(inp.value) || 1; sugerido(); });
     });
     cont.querySelectorAll('.venta-quitar').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -2217,6 +2235,22 @@
     return filas.sort((a,b) => b.fecha.localeCompare(a.fecha) || b.orden - a.orden);
   }
 
+  // ---------- precio sugerido de congeladas ----------
+  function precioCongeladas(lista){
+    const cg = costos.congeladas;
+    const premium = new Set(Object.values(cg.premiumSabores || {}).map(x => String(x).toLowerCase()));
+    const n = lista.reduce((t, i) => t + (Number(i.cantidad) || 0), 0);
+    if(!n) return { n: 0, total: 0, pct: 0 };
+    const base = lista.reduce((t, i) => t + (Number(i.cantidad) || 0) *
+      ((Number(cg.unidad) || 0) + (premium.has(String(i.nombre).toLowerCase()) ? Number(cg.premium) || 0 : 0)), 0);
+    const pct = Object.values(cg.descuentos || {}).filter(d => n >= d.desde).reduce((m, d) => Math.max(m, d.pct), 0);
+    return { n, total: Math.round(base * (1 - pct / 100) / 100) * 100, pct };
+  }
+  function textoPrecioCongeladas(lista){
+    const p = precioCongeladas(lista);
+    return p.n ? `${fmt(p.total)}${p.pct ? ` (${p.pct}% off por ${p.n})` : ''}` : '';
+  }
+
   // ---------- ganancia de las pizzas vendidas (congeladas) ----------
   function costoSabor(nombre){
     const v = costos.sabores[String(nombre || '').toLowerCase()];
@@ -2270,7 +2304,27 @@
       }).join('')}</div>`
       : `<div class="vacio">Sin ventas cobradas en ${nombreMes(mesSel)}.</div>`) +
       (sinCobro ? `<div class="card-nota" style="margin:8px 0 0">${sinCobro} ${sinCobro === 1 ? 'venta' : 'ventas'} sin cobro anotado no ${sinCobro === 1 ? 'entra' : 'entran'} en la cuenta.</div>` : '') + `
-      <details class="pl-check" style="margin-top:14px">
+      <details class="pl-check" style="margin-top:14px" data-det="lista">
+        <summary>Lista de precios</summary>
+        <div class="costos-grid" style="margin-top:10px">
+          <label class="costo-campo"><span>Precio por unidad $</span>
+            <input type="number" min="0" step="any" inputmode="decimal" data-cg="unidad" value="${costos.congeladas.unidad}"></label>
+          <label class="costo-campo"><span>Plus sabores premium $</span>
+            <input type="number" min="0" step="any" inputmode="decimal" data-cg="premium" value="${costos.congeladas.premium}"></label>
+          ${Object.values(costos.congeladas.descuentos || {}).map((d, i) => `
+          <label class="costo-campo"><span>Desde ${d.desde} pizzas: % off</span>
+            <input type="number" min="0" max="100" step="any" data-cg-desc="${i}" value="${d.pct}"></label>`).join('')}
+        </div>
+        <div class="check-grupo">Sabores premium</div>
+        <div class="chips">${nombres.map(n => {
+          const on = Object.values(costos.congeladas.premiumSabores || {}).map(x => String(x).toLowerCase()).includes(n.toLowerCase());
+          return `<button type="button" class="chip ${on ? 'chip-on' : ''}" data-cg-prem="${escapeHtml(n.toLowerCase())}">${on ? '★ ' : ''}${escapeHtml(n)}</button>`;
+        }).join('')}</div>
+        <div class="card-nota" style="margin:8px 0 0">Ej: 4 Margarita = <b>${textoPrecioCongeladas([{ nombre: 'Margarita', cantidad: 4 }])}</b> ·
+          6 Margarita = <b>${textoPrecioCongeladas([{ nombre: 'Margarita', cantidad: 6 }])}</b> ·
+          12 Margarita = <b>${textoPrecioCongeladas([{ nombre: 'Margarita', cantidad: 12 }])}</b></div>
+      </details>
+      <details class="pl-check" style="margin-top:14px" data-det="costos">
         <summary>Costo por sabor (con packaging)</summary>
         <div class="costos-grid" style="margin-top:10px">${nombres.map(n => `
           <label class="costo-campo"><span>${escapeHtml(n)}</span>
@@ -2278,9 +2332,33 @@
               value="${costos.sabores[n.toLowerCase()] || ''}" placeholder="${costos.costoPizza}"></label>`).join('')}</div>
         <div class="card-nota" style="margin:8px 0 0">Vacío = usa el costo promedio de una pizza (${fmt(costos.costoPizza)}).</div>
       </details>`;
-    const det = cont.querySelector('details');
-    det.open = cont.dataset.abierto === '1';
-    det.addEventListener('toggle', () => cont.dataset.abierto = det.open ? '1' : '');
+    // recordamos qué desplegables estaban abiertos al redibujar
+    const abiertos = (cont.dataset.abiertos || '').split(',');
+    cont.querySelectorAll('details[data-det]').forEach(det => {
+      det.open = abiertos.includes(det.dataset.det);
+      det.addEventListener('toggle', () => {
+        cont.dataset.abiertos = [...cont.querySelectorAll('details[data-det]')].filter(d => d.open).map(d => d.dataset.det).join(',');
+      });
+    });
+    cont.querySelectorAll('[data-cg]').forEach(inp => inp.addEventListener('change', () => {
+      const v = parseFloat(inp.value);
+      if(isNaN(v) || v < 0) return;
+      costos.congeladas[inp.dataset.cg] = v;
+      persistirCostos();
+    }));
+    cont.querySelectorAll('[data-cg-desc]').forEach(inp => inp.addEventListener('change', () => {
+      const v = parseFloat(inp.value);
+      if(isNaN(v) || v < 0) return;
+      costos.congeladas.descuentos = Object.values(costos.congeladas.descuentos);
+      costos.congeladas.descuentos[+inp.dataset.cgDesc].pct = v;
+      persistirCostos();
+    }));
+    cont.querySelectorAll('[data-cg-prem]').forEach(b => b.addEventListener('click', () => {
+      const lista = Object.values(costos.congeladas.premiumSabores || {}).map(x => String(x).toLowerCase());
+      const n = b.dataset.cgPrem;
+      costos.congeladas.premiumSabores = lista.includes(n) ? lista.filter(x => x !== n) : lista.concat(n);
+      persistirCostos();
+    }));
     cont.querySelectorAll('[data-costo-sabor]').forEach(inp => inp.addEventListener('change', () => {
       const v = parseFloat(inp.value);
       if(v > 0) costos.sabores[inp.dataset.costoSabor] = v; else delete costos.sabores[inp.dataset.costoSabor];
@@ -3648,7 +3726,19 @@
       detalle.push({ nombre: f.sabor, cantidad: f.cantidad });
     });
 
-    pizzas.ventas.push({ id: Date.now(), fecha: hoyISO(), items: detalle });
+    const ventaId = Date.now();
+    const cliente = document.getElementById('ventaCliente').value.trim();
+    pizzas.ventas.push({ id: ventaId, fecha: hoyISO(), items: detalle, ...(cliente ? { cliente } : {}) });
+    // si anotaste lo cobrado, entra como ingreso enlazado a la venta (con el último medio elegido)
+    const cobrado = parseFloat(document.getElementById('ventaCobrado').value);
+    if(cobrado > 0){
+      const n = detalle.reduce((t, i) => t + i.cantidad, 0);
+      items.push({ id: ventaId + 1, ventaId, fecha: hoyISO(), desc: `${cliente || 'Venta'} x${n}`, monto: cobrado,
+                   medio: medioUltimo(), cuenta: cuentaPara(medioUltimo(), cuentaUltima()) });
+      persistirIngresos();
+    }
+    document.getElementById('ventaCliente').value = '';
+    document.getElementById('ventaCobrado').value = '';
     ventaDraft = [{ sabor: null, cantidad: 1 }];
     persistirPizzas();
   });

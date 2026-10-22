@@ -68,6 +68,8 @@ También `gananciaMinima` (aviso "bajo mínimo" si un evento deja menos), `sueld
 con el trabajo de los dueños pagado). `servOfertas` son precios de servilletas anotados para comparar; el que se usa queda en `servPaquete`/`servPrecio`.
 `sabores: { 'nombre en minúscula': costo }` es el costo de cada sabor con packaging (de la planilla de costos), para la
 ganancia de las congeladas en Ventas; los sabores que faltan usan `costoPizza`.
+`congeladas: { unidad, premium, premiumSabores: [nombre en minúscula], descuentos: [{ desde, pct }] }` es la lista de precios
+de congeladas: precio sugerido = Σ cantidad × (unidad + premium si el sabor es premium), menos el mayor % de descuento que aplique.
 Insumos = pizzas × costoPizza × (1 + merma) + pax × extra del menú; nafta = km × tanque / kmTanque;
 servilletas = pizzas × servilletasPorPizza × servPrecio / servPaquete.
 
