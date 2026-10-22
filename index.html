@@ -910,6 +910,11 @@
     </div>
 
     <div class="card">
+      <div class="card-titulo">Ganancia de congeladas</div>
+      <div id="margenCongeladas"></div>
+    </div>
+
+    <div class="card">
       <div class="card-titulo">Historial del mes</div>
       <div class="hist-tot" id="histTotales"></div>
       <div class="lista" id="listaHistorial"></div>
@@ -1020,7 +1025,8 @@
     duenos: 2,                 // dueños que van a cada evento
     // lista de precios por persona de cada menú y logística en CABA (0 = sin precio de lista)
     precios: { op1: 23500, op2: 29000, papas: 0, logistica: 50000 },
-    minPersonas: 25            // los términos cobran como mínimo 25 cubiertos
+    minPersonas: 25,           // los términos cobran como mínimo 25 cubiertos
+    sabores: {}                // costo por sabor con packaging (planilla de costos); el que falta usa costoPizza
   };
   const MENUS = [
     { id: 'op1',   nombre: 'Opción 1 · Pizza party' },
@@ -1259,6 +1265,7 @@
     const c = rCos.status === 'fulfilled' ? rCos.value : leerCache(CACHE_KEY_COSTOS, null);
     costos = { ...COSTOS_DEFAULT, ...(c || {}), extras: { ...COSTOS_DEFAULT.extras, ...((c && c.extras) || {}) },
                precios: { ...COSTOS_DEFAULT.precios, ...((c && c.precios) || {}) },
+               sabores: { ...((c && c.sabores) || {}) },
                servOfertas: Object.values((c && c.servOfertas) || {}) };
     guardarCache(CACHE_KEY_COSTOS, costos);
     const pl = (rPla.status === 'fulfilled' ? rPla.value : leerCache(CACHE_KEY_PLANTILLA, null)) || {};
@@ -2210,7 +2217,82 @@
     return filas.sort((a,b) => b.fecha.localeCompare(a.fecha) || b.orden - a.orden);
   }
 
+  // ---------- ganancia de las pizzas vendidas (congeladas) ----------
+  function costoSabor(nombre){
+    const v = costos.sabores[String(nombre || '').toLowerCase()];
+    return Number(v) > 0 ? Number(v) : costos.costoPizza;
+  }
+  function renderMargenCongeladas(){
+    const cont = document.getElementById('margenCongeladas');
+    if(escribiendoEn(cont)) return;
+    const ingresoPorId = Object.fromEntries(items.map(i => [i.id, i]));
+    let pizzasN = 0, facturado = 0, costo = 0, sinCobro = 0;
+    const porSabor = {};
+    armarHistorial().forEach(f => {
+      if(f.ventaId != null){
+        const v = pizzas.ventas.find(x => x.id === f.ventaId);
+        if(!v) return;
+        if(f.monto == null){ sinCobro++; return; }
+        v.items.forEach(i => {
+          pizzasN += i.cantidad;
+          costo += i.cantidad * costoSabor(i.nombre);
+          porSabor[i.nombre] = (porSabor[i.nombre] || 0) + i.cantidad;
+        });
+        facturado += f.monto;
+      } else if(f.ingresoId != null){
+        // ventas viejas sin sabores ("Rubio x6"): se costean con el promedio
+        const ing = ingresoPorId[f.ingresoId];
+        const n = ing && ing.eventoId == null ? pizzasEnDesc(ing.desc) : null;
+        if(!n) return;
+        pizzasN += n; costo += n * costos.costoPizza; facturado += ing.monto;
+        porSabor['Sin detalle'] = (porSabor['Sin detalle'] || 0) + n;
+      }
+    });
+    const ganancia = facturado - costo;
+    const precioProm = pizzasN ? facturado / pizzasN : 0;
+    const filas = Object.entries(porSabor).sort((a, b) => b[1] - a[1]);
+    const nombres = [...new Set(pizzas.stock.map(x => x.nombre).concat(Object.keys(costos.sabores).map(k =>
+      k.replace(/(^|\s)\S/g, c => c.toUpperCase()))))];
+    cont.innerHTML = (pizzasN ? `
+      <div class="costo-totales" style="margin-top:0">
+        <div><div class="label">Pizzas</div><div class="val">${pizzasN}</div></div>
+        <div><div class="label">Facturado</div><div class="val">${fmt(facturado)}</div></div>
+        <div><div class="label">Costo</div><div class="val">${fmt(Math.round(costo))}</div></div>
+        <div><div class="label">Ganancia</div><div class="val plata">${fmt(Math.round(ganancia))}</div></div>
+      </div>
+      <div class="card-nota" style="margin:10px 0">Precio promedio <b>${fmt(Math.round(precioProm))}</b> por pizza ·
+        costo promedio <b>${fmt(Math.round(costo / pizzasN))}</b> · margen <b>${Math.round(ganancia / facturado * 100)}%</b></div>
+      <div class="lista">${filas.map(([n, cant]) => {
+        const cu = n === 'Sin detalle' ? costos.costoPizza : costoSabor(n);
+        return `<div class="item"><div class="item-info"><div class="item-desc">${escapeHtml(n)} <span class="item-fecha">× ${cant}</span></div>
+          <div class="item-fecha">costo ${fmt(Math.round(cu))} c/u · deja ~${fmt(Math.round(precioProm - cu))} c/u</div></div>
+          <div class="item-monto">${fmt(Math.round(cant * (precioProm - cu)))}</div></div>`;
+      }).join('')}</div>`
+      : `<div class="vacio">Sin ventas cobradas en ${nombreMes(mesSel)}.</div>`) +
+      (sinCobro ? `<div class="card-nota" style="margin:8px 0 0">${sinCobro} ${sinCobro === 1 ? 'venta' : 'ventas'} sin cobro anotado no ${sinCobro === 1 ? 'entra' : 'entran'} en la cuenta.</div>` : '') + `
+      <details class="pl-check" style="margin-top:14px">
+        <summary>Costo por sabor (con packaging)</summary>
+        <div class="costos-grid" style="margin-top:10px">${nombres.map(n => `
+          <label class="costo-campo"><span>${escapeHtml(n)}</span>
+            <input type="number" min="0" step="any" inputmode="decimal" data-costo-sabor="${escapeHtml(n.toLowerCase())}"
+              value="${costos.sabores[n.toLowerCase()] || ''}" placeholder="${costos.costoPizza}"></label>`).join('')}</div>
+        <div class="card-nota" style="margin:8px 0 0">Vacío = usa el costo promedio de una pizza (${fmt(costos.costoPizza)}).</div>
+      </details>`;
+    const det = cont.querySelector('details');
+    det.open = cont.dataset.abierto === '1';
+    det.addEventListener('toggle', () => cont.dataset.abierto = det.open ? '1' : '');
+    cont.querySelectorAll('[data-costo-sabor]').forEach(inp => inp.addEventListener('change', () => {
+      const v = parseFloat(inp.value);
+      if(v > 0) costos.sabores[inp.dataset.costoSabor] = v; else delete costos.sabores[inp.dataset.costoSabor];
+      persistirCostos();
+    }));
+  }
+  document.getElementById('margenCongeladas').addEventListener('focusout', () => setTimeout(() => {
+    if(!escribiendoEn(document.getElementById('margenCongeladas'))) renderMargenCongeladas();
+  }, 0));
+
   function renderHistorial(){
+    renderMargenCongeladas();
     filasHistorial = armarHistorial();
 
     const plata = filasHistorial.reduce((s,f) => s + (f.monto || 0), 0);
