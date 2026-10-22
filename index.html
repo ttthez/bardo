@@ -420,6 +420,8 @@
   .chip button{border:0;background:none;color:var(--gris);cursor:pointer;padding:0;font-size:.8rem}
   .pl-check summary{cursor:pointer;font-weight:700;font-size:.9rem}
   .pl-item{flex:1;font-size:.92rem}
+  .serv-box{margin-top:16px;padding-top:14px;border-top:1px solid var(--linea)}
+  .serv-box .item{gap:8px}
 
   .check-progreso{
     font-size:.78rem;color:var(--gris);text-transform:uppercase;
@@ -974,7 +976,8 @@
     kmTanque: 600,             // km que se hacen con un tanque
     servilletasPorPizza: 12,   // se usan ~8, se calcula con margen
     servPaquete: 1000,         // servilletas por paquete...
-    servPrecio: 10000          // ...y lo que sale ese paquete
+    servPrecio: 10000,         // ...y lo que sale ese paquete
+    servOfertas: []            // precios anotados para comparar: { id, donde, medida, cantidad, precio, fecha }
   };
   const MENUS = [
     { id: 'op1',   nombre: 'Opción 1 · Pizza party' },
@@ -1211,7 +1214,8 @@
 
     caja = rCaja.status === 'fulfilled' ? rCaja.value : leerCache(CACHE_KEY_CAJA, null);
     const c = rCos.status === 'fulfilled' ? rCos.value : leerCache(CACHE_KEY_COSTOS, null);
-    costos = { ...COSTOS_DEFAULT, ...(c || {}), extras: { ...COSTOS_DEFAULT.extras, ...((c && c.extras) || {}) } };
+    costos = { ...COSTOS_DEFAULT, ...(c || {}), extras: { ...COSTOS_DEFAULT.extras, ...((c && c.extras) || {}) },
+               servOfertas: Object.values((c && c.servOfertas) || {}) };
     guardarCache(CACHE_KEY_COSTOS, costos);
     const pl = (rPla.status === 'fulfilled' ? rPla.value : leerCache(CACHE_KEY_PLANTILLA, null)) || {};
     plantilla = { sabores: Object.values(pl.sabores || {}), pizzaDelMes: pl.pizzaDelMes || '',
@@ -2349,6 +2353,69 @@
     else { eventoAbierto = null; renderListaEventos(); }
   }
 
+  // ---------- servilletas: precios anotados para comparar y elegir cuál usar ----------
+  const porUnidad = o => o.cantidad > 0 ? o.precio / o.cantidad : Infinity;
+  function htmlServilletas(){
+    const ofertas = costos.servOfertas.slice().sort((a, b) => porUnidad(a) - porUnidad(b));
+    const usando = o => o.cantidad === costos.servPaquete && o.precio === costos.servPrecio;
+    const fmtU = v => fmt(Math.round(v * 100) / 100);
+    return `
+      <div class="serv-box">
+        <div class="check-grupo" style="margin-top:0">🧻 Servilletas</div>
+        <div class="card-nota" style="margin:4px 0 8px">Usando <b>${costos.servPaquete} por ${fmt(costos.servPrecio)}</b> →
+          ${fmtU(costoServilleta())} c/u · <b>${fmt(Math.round(costoServilleta() * costos.servilletasPorPizza))}</b> por pizza</div>
+        ${ofertas.map((o, i) => `
+          <div class="item">
+            <div class="item-info">
+              <div class="item-desc">${escapeHtml(o.donde || 'Sin nombre')}${o.medida ? ` · ${escapeHtml(o.medida)}` : ''}
+                ${i === 0 && ofertas.length > 1 ? '<span class="badge badge-cerrado">más barata</span>' : ''}</div>
+              <div class="item-fecha">${o.cantidad} por ${fmt(o.precio)} · ${fmtU(porUnidad(o))} c/u ·
+                ${fmt(Math.round(porUnidad(o) * costos.servilletasPorPizza))} por pizza${o.fecha ? ' · ' + formatoFecha(o.fecha).slice(0, 5) : ''}</div>
+            </div>
+            ${usando(o) ? '<span class="tag-ok">✓ usando</span>'
+              : `<button type="button" class="link-btn" data-serv-usar="${o.id}">usar</button>`}
+            <button type="button" class="item-del" data-serv-del="${o.id}" title="Borrar">✕</button>
+          </div>`).join('')}
+        <form id="formServ" class="item-nuevo" style="flex-wrap:wrap">
+          <input type="text" id="servDonde" placeholder="Dónde (ej: Makro)" style="flex:1 1 120px">
+          <input type="text" id="servMedida" placeholder="Medida (ej: 33×33 doble)" style="flex:1 1 120px">
+          <input type="number" id="servCant" min="1" inputmode="numeric" placeholder="Cantidad" style="flex:0 0 96px">
+          <input type="number" id="servPrecio" min="0" step="any" inputmode="decimal" placeholder="Precio $" style="flex:0 0 104px">
+          <button type="submit" class="btn btn-fuego">Anotar precio</button>
+        </form>
+        <div class="card-nota" style="margin:6px 0 0">Anotá los precios que veas; la más barata queda primera y con "usar" pasa a los costos de los eventos.</div>
+      </div>`;
+  }
+  function usarServilletas(cantidad, precio){
+    costos.servPaquete = cantidad;
+    costos.servPrecio = precio;
+  }
+  function enlazarServilletas(cont){
+    cont.querySelectorAll('[data-serv-usar]').forEach(b => b.addEventListener('click', () => {
+      const o = costos.servOfertas.find(x => String(x.id) === b.dataset.servUsar);
+      if(!o) return;
+      usarServilletas(o.cantidad, o.precio);
+      persistirCostos();
+    }));
+    cont.querySelectorAll('[data-serv-del]').forEach(b => b.addEventListener('click', () => {
+      costos.servOfertas = costos.servOfertas.filter(x => String(x.id) !== b.dataset.servDel);
+      persistirCostos();
+    }));
+    document.getElementById('formServ').addEventListener('submit', e => {
+      e.preventDefault();
+      const cantidad = parseInt(document.getElementById('servCant').value);
+      const precio = parseFloat(document.getElementById('servPrecio').value);
+      if(!(cantidad > 0) || !(precio > 0)){ alert('Poné la cantidad del paquete y el precio.'); return; }
+      const o = { id: Date.now(), donde: document.getElementById('servDonde').value.trim(),
+                  medida: document.getElementById('servMedida').value.trim(), cantidad, precio, fecha: hoyISO() };
+      costos.servOfertas.push(o);
+      // si sale más barata que la que usás, pasa a ser la que se usa; si no, queda para comparar
+      if(porUnidad(o) < costoServilleta()) usarServilletas(cantidad, precio);
+      document.activeElement.blur();
+      persistirCostos();
+    });
+  }
+
   function renderCostosConfig(){
     const cont = document.getElementById('costosConfig');
     if(escribiendoEn(cont)) return;
@@ -2366,9 +2433,8 @@
         ${campo('tanque', 'Tanque lleno de nafta $', costos.tanque)}
         ${campo('kmTanque', 'Km por tanque', costos.kmTanque)}
         ${campo('servilletasPorPizza', 'Servilletas por pizza', costos.servilletasPorPizza)}
-        ${campo('servPaquete', 'Servilletas por paquete', costos.servPaquete)}
-        ${campo('servPrecio', 'Precio del paquete $', costos.servPrecio)}
       </div>
+      ${htmlServilletas()}
       <div class="card-nota" style="margin:10px 0 0">
         Persona en opción 1 ≈ <b>${fmt(Math.round(costos.pizzasPorPersona * costos.costoPizza * (1 + costos.merma / 100) + (Number(costos.extras.op1) || 0)))}</b> ·
         opción 2 ≈ <b>${fmt(Math.round(costos.pizzasPorPersona * costos.costoPizza * (1 + costos.merma / 100) + (Number(costos.extras.op2) || 0)))}</b> ·
@@ -2376,6 +2442,7 @@
         servilletas <b>${fmt(Math.round(costoServilleta() * costos.servilletasPorPizza))}</b> por pizza
       </div>
       <button type="button" class="link-btn" id="btnSubirInsumos" style="margin-top:10px">subir insumos un %</button>`;
+    enlazarServilletas(cont);
     cont.querySelectorAll('[data-costo]').forEach(inp => inp.addEventListener('change', () => {
       const v = parseFloat(inp.value);
       if(isNaN(v) || v < 0) return;
@@ -2618,7 +2685,8 @@
             <div class="item-fecha">${r.pizzasCalc} pizzas ${r.pizzasReales ? 'que salieron' : 'estimadas'} × ${fmt(costos.costoPizza)} + ${costos.merma}% merma${costos.extras[ev.menu] ? ` + ${fmt(costos.extras[ev.menu])} × ${ev.personas || 0} pax` : ''}${ev.menu ? '' : ' · elegí el menú'}</div></div>
             <div class="item-monto gasto">−${fmt(r.insumos)}</div></div>
           <div class="item"><div class="item-info"><div class="item-desc">Servilletas</div>
-            <div class="item-fecha">${r.pizzasCalc} pizzas × ${costos.servilletasPorPizza} × ${fmt(Math.round(costoServilleta() * 100) / 100)} c/u</div></div>
+            <div class="item-fecha">${r.pizzasCalc} pizzas × ${costos.servilletasPorPizza} × ${fmt(Math.round(costoServilleta() * 100) / 100)} c/u ·
+              <button type="button" class="link-btn" id="btnServPrecio">cambiar precio</button></div></div>
             <div class="item-monto gasto">−${fmt(r.servilletas)}</div></div>
           <div class="item"><div class="item-info"><div class="item-desc">Personal</div></div><div class="item-monto gasto">−${fmt(r.personal)}</div></div>
           <div class="item"><div class="item-info"><div class="item-desc">Nafta</div>
@@ -2856,6 +2924,16 @@
 
     // checklist de ítems: normalizamos al formato {nombre, cantidad, hecho, grupo} antes de tocarla
     ev.checklist = itemsDe(ev);
+    const btnServ = document.getElementById('btnServPrecio');
+    if(btnServ) btnServ.addEventListener('click', () => {
+      const cant = parseInt(prompt('¿Cuántas servilletas trae el paquete?', costos.servPaquete));
+      if(!(cant > 0)) return;
+      const precio = parseFloat(String(prompt(`¿Cuánto sale el paquete de ${cant}?`, costos.servPrecio) || '').replace(/[^\d.]/g, ''));
+      if(!(precio > 0)) return;
+      costos.servOfertas.push({ id: Date.now(), donde: '', medida: '', cantidad: cant, precio, fecha: hoyISO() });
+      usarServilletas(cant, precio);
+      persistirCostos();
+    });
     ['btnChecklistPlantilla', 'btnSaboresPlantilla'].forEach(id => {
       const b = document.getElementById(id);
       if(b) b.addEventListener('click', () => { aplicarPlantilla(ev); persistirCatering(); });
