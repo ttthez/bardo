@@ -1034,9 +1034,9 @@
     precios: { op1: 23500, op2: 29000, papas: 0, logistica: 50000 },
     minPersonas: 25,           // los términos cobran como mínimo 25 cubiertos
     sabores: {},               // costo por sabor con packaging (planilla de costos); el que falta usa costoPizza
-    // lista de precios de congeladas: precio por unidad, plus de los sabores premium y descuento por cantidad
-    congeladas: { unidad: 14500, premium: 1000, premiumSabores: ['diavola', '4 formaggi', 'stracciatella'],
-                  descuentos: [{ desde: 6, pct: 5 }, { desde: 12, pct: 10 }] }
+    // lista de precios de congeladas: precio por pizza según cuántas lleva (packs) y plus de los sabores premium
+    congeladas: { escalones: [{ desde: 1, precio: 14000 }, { desde: 4, precio: 13000 }, { desde: 6, precio: 12500 }],
+                  premium: 1000, premiumSabores: ['diavola', '4 formaggi'] }
   };
   const MENUS = [
     { id: 'op1',   nombre: 'Opción 1 · Pizza party' },
@@ -2236,19 +2236,23 @@
   }
 
   // ---------- precio sugerido de congeladas ----------
+  function escalonesCongeladas(){
+    return Object.values(costos.congeladas.escalones || {}).slice().sort((a, b) => a.desde - b.desde);
+  }
+  // el precio por pizza depende del total del pedido: el pack más grande que alcanza
   function precioCongeladas(lista){
     const cg = costos.congeladas;
     const premium = new Set(Object.values(cg.premiumSabores || {}).map(x => String(x).toLowerCase()));
     const n = lista.reduce((t, i) => t + (Number(i.cantidad) || 0), 0);
-    if(!n) return { n: 0, total: 0, pct: 0 };
-    const base = lista.reduce((t, i) => t + (Number(i.cantidad) || 0) *
-      ((Number(cg.unidad) || 0) + (premium.has(String(i.nombre).toLowerCase()) ? Number(cg.premium) || 0 : 0)), 0);
-    const pct = Object.values(cg.descuentos || {}).filter(d => n >= d.desde).reduce((m, d) => Math.max(m, d.pct), 0);
-    return { n, total: Math.round(base * (1 - pct / 100) / 100) * 100, pct };
+    const esc = escalonesCongeladas().filter(e => n >= e.desde).pop();
+    if(!n || !esc) return { n: 0, total: 0, unitario: 0 };
+    const total = lista.reduce((t, i) => t + (Number(i.cantidad) || 0) *
+      (Number(esc.precio) + (premium.has(String(i.nombre).toLowerCase()) ? Number(cg.premium) || 0 : 0)), 0);
+    return { n, total, unitario: Number(esc.precio) };
   }
   function textoPrecioCongeladas(lista){
     const p = precioCongeladas(lista);
-    return p.n ? `${fmt(p.total)}${p.pct ? ` (${p.pct}% off por ${p.n})` : ''}` : '';
+    return p.n ? `${fmt(p.total)} (${p.n} × ${fmt(p.unitario)}${p.total !== p.n * p.unitario ? ' + premium' : ''})` : '';
   }
 
   // ---------- ganancia de las pizzas vendidas (congeladas) ----------
@@ -2307,22 +2311,20 @@
       <details class="pl-check" style="margin-top:14px" data-det="lista">
         <summary>Lista de precios</summary>
         <div class="costos-grid" style="margin-top:10px">
-          <label class="costo-campo"><span>Precio por unidad $</span>
-            <input type="number" min="0" step="any" inputmode="decimal" data-cg="unidad" value="${costos.congeladas.unidad}"></label>
+          ${escalonesCongeladas().map((e, i) => `
+          <label class="costo-campo"><span>${e.desde === 1 ? 'Por unidad' : `Pack x${e.desde} o más`} $ c/u</span>
+            <input type="number" min="0" step="any" inputmode="decimal" data-cg-esc="${i}" value="${e.precio}"></label>`).join('')}
           <label class="costo-campo"><span>Plus sabores premium $</span>
             <input type="number" min="0" step="any" inputmode="decimal" data-cg="premium" value="${costos.congeladas.premium}"></label>
-          ${Object.values(costos.congeladas.descuentos || {}).map((d, i) => `
-          <label class="costo-campo"><span>Desde ${d.desde} pizzas: % off</span>
-            <input type="number" min="0" max="100" step="any" data-cg-desc="${i}" value="${d.pct}"></label>`).join('')}
         </div>
         <div class="check-grupo">Sabores premium</div>
         <div class="chips">${nombres.map(n => {
           const on = Object.values(costos.congeladas.premiumSabores || {}).map(x => String(x).toLowerCase()).includes(n.toLowerCase());
           return `<button type="button" class="chip ${on ? 'chip-on' : ''}" data-cg-prem="${escapeHtml(n.toLowerCase())}">${on ? '★ ' : ''}${escapeHtml(n)}</button>`;
         }).join('')}</div>
-        <div class="card-nota" style="margin:8px 0 0">Ej: 4 Margarita = <b>${textoPrecioCongeladas([{ nombre: 'Margarita', cantidad: 4 }])}</b> ·
-          6 Margarita = <b>${textoPrecioCongeladas([{ nombre: 'Margarita', cantidad: 6 }])}</b> ·
-          12 Margarita = <b>${textoPrecioCongeladas([{ nombre: 'Margarita', cantidad: 12 }])}</b></div>
+        <div class="card-nota" style="margin:8px 0 0">Ej: 1 Margarita = <b>${textoPrecioCongeladas([{ nombre: 'Margarita', cantidad: 1 }])}</b> ·
+          4 = <b>${textoPrecioCongeladas([{ nombre: 'Margarita', cantidad: 4 }])}</b> ·
+          6 = <b>${textoPrecioCongeladas([{ nombre: 'Margarita', cantidad: 6 }])}</b></div>
       </details>
       <details class="pl-check" style="margin-top:14px" data-det="costos">
         <summary>Costo por sabor (con packaging)</summary>
@@ -2346,11 +2348,11 @@
       costos.congeladas[inp.dataset.cg] = v;
       persistirCostos();
     }));
-    cont.querySelectorAll('[data-cg-desc]').forEach(inp => inp.addEventListener('change', () => {
+    cont.querySelectorAll('[data-cg-esc]').forEach(inp => inp.addEventListener('change', () => {
       const v = parseFloat(inp.value);
-      if(isNaN(v) || v < 0) return;
-      costos.congeladas.descuentos = Object.values(costos.congeladas.descuentos);
-      costos.congeladas.descuentos[+inp.dataset.cgDesc].pct = v;
+      if(!(v > 0)) return;
+      costos.congeladas.escalones = escalonesCongeladas();
+      costos.congeladas.escalones[+inp.dataset.cgEsc].precio = v;
       persistirCostos();
     }));
     cont.querySelectorAll('[data-cg-prem]').forEach(b => b.addEventListener('click', () => {
