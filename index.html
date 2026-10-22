@@ -408,6 +408,13 @@
   .item-nuevo input{min-width:0}
   .item-nuevo input#nuevoItemCant{flex:0 0 76px;text-align:center}
   .item-nuevo .btn{padding:10px 16px}
+  .check-grupo{margin:14px 0 2px;font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--fuego-claro)}
+  .check-grupo span{color:var(--gris);font-weight:600}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+  .chip{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;border:1px solid var(--linea);background:var(--carbon);font-size:.85rem}
+  .chip button{border:0;background:none;color:var(--gris);cursor:pointer;padding:0;font-size:.8rem}
+  .pl-check summary{cursor:pointer;font-weight:700;font-size:.9rem}
+  .pl-item{flex:1;font-size:.92rem}
 
   .check-progreso{
     font-size:.78rem;color:var(--gris);text-transform:uppercase;
@@ -674,6 +681,12 @@
       </div>
 
       <div class="card">
+        <div class="card-titulo">Lo que llevamos a cada evento</div>
+        <div class="card-nota" style="margin:-8px 0 12px">Los eventos nuevos arrancan con estos sabores y esta checklist.</div>
+        <div id="plantillaConfig"></div>
+      </div>
+
+      <div class="card">
         <div class="card-titulo">Costos para calcular la ganancia</div>
         <div class="card-nota" style="margin:-8px 0 12px">Valores aproximados: cuando suben los precios, cambiá el costo de la pizza o usá "subir insumos".</div>
         <div id="costosConfig"></div>
@@ -895,6 +908,7 @@
   const GASTOS_URL   = FIREBASE_BASE + 'gastos.json';
   const CAJA_URL     = FIREBASE_BASE + 'caja.json';
   const COSTOS_URL   = FIREBASE_BASE + 'costos.json';
+  const PLANTILLA_URL = FIREBASE_BASE + 'plantilla.json';
 
   const CACHE_KEY_INGRESOS = 'lasinergia_cache_ingresos';
   const CACHE_KEY_PIZZAS   = 'lasinergia_cache_pizzas';
@@ -905,6 +919,7 @@
   const CACHE_KEY_GASTOS   = 'lasinergia_cache_gastos';
   const CACHE_KEY_CAJA     = 'lasinergia_cache_caja';
   const CACHE_KEY_COSTOS   = 'lasinergia_cache_costos';
+  const CACHE_KEY_PLANTILLA = 'lasinergia_cache_plantilla';
   const CACHE_KEY_TAB      = 'lasinergia_tab';
 
   const SABORES_DEFAULT = ['Margarita','Honey pesto','Diavola','Di patate','Caramellata','4 Formaggi'];
@@ -959,6 +974,10 @@
     { id: 'papas', nombre: 'Papas y pizza' }
   ];
   let costos = COSTOS_DEFAULT;
+  // lo que se lleva a todos los eventos: sabores fijos + la pizza del mes, y la checklist por grupos
+  const GRUPOS_CHECK = ['Cajas', 'Bases', 'Quesos', 'Toppings', 'Finishers', 'Equipamiento', 'Comprar', 'Otros'];
+  const MISE_EN_PLACE = ['Cajas', 'Bases', 'Quesos', 'Toppings', 'Finishers'];
+  let plantilla = { sabores: [], pizzaDelMes: '', checklist: [] };
   let pizzas   = { stock: [], ventas: [] };
   let pedidos  = [];
   let metas    = {};
@@ -1136,16 +1155,16 @@
     const rev = revLocal;
     if(mostrarCarga) setEstado('Actualizando…', true);
 
-    const [rIng, rPiz, rPed, rMet, rCat, rPre, rGas, rCaja, rCos] = await Promise.allSettled([
+    const [rIng, rPiz, rPed, rMet, rCat, rPre, rGas, rCaja, rCos, rPla] = await Promise.allSettled([
       fetchJSON(INGRESOS_URL), fetchJSON(PIZZAS_URL), fetchJSON(PEDIDOS_URL),
       fetchJSON(METAS_URL), fetchJSON(CATERING_URL), fetchJSON(PRECIOS_URL),
-      fetchJSON(GASTOS_URL), fetchJSON(CAJA_URL), fetchJSON(COSTOS_URL)
+      fetchJSON(GASTOS_URL), fetchJSON(CAJA_URL), fetchJSON(COSTOS_URL), fetchJSON(PLANTILLA_URL)
     ]);
 
     // si mientras traíamos datos tocaste algo acá, descartamos lo del servidor
     if(revLocal !== rev || escrituras > 0) return;
 
-    const ok = [rIng, rPiz, rPed, rMet, rCat, rPre, rGas, rCaja, rCos].every(r => r.status === 'fulfilled');
+    const ok = [rIng, rPiz, rPed, rMet, rCat, rPre, rGas, rCaja, rCos, rPla].every(r => r.status === 'fulfilled');
 
     items = rIng.status === 'fulfilled'
       ? (rIng.value || [])
@@ -1186,6 +1205,10 @@
     const c = rCos.status === 'fulfilled' ? rCos.value : leerCache(CACHE_KEY_COSTOS, null);
     costos = { ...COSTOS_DEFAULT, ...(c || {}), extras: { ...COSTOS_DEFAULT.extras, ...((c && c.extras) || {}) } };
     guardarCache(CACHE_KEY_COSTOS, costos);
+    const pl = (rPla.status === 'fulfilled' ? rPla.value : leerCache(CACHE_KEY_PLANTILLA, null)) || {};
+    plantilla = { sabores: Object.values(pl.sabores || {}), pizzaDelMes: pl.pizzaDelMes || '',
+                  checklist: Object.values(pl.checklist || {}) };
+    guardarCache(CACHE_KEY_PLANTILLA, plantilla);
     guardarCache(CACHE_KEY_CAJA, caja);
 
     guardarCache(CACHE_KEY_INGRESOS, items);
@@ -1221,6 +1244,7 @@
   const persistirGastos   = hacerPersistidor(GASTOS_URL,   CACHE_KEY_GASTOS,   () => gastos);
   const persistirCaja     = hacerPersistidor(CAJA_URL,     CACHE_KEY_CAJA,     () => caja);
   const persistirCostos   = hacerPersistidor(COSTOS_URL,   CACHE_KEY_COSTOS,   () => costos);
+  const persistirPlantilla = hacerPersistidor(PLANTILLA_URL, CACHE_KEY_PLANTILLA, () => plantilla);
 
   // Firebase no guarda listas vacías, así que al leer completamos lo que falte
   function normalizarGastos(v){
@@ -2267,8 +2291,37 @@
     return (ev.checklist || []).map(t => ({
       nombre: t.nombre != null ? t.nombre : (t.texto || ''),
       cantidad: t.cantidad || '',
-      hecho: !!t.hecho
+      hecho: !!t.hecho,
+      grupo: GRUPOS_CHECK.includes(t.grupo) ? t.grupo : 'Otros'
     }));
+  }
+
+  // sabores de la plantilla (los fijos + la pizza del mes) y su checklist, para un evento
+  function saboresPlantilla(){
+    return plantilla.sabores.concat(plantilla.pizzaDelMes ? [plantilla.pizzaDelMes] : []);
+  }
+  function checklistPlantilla(){
+    return plantilla.checklist.map(t => ({ nombre: t.nombre, cantidad: t.cantidad || '', hecho: false, grupo: t.grupo || 'Otros' }));
+  }
+  // agrega al evento lo de la plantilla que todavía no tiene (no duplica por nombre)
+  function aplicarPlantilla(ev){
+    ev.sabores = ev.sabores || [];
+    const tieneSabor = new Set(ev.sabores.map(x => (x.nombre || '').toLowerCase()));
+    saboresPlantilla().forEach(n => { if(!tieneSabor.has(n.toLowerCase())) ev.sabores.push({ nombre: n, cantidad: 0 }); });
+    ev.checklist = itemsDe(ev);
+    const tieneItem = new Set(ev.checklist.map(t => t.nombre.toLowerCase() + '|' + t.grupo));
+    checklistPlantilla().forEach(t => { if(!tieneItem.has(t.nombre.toLowerCase() + '|' + t.grupo)) ev.checklist.push(t); });
+  }
+  // checklist ordenada por grupo, conservando el índice real de cada ítem
+  function checklistPorGrupo(items){
+    return GRUPOS_CHECK.map(g => ({ g, filas: items.map((t, i) => ({ t, i })).filter(x => x.t.grupo === g) }))
+      .filter(x => x.filas.length);
+  }
+  function opcionesGrupo(sel){
+    return GRUPOS_CHECK.map(g => `<option value="${g}" ${g === sel ? 'selected' : ''}>${MISE_EN_PLACE.includes(g) ? 'Mise en place · ' : ''}${g}</option>`).join('');
+  }
+  function tituloGrupo(g){
+    return `<div class="check-grupo">${MISE_EN_PLACE.includes(g) ? '<span>Mise en place ·</span> ' : ''}${g}</div>`;
   }
 
   function renderCatering(){
@@ -2321,13 +2374,78 @@
   }
 
   // al salir de un campo se vuelve a dibujar, así los totales de costos y ganancia se actualizan
-  ['cateringDetalle', 'costosConfig'].forEach(id => {
+  ['cateringDetalle', 'costosConfig', 'plantillaConfig'].forEach(id => {
     document.getElementById(id).addEventListener('focusout', () => setTimeout(() => {
       if(!escribiendoEn(document.getElementById(id))) renderCatering();
     }, 0));
   });
 
+  function renderPlantilla(){
+    const cont = document.getElementById('plantillaConfig');
+    if(escribiendoEn(cont)) return;
+    cont.innerHTML = `
+      <label class="costo-campo"><span>🍕 Pizza del mes</span>
+        <input type="text" id="pizzaDelMes" value="${escapeHtml(plantilla.pizzaDelMes)}" placeholder="Ej: Prosciutto"></label>
+      <div class="check-grupo">Sabores fijos</div>
+      <div class="chips">${plantilla.sabores.map((n, i) =>
+        `<span class="chip">${escapeHtml(n)} <button type="button" data-pl-sabor-del="${i}" title="Quitar">✕</button></span>`).join('')}</div>
+      <form id="formPlSabor" class="item-nuevo">
+        <input type="text" id="plSaborNuevo" placeholder="Agregar sabor fijo">
+        <button type="submit" class="btn btn-fuego">+</button>
+      </form>
+      <details class="pl-check" style="margin-top:16px">
+        <summary>Checklist fija · ${plantilla.checklist.length} ítems</summary>
+        ${checklistPorGrupo(plantilla.checklist.map(t => ({ ...t, grupo: GRUPOS_CHECK.includes(t.grupo) ? t.grupo : 'Otros' }))).map(({ g, filas }) =>
+          tituloGrupo(g) + filas.map(({ t, i }) => `
+          <div class="item-check">
+            <span class="pl-item">${escapeHtml(t.nombre)}${t.cantidad ? ` <span class="item-fecha">× ${escapeHtml(t.cantidad)}</span>` : ''}</span>
+            <button type="button" class="item-del" data-pl-chk-del="${i}" title="Quitar">✕</button>
+          </div>`).join('')).join('')}
+        <form id="formPlCheck" class="item-nuevo" style="flex-wrap:wrap">
+          <input type="text" id="plCheckNombre" placeholder="Ítem fijo">
+          <input type="text" id="plCheckCant" placeholder="cant." style="flex:0 0 76px;text-align:center">
+          <select id="plCheckGrupo">${opcionesGrupo('Equipamiento')}</select>
+          <button type="submit" class="btn btn-fuego">+</button>
+        </form>
+      </details>`;
+    const abierto = cont.dataset.abierto === '1';
+    const det = cont.querySelector('details');
+    det.open = abierto;
+    det.addEventListener('toggle', () => cont.dataset.abierto = det.open ? '1' : '');
+    document.getElementById('pizzaDelMes').addEventListener('change', e => {
+      plantilla.pizzaDelMes = e.target.value.trim();
+      persistirPlantilla();
+    });
+    cont.querySelectorAll('[data-pl-sabor-del]').forEach(b => b.addEventListener('click', () => {
+      plantilla.sabores.splice(+b.dataset.plSaborDel, 1);
+      persistirPlantilla();
+    }));
+    document.getElementById('formPlSabor').addEventListener('submit', e => {
+      e.preventDefault();
+      const n = document.getElementById('plSaborNuevo').value.trim();
+      if(!n) return;
+      plantilla.sabores.push(n);
+      document.activeElement.blur();
+      persistirPlantilla();
+    });
+    cont.querySelectorAll('[data-pl-chk-del]').forEach(b => b.addEventListener('click', () => {
+      plantilla.checklist.splice(+b.dataset.plChkDel, 1);
+      persistirPlantilla();
+    }));
+    document.getElementById('formPlCheck').addEventListener('submit', e => {
+      e.preventDefault();
+      const nombre = document.getElementById('plCheckNombre').value.trim();
+      if(!nombre) return;
+      plantilla.checklist.push({ nombre, cantidad: document.getElementById('plCheckCant').value.trim(),
+                                 grupo: document.getElementById('plCheckGrupo').value });
+      document.activeElement.blur();
+      persistirPlantilla();
+      document.getElementById('plCheckNombre').focus();
+    });
+  }
+
   function renderListaEventos(){
+    renderPlantilla();
     renderCostosConfig();
     // opción de copiar checklist y personal de un evento anterior
     const wrap = document.getElementById('evCopiarWrap');
@@ -2531,6 +2649,7 @@
         ${avisoSabores}
         <div class="footer-row" style="justify-content:flex-start;margin-top:14px">
           <button type="button" class="link-btn" id="btnAgregarSaborEv">+ Agregar sabor</button>
+          ${saboresPlantilla().length ? `<button type="button" class="link-btn" id="btnSaboresPlantilla">+ Sumar los sabores fijos${plantilla.pizzaDelMes ? ' y la pizza del mes' : ''}</button>` : ''}
         </div>
       </div>
 
@@ -2538,19 +2657,23 @@
         <div class="card-titulo">Checklist del evento</div>
         <div class="check-progreso"><b>${hechas}</b> de <b>${tareas.length}</b> cargados</div>
         <div id="evChecklist">
-          ${tareas.length === 0 ? '<div class="vacio">Agregá lo que hay que llevar a este evento.</div>' : tareas.map((t, i) => `
+          ${tareas.length === 0 ? '<div class="vacio">Agregá lo que hay que llevar a este evento.</div>' : checklistPorGrupo(tareas).map(({ g, filas }) =>
+            tituloGrupo(g) + filas.map(({ t, i }) => `
             <div class="item-check ${t.hecho ? 'hecho' : ''}">
               <input type="checkbox" data-chk="${i}" ${t.hecho ? 'checked' : ''} title="Cargado">
               <input type="text" data-item="${i}" value="${escapeHtml(t.nombre)}" placeholder="Ítem">
               <input type="text" class="item-cant" data-item-cant="${i}" value="${escapeHtml(t.cantidad)}" placeholder="cant.">
               <button type="button" class="item-del" data-chk-del="${i}">✕</button>
-            </div>`).join('')}
+            </div>`).join('')).join('')}
         </div>
-        <form id="formChecklist" class="item-nuevo">
+        <form id="formChecklist" class="item-nuevo" style="flex-wrap:wrap">
           <input type="text" id="nuevoItem" placeholder="Ítem (ej: Servilletas)">
           <input type="text" id="nuevoItemCant" placeholder="cant.">
+          <select id="nuevoItemGrupo">${opcionesGrupo('Comprar')}</select>
           <button type="submit" class="btn btn-fuego">+</button>
         </form>
+        ${plantilla.checklist.length ? `<div class="footer-row" style="justify-content:flex-start;margin-top:10px">
+          <button type="button" class="link-btn" id="btnChecklistPlantilla">+ Sumar la checklist fija</button></div>` : ''}
       </div>
 
       <datalist id="saboresConocidos">
@@ -2685,8 +2808,12 @@
       persistirGastos();
     });
 
-    // checklist de ítems: normalizamos al formato {nombre, cantidad, hecho} antes de tocarla
+    // checklist de ítems: normalizamos al formato {nombre, cantidad, hecho, grupo} antes de tocarla
     ev.checklist = itemsDe(ev);
+    ['btnChecklistPlantilla', 'btnSaboresPlantilla'].forEach(id => {
+      const b = document.getElementById(id);
+      if(b) b.addEventListener('click', () => { aplicarPlantilla(ev); persistirCatering(); });
+    });
 
     cont.querySelectorAll('[data-chk]').forEach(chk => {
       chk.addEventListener('change', () => {
@@ -2723,7 +2850,8 @@
       const inpCant = document.getElementById('nuevoItemCant');
       const nombre = inpNombre.value.trim();
       if(!nombre) return;
-      ev.checklist.push({ nombre, cantidad: inpCant.value.trim(), hecho: false });
+      ev.checklist.push({ nombre, cantidad: inpCant.value.trim(), hecho: false,
+                          grupo: document.getElementById('nuevoItemGrupo').value });
       // soltamos el foco para que se redibuje la lista, y lo devolvemos al campo
       // nuevo para cargar el siguiente ítem de corrido
       document.activeElement.blur();
@@ -3184,14 +3312,15 @@
       personas: personasEv,
       pizzas: pizzasEv,
       notas: '',
-      sabores: [],
+      // sin evento para copiar, arranca con los sabores y la checklist de la plantilla
+      sabores: base ? [] : saboresPlantilla().map(n => ({ nombre: n, cantidad: 0 })),
       // del evento elegido copiamos el personal (nombres y montos) y la checklist
       personal: base
         ? personalDe(base).map((pp, i) => ({ id: Date.now() + 1 + i, nombre: pp.nombre, monto: pp.monto }))
         : [],
       checklist: base
-        ? itemsDe(base).map(t => ({ nombre: t.nombre, cantidad: t.cantidad, hecho: false }))
-        : []
+        ? itemsDe(base).map(t => ({ nombre: t.nombre, cantidad: t.cantidad, hecho: false, grupo: t.grupo }))
+        : checklistPlantilla()
     };
 
     catering.push(nuevo);

@@ -61,6 +61,10 @@ para mostrar el efectivo en caja; los que tienen `moneda: 'USD'` mueven la caja 
 `{ costoPizza, pizzasPorPersona, merma (%), extras: { op1, op2, papas } ($ por persona), tanque ($ tanque lleno), kmTanque }`.
 Insumos = pizzas × costoPizza × (1 + merma) + pax × extra del menú; nafta = km × tanque / kmTanque.
 
+**`plantilla`**: lo que se lleva a cada evento, editable desde Catering: `{ sabores: [nombre], pizzaDelMes, checklist: [{ nombre, cantidad, grupo }] }`.
+Los eventos nuevos arrancan con esos sabores (más la pizza del mes) y esa checklist. Los ítems de la checklist de un evento
+llevan `grupo`: `Cajas`, `Bases`, `Quesos`, `Toppings`, `Finishers` (mise en place), `Equipamiento`, `Comprar` u `Otros`.
+
 **`titulares`** (no lo usa la app): `{ reglas: [texto], lista: [{ titular, es, tipo, cat?, nota? }] }`.
 Cómo clasificar los movimientos de los extractos (Mercado Pago, tarjetas): `tipo` es `empresa`, `personal`,
 `no es gasto` o `dudoso`, y `cat` la categoría de gasto. Leelo antes de procesar un extracto y sumá ahí
