@@ -30,6 +30,8 @@ con `desc` tipo `"Seña · Casamiento Pérez"`. El evento calcula lo cobrado sum
 `personas` es la cantidad de pax. `precio` es el total del evento.
 Para estimar la ganancia del evento: `menu` (`op1` | `op2` | `papas`), `km` (ida y vuelta), `peajes` y
 `pizzasSalieron` (las que salieron, se carga después del evento; si falta se estima por persona).
+Cada sabor lleva `cantidad` (las que se llevan) y `salieron` (las que salieron, después del evento); al cargar `salieron`
+la app actualiza `pizzasSalieron` con la suma.
 Campos viejos que la app ya no muestra (`ingredientes`, `cerrado`, `cerradoEl`): dejarlos como están.
 
 **`gastos`**: `{ fijos: [...], movs: [...], pagos: { 'YYYY-MM': [idFijo, ...] } }`

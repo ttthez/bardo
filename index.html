@@ -190,6 +190,11 @@
   .venta-fila{display:flex;gap:10px;margin-bottom:10px;flex-wrap:wrap}
   .venta-fila select{flex:2;min-width:150px}
   .venta-fila input{flex:0 0 90px}
+  .sabor-fila{display:grid;grid-template-columns:1fr 64px 64px 32px;gap:8px;align-items:center;margin-bottom:8px}
+  .sabor-fila input{min-width:0;width:100%;padding:9px 8px}
+  .sabor-fila input[type="number"]{text-align:center}
+  .sabor-cab{font-size:.7rem;color:var(--gris);text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px}
+  .sabor-cab span:nth-child(2), .sabor-cab span:nth-child(3){text-align:center}
 
   .pedido-campos{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px}
   .pedido{padding:16px 0;border-bottom:1px solid var(--linea)}
@@ -2637,15 +2642,26 @@
       </div>
 
       <div class="card">
-        <div class="card-titulo">Sabores a llevar</div>
+        <div class="card-titulo">Sabores</div>
         <div id="evSabores">
-          ${sabores.length === 0 ? '<div class="vacio">Todavía no cargaste sabores.</div>' : sabores.map((s, i) => `
-            <div class="venta-fila">
+          ${sabores.length === 0 ? '<div class="vacio">Todavía no cargaste sabores.</div>' : `
+            <div class="sabor-fila sabor-cab"><span>Sabor</span><span>Llevar</span><span>Salieron</span><span></span></div>` +
+            sabores.map((s, i) => `
+            <div class="sabor-fila">
               <input type="text" list="saboresConocidos" data-sabor="${i}" value="${escapeHtml(s.nombre || '')}" placeholder="Sabor">
-              <input type="number" min="0" data-sabor-cant="${i}" value="${s.cantidad || 0}">
+              <input type="number" min="0" data-sabor-cant="${i}" value="${s.cantidad || 0}" title="Pizzas a llevar">
+              <input type="number" min="0" data-sabor-sal="${i}" value="${s.salieron != null ? s.salieron : ''}" placeholder="—" title="Pizzas que salieron">
               <button type="button" class="item-del" data-sabor-del="${i}">✕</button>
             </div>`).join('')}
         </div>
+        ${sabores.length ? (() => {
+          const llevar = sabores.reduce((t, x) => t + (Number(x.cantidad) || 0), 0);
+          const cargadas = sabores.filter(x => x.salieron != null);
+          const salieron = cargadas.reduce((t, x) => t + (Number(x.salieron) || 0), 0);
+          return `<div class="card-nota" style="margin:10px 0 0">Llevar <b>${llevar}</b>` +
+            (cargadas.length ? ` · Salieron <b>${salieron}</b> · Sobraron <b>${Math.max(llevar - salieron, 0)}</b>` : ' · después del evento anotá cuántas salieron de cada sabor') +
+            `</div>`;
+        })() : ''}
         ${avisoSabores}
         <div class="footer-row" style="justify-content:flex-start;margin-top:14px">
           <button type="button" class="link-btn" id="btnAgregarSaborEv">+ Agregar sabor</button>
@@ -2718,6 +2734,16 @@
     cont.querySelectorAll('[data-sabor-cant]').forEach(inp => {
       inp.addEventListener('change', () => {
         ev.sabores[+inp.getAttribute('data-sabor-cant')].cantidad = parseInt(inp.value) || 0;
+        persistirCatering();
+      });
+    });
+    // las que salieron de cada sabor también dan el total de pizzas que salieron (para los costos)
+    cont.querySelectorAll('[data-sabor-sal]').forEach(inp => {
+      inp.addEventListener('change', () => {
+        const s = ev.sabores[+inp.getAttribute('data-sabor-sal')];
+        if(inp.value === '') delete s.salieron; else s.salieron = parseInt(inp.value) || 0;
+        const cargadas = ev.sabores.filter(x => x.salieron != null);
+        ev.pizzasSalieron = cargadas.length ? cargadas.reduce((t, x) => t + x.salieron, 0) : 0;
         persistirCatering();
       });
     });
