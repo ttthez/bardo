@@ -420,6 +420,21 @@
   .chip button{border:0;background:none;color:var(--gris);cursor:pointer;padding:0;font-size:.8rem}
   .pl-check summary{cursor:pointer;font-weight:700;font-size:.9rem}
   .pl-item{flex:1;font-size:.92rem}
+  /* calendario de catering */
+  .cal-cab{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+  .cal-titulo{font-weight:900;font-size:1.1rem}
+  .cal-grilla{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+  .cal-dow{text-align:center;font-size:.68rem;color:var(--gris);font-weight:700;padding-bottom:2px}
+  .cal-dia{aspect-ratio:1/1.05;border:1px solid var(--linea);border-radius:10px;background:var(--carbon);color:var(--crema);
+    display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:4px 0;font:inherit;cursor:pointer;min-width:0}
+  .cal-dia.pasado{opacity:.55}
+  .cal-dia.hoy{border-color:var(--fuego)}
+  .cal-dia.con-ev{background:rgba(226,58,22,.16);border-color:rgba(226,58,22,.45)}
+  .cal-dia.sel{outline:2px solid var(--fuego-claro);outline-offset:-1px}
+  .cal-num{font-size:.85rem;font-weight:700}
+  .cal-ev{font-size:.72rem;line-height:1.1;margin-top:2px}
+  .cal-pax{font-size:.6rem;color:var(--gris)}
+  .cal-dia-titulo{margin:14px 0 8px;font-weight:800;display:flex;justify-content:space-between;align-items:baseline;gap:8px}
   .serv-box{margin-top:16px;padding-top:14px;border-top:1px solid var(--linea)}
   .serv-box .item{gap:8px}
 
@@ -667,6 +682,23 @@
   <section class="tab-panel" id="panel-catering">
     <div id="cateringLista">
       <div class="card">
+        <div id="calWrap">
+          <div class="cal-cab">
+            <button type="button" class="mes-flecha" id="calPrev" title="Mes anterior">‹</button>
+            <div class="cal-titulo" id="calTitulo"></div>
+            <button type="button" class="mes-flecha" id="calNext" title="Mes siguiente">›</button>
+          </div>
+          <div class="cal-grilla" id="calGrilla"></div>
+          <div id="calDia"></div>
+        </div>
+        <div id="listaWrap" hidden>
+          <div class="card-titulo">Todos los eventos</div>
+          <div class="lista" id="listaEventos"></div>
+        </div>
+        <button type="button" class="btn-cerrar" id="btnVistaEventos" style="margin-top:14px">Todos los eventos</button>
+      </div>
+
+      <div class="card">
         <div class="card-titulo">Nuevo evento</div>
         <div class="pedido-campos">
           <input type="text" id="evNombre" placeholder="Nombre del evento (ej: Casamiento Pérez)">
@@ -680,11 +712,6 @@
         </div>
         <div id="evCopiarWrap"></div>
         <button type="button" class="btn btn-fuego" id="btnCrearEvento" style="width:100%">Crear evento</button>
-      </div>
-
-      <div class="card">
-        <div class="card-titulo">Eventos agendados</div>
-        <div class="lista" id="listaEventos"></div>
       </div>
 
       <div class="card">
@@ -2532,7 +2559,81 @@
     });
   }
 
+  // ---------- calendario de eventos ----------
+  let calMes = hoyISO().slice(0, 7);
+  let calDiaSel = hoyISO();
+  let vistaLista = false;
+
+  function renderCalendario(){
+    document.getElementById('calWrap').hidden = vistaLista;
+    document.getElementById('listaWrap').hidden = !vistaLista;
+    document.getElementById('btnVistaEventos').textContent = vistaLista ? '📅 Ver calendario' : 'Todos los eventos';
+    if(vistaLista) return;
+
+    const [y, m] = calMes.split('-').map(Number);
+    document.getElementById('calTitulo').textContent = `${MESES[m - 1]} ${y}`;
+    const hoy = hoyISO();
+    const porDia = {};
+    catering.filter(e => (e.fecha || '').startsWith(calMes)).forEach(e => (porDia[e.fecha] = porDia[e.fecha] || []).push(e));
+    // la semana arranca el lunes
+    const primero = (new Date(y, m - 1, 1).getDay() + 6) % 7;
+    const dias = new Date(y, m, 0).getDate();
+    let html = ['L','M','M','J','V','S','D'].map(d => `<div class="cal-dow">${d}</div>`).join('');
+    for(let i = 0; i < primero; i++) html += '<div></div>';
+    for(let d = 1; d <= dias; d++){
+      const f = `${calMes}-${String(d).padStart(2, '0')}`;
+      const evs = porDia[f] || [];
+      const pax = evs.reduce((t, e) => t + (Number(e.personas) || 0), 0);
+      html += `<button type="button" class="cal-dia ${f === hoy ? 'hoy' : ''} ${f === calDiaSel ? 'sel' : ''} ${evs.length ? 'con-ev' : ''} ${f < hoy ? 'pasado' : ''}" data-cal-dia="${f}">
+        <span class="cal-num">${d}</span>
+        ${evs.length ? `<span class="cal-ev">${evs.length > 1 ? evs.length + ' ev' : '🍕'}</span><span class="cal-pax">${pax ? pax + 'p' : ''}</span>` : ''}
+      </button>`;
+    }
+    const grilla = document.getElementById('calGrilla');
+    grilla.innerHTML = html;
+    grilla.querySelectorAll('[data-cal-dia]').forEach(b => b.addEventListener('click', () => {
+      calDiaSel = b.dataset.calDia;
+      renderCalendario();
+    }));
+
+    // eventos del día elegido
+    const delDia = (calDiaSel.startsWith(calMes) ? catering.filter(e => e.fecha === calDiaSel) : [])
+      .sort((a, b) => (a.hora || '99').localeCompare(b.hora || '99'));
+    const resumenMes = Object.values(porDia).flat();
+    const panel = document.getElementById('calDia');
+    panel.innerHTML = `
+      <div class="cal-dia-titulo">${calDiaSel.startsWith(calMes) ? formatoFecha(calDiaSel) : ''}
+        <span class="item-fecha">${resumenMes.length} ${resumenMes.length === 1 ? 'evento' : 'eventos'} en ${MESES[m - 1].toLowerCase()}</span></div>
+      ${delDia.length ? delDia.map(e => {
+        const r = resumenEvento(e);
+        return `<div class="evento" data-cal-ev="${e.id}">
+          <div class="evento-top">
+            <div class="evento-nombre">${escapeHtml(e.nombre)} ${badgeEvento(e)}</div>
+            <div class="pedido-cuando">${e.hora || ''}</div>
+          </div>
+          <div class="evento-meta"><b>${e.personas || 0}</b> personas${e.lugar ? ' · ' + escapeHtml(e.lugar) : ''}
+            ${r.precio ? ` · <b>${fmt(r.precio)}</b>` : ''}${r.falta > 0 && r.cobrado > 0 ? ` · falta <b>${fmt(r.falta)}</b>` : ''}</div>
+        </div>`;
+      }).join('') : `<div class="vacio">${calDiaSel.startsWith(calMes) ? 'Sin eventos este día.' : 'Tocá un día para ver sus eventos.'}</div>`}
+      ${calDiaSel.startsWith(calMes) ? `<button type="button" class="link-btn" id="btnEventoEnDia" style="margin-top:8px">+ Nuevo evento el ${formatoFecha(calDiaSel).slice(0, 5)}</button>` : ''}`;
+    panel.querySelectorAll('[data-cal-ev]').forEach(el => el.addEventListener('click', () => {
+      eventoAbierto = Number(el.dataset.calEv);
+      renderCatering();
+      window.scrollTo(0, 0);
+    }));
+    const btnNuevo = document.getElementById('btnEventoEnDia');
+    if(btnNuevo) btnNuevo.addEventListener('click', () => {
+      document.getElementById('evFecha').value = calDiaSel;
+      document.getElementById('evNombre').scrollIntoView({ behavior: 'smooth', block: 'center' });
+      document.getElementById('evNombre').focus();
+    });
+  }
+  document.getElementById('calPrev').addEventListener('click', () => { calMes = correrMes(calMes, -1); renderCalendario(); });
+  document.getElementById('calNext').addEventListener('click', () => { calMes = correrMes(calMes, 1); renderCalendario(); });
+  document.getElementById('btnVistaEventos').addEventListener('click', () => { vistaLista = !vistaLista; renderCalendario(); });
+
   function renderListaEventos(){
+    renderCalendario();
     renderPlantilla();
     renderCostosConfig();
     // opción de copiar checklist y personal de un evento anterior
