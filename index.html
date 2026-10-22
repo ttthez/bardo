@@ -432,7 +432,15 @@
   .cal-dia.con-ev{background:rgba(226,58,22,.16);border-color:rgba(226,58,22,.45)}
   .cal-dia.sel{outline:2px solid var(--fuego-claro);outline-offset:-1px}
   .cal-num{font-size:.85rem;font-weight:700}
-  .cal-ev{font-size:.72rem;line-height:1.1;margin-top:2px}
+  .cal-dots{display:flex;gap:3px;margin-top:4px}
+  .cal-dot{width:7px;height:7px;border-radius:50%;display:block}
+  .cal-dot.dia{background:#f2b84b}
+  .cal-dot.noche{background:#9b7cf2}
+  .cal-dot.sin{background:var(--gris)}
+  .cal-dia.doble{border-width:2px;border-color:var(--fuego)}
+  .cal-alerta{font-size:.55rem;margin-left:1px;vertical-align:top}
+  .cal-leyenda{display:flex;gap:14px;justify-content:center;margin-top:8px;font-size:.7rem;color:var(--gris)}
+  .cal-leyenda span{display:flex;align-items:center;gap:5px}
   .cal-pax{font-size:.6rem;color:var(--gris)}
   .cal-dia-titulo{margin:14px 0 8px;font-weight:800;display:flex;justify-content:space-between;align-items:baseline;gap:8px}
   .serv-box{margin-top:16px;padding-top:14px;border-top:1px solid var(--linea)}
@@ -689,6 +697,7 @@
             <button type="button" class="mes-flecha" id="calNext" title="Mes siguiente">›</button>
           </div>
           <div class="cal-grilla" id="calGrilla"></div>
+          <div class="cal-leyenda"><span><i class="cal-dot dia"></i> mediodía</span><span><i class="cal-dot noche"></i> noche</span><span>⚠️ mismo turno</span></div>
           <div id="calDia"></div>
         </div>
         <div id="listaWrap" hidden>
@@ -2564,6 +2573,15 @@
   let calDiaSel = hoyISO();
   let vistaLista = false;
 
+  // turno de un evento según la hora: mediodía/tarde (antes de las 18) o noche
+  function turnoEvento(e){ return !e.hora ? 'sin' : e.hora < '18:00' ? 'dia' : 'noche'; }
+  const ICONO_TURNO = { dia: '☀️', noche: '🌙', sin: '🕓' };
+  // dos eventos el mismo día y en el mismo turno necesitan dos equipos y dos hornos
+  function hayChoque(evs){
+    const turnos = evs.map(turnoEvento).filter(t => t !== 'sin');
+    return turnos.length !== new Set(turnos).size;
+  }
+
   function renderCalendario(){
     document.getElementById('calWrap').hidden = vistaLista;
     document.getElementById('listaWrap').hidden = !vistaLista;
@@ -2584,9 +2602,11 @@
       const f = `${calMes}-${String(d).padStart(2, '0')}`;
       const evs = porDia[f] || [];
       const pax = evs.reduce((t, e) => t + (Number(e.personas) || 0), 0);
-      html += `<button type="button" class="cal-dia ${f === hoy ? 'hoy' : ''} ${f === calDiaSel ? 'sel' : ''} ${evs.length ? 'con-ev' : ''} ${f < hoy ? 'pasado' : ''}" data-cal-dia="${f}">
-        <span class="cal-num">${d}</span>
-        ${evs.length ? `<span class="cal-ev">${evs.length > 1 ? evs.length + ' ev' : '🍕'}</span><span class="cal-pax">${pax ? pax + 'p' : ''}</span>` : ''}
+      const ordenados = evs.slice().sort((a, b) => (a.hora || '99').localeCompare(b.hora || '99'));
+      html += `<button type="button" class="cal-dia ${f === hoy ? 'hoy' : ''} ${f === calDiaSel ? 'sel' : ''} ${evs.length ? 'con-ev' : ''} ${evs.length > 1 ? 'doble' : ''} ${f < hoy ? 'pasado' : ''}" data-cal-dia="${f}">
+        <span class="cal-num">${d}${hayChoque(evs) ? '<span class="cal-alerta">⚠️</span>' : ''}</span>
+        ${evs.length ? `<span class="cal-dots">${ordenados.slice(0, 3).map(e => `<i class="cal-dot ${turnoEvento(e)}"></i>`).join('')}</span>
+          <span class="cal-pax">${pax ? pax + 'p' : ''}</span>` : ''}
       </button>`;
     }
     const grilla = document.getElementById('calGrilla');
@@ -2604,12 +2624,16 @@
     panel.innerHTML = `
       <div class="cal-dia-titulo">${calDiaSel.startsWith(calMes) ? formatoFecha(calDiaSel) : ''}
         <span class="item-fecha">${resumenMes.length} ${resumenMes.length === 1 ? 'evento' : 'eventos'} en ${MESES[m - 1].toLowerCase()}</span></div>
+      ${delDia.length > 1 ? `<div class="card-nota" style="margin:0 0 8px">${delDia.length} eventos ·
+        <b>${delDia.reduce((t, e) => t + (Number(e.personas) || 0), 0)}</b> personas ·
+        <b>${delDia.reduce((t, e) => t + personalDe(e).length, 0)}</b> de personal</div>` : ''}
+      ${hayChoque(delDia) ? `<div class="alerta-sabores" style="margin:0 0 8px">⚠️ Ojo: hay dos eventos en el mismo turno, van a necesitar dos equipos y dos hornos.</div>` : ''}
       ${delDia.length ? delDia.map(e => {
         const r = resumenEvento(e);
         return `<div class="evento" data-cal-ev="${e.id}">
           <div class="evento-top">
             <div class="evento-nombre">${escapeHtml(e.nombre)} ${badgeEvento(e)}</div>
-            <div class="pedido-cuando">${e.hora || ''}</div>
+            <div class="pedido-cuando">${ICONO_TURNO[turnoEvento(e)]} ${e.hora || 'sin hora'}</div>
           </div>
           <div class="evento-meta"><b>${e.personas || 0}</b> personas${e.lugar ? ' · ' + escapeHtml(e.lugar) : ''}
             ${r.precio ? ` · <b>${fmt(r.precio)}</b>` : ''}${r.falta > 0 && r.cobrado > 0 ? ` · falta <b>${fmt(r.falta)}</b>` : ''}</div>
