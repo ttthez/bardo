@@ -83,6 +83,18 @@ Cómo clasificar los movimientos de los extractos (Mercado Pago, tarjetas): `tip
 `no es gasto` o `dudoso`, y `cat` la categoría de gasto. Leelo antes de procesar un extracto y sumá ahí
 los titulares nuevos que el usuario aclare.
 
+## Convenciones de la interfaz
+
+- Cada campo lleva etiqueta visible (`<label class="campo"><span>Monto</span><input …></label>`) con un ejemplo en el
+  placeholder; los que se pueden dejar vacíos dicen `· opcional`.
+- Montos que se escriben a mano: `type="text" inputmode="decimal" class="inp-plata"` y se leen con `parsearMonto`
+  (entiende "15.000" y "1.450,50"); debajo se muestra cómo se entendió.
+- Errores: `errorEn(campo, 'qué falta y un ejemplo')` junto al campo, nunca `alert`.
+- Después de guardar: `hecho('qué pasó', foto())` muestra el aviso con "Deshacer". Las acciones reversibles no piden
+  confirmación; `confirm` queda para lo grave (borrar un evento, cerrar sesión con cambios sin subir).
+- Medio, cuenta y moneda se eligen con botones (`chipear` sobre los `<select class="sel-medio|sel-cuenta|sel-moneda">`).
+- Si un guardado falla, el nodo queda en `lasinergia_pendientes`: la sincronización no lo pisa y lo reintenta sola.
+
 ## Calendario de eventos
 
 Los eventos de catering también se anotan en Google Calendar ("La Sinergia | Eventos"), con cliente, PAX, menú,

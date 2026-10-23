@@ -508,7 +508,7 @@
   .home-kpis .val{font-weight:900;font-size:.95rem;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .home-ver{color:var(--fuego-claro);font-size:.8rem;font-weight:800;margin-top:14px}
 
-  .home-acciones{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:20px}
+  .home-acciones{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:20px}
   .home-accion{
     background:var(--negro-2);border:1px solid var(--linea);border-radius:18px;
     color:var(--crema);font-family:inherit;font-size:.72rem;font-weight:700;cursor:pointer;
@@ -578,14 +578,73 @@
   .fijo-item{cursor:pointer}
   .fijo-item.pagado .item-desc{color:var(--gris);text-decoration:line-through}
   .fijo-item .badge{margin-left:6px;font-size:.6rem;padding:2px 7px}
-  #formGasto input#gastoMonto{flex:1 1 120px}
   .sel-medio, .sel-cuenta, .sel-moneda, .inp-tc{flex:1 1 150px}
   .costos-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px}
   .costo-campo{display:flex;flex-direction:column;gap:4px;font-size:.75rem;color:var(--gris)}
   .costo-campo input{min-width:0;width:100%;flex:none;height:auto;padding:9px 11px;font-size:.95rem}
-  #formFijo select{flex:1 1 140px}
-  #formFijo input[type="number"]{flex:1 1 110px}
-  #formFijo input#fijoDia{flex:0 0 76px;min-width:0}
+
+  /* ---------- formularios: etiqueta visible arriba de cada campo ---------- */
+  .campo{display:flex;flex-direction:column;gap:5px;flex:1 1 140px;min-width:0}
+  .campo.full{flex-basis:100%}
+  .campo > span{font-size:.78rem;font-weight:700;color:var(--crema-tenue)}
+  .campo > span small{font-weight:500;color:var(--gris);font-size:.74rem}
+  .campo input, .campo select{flex:none;width:100%;min-width:0}
+  .campo .ayuda{font-size:.74rem;color:var(--gris)}
+  .campo .ayuda b{color:var(--crema)}
+  .form-campos{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+  .invalido{border-color:var(--fuego-claro) !important;background:rgba(226,58,22,.08)}
+  .campo-error{font-size:.78rem;font-weight:700;color:var(--fuego-claro)}
+  .botones{display:flex;gap:10px;flex-wrap:wrap;margin-top:4px}
+  .botones .btn{flex:1 1 150px}
+  .btn-sec{background:transparent;color:var(--crema);border:1.5px solid var(--linea)}
+  .btn-sec:hover{border-color:var(--crema-tenue)}
+  /* opciones de un toque (medio de pago, cuenta, moneda) */
+  .toggle.seg{margin:0}
+  .toggle.seg button{font-size:.82rem;padding:9px 12px}
+  .sel-oculto{display:none !important}
+  .atajo{display:inline-block;margin-top:2px;background:rgba(63,174,92,.12);border:1px solid rgba(63,174,92,.35);
+    color:var(--verde);border-radius:999px;padding:5px 11px;font:inherit;font-size:.78rem;font-weight:700;cursor:pointer}
+  .entregar-panel{margin-top:12px;padding:14px;border-radius:14px;background:var(--carbon);border:1px solid var(--linea)}
+  .ajustes > summary{list-style:none;cursor:pointer;font-weight:800;font-size:1.05rem;display:flex;justify-content:space-between;align-items:center}
+  .ajustes > summary::-webkit-details-marker{display:none}
+  .ajustes > summary::after{content:'›';color:var(--gris);font-size:1.3rem;transition:transform .15s}
+  .ajustes[open] > summary::after{transform:rotate(90deg)}
+  .ajustes > summary small{display:block;font-weight:500;font-size:.8rem;color:var(--gris)}
+
+  /* ---------- aviso flotante: qué pasó, con "Deshacer" ---------- */
+  .toast{
+    position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom, 0px));z-index:80;
+    transform:translate(-50%, 20px);opacity:0;pointer-events:none;
+    width:min(92vw, 520px);display:flex;align-items:center;gap:12px;
+    background:#2a211b;border:1px solid rgba(244,236,225,.18);border-radius:14px;
+    padding:12px 14px;font-size:.9rem;font-weight:600;box-shadow:0 12px 30px rgba(0,0,0,.45);
+    transition:opacity .18s ease, transform .18s ease;
+  }
+  .toast.ver{opacity:1;transform:translate(-50%, 0);pointer-events:auto}
+  .toast.error{border-color:rgba(255,90,44,.6);background:#3a1a12}
+  .toast span{flex:1}
+  .toast button{background:none;border:none;color:var(--fuego-claro);font:inherit;font-weight:800;cursor:pointer;padding:8px 6px;white-space:nowrap}
+  /* estado de guardado, siempre a la vista */
+  .sync-pill{
+    position:fixed;top:calc(10px + env(safe-area-inset-top, 0px));right:12px;z-index:70;
+    font-size:.72rem;font-weight:800;padding:5px 10px;border-radius:999px;
+    background:var(--carbon);border:1px solid var(--linea);color:var(--gris);
+    transition:opacity .2s ease;
+  }
+  .sync-pill.error{color:#fff;background:rgba(226,58,22,.9);border-color:transparent;cursor:pointer}
+  .sync-pill.oculto{opacity:0;pointer-events:none}
+
+  /* botones más fáciles de tocar y foco visible con teclado */
+  .item-del{min-width:40px;min-height:40px}
+  .link-btn{font-size:.85rem;padding:6px 2px}
+  .pedido-acciones .btn-mini{padding:10px 18px}
+  :focus-visible{outline:2px solid var(--fuego-claro);outline-offset:2px}
+  input:focus-visible, select:focus-visible{outline:none}
+  .tab-panel{animation:aparecer .16s ease}
+  @keyframes aparecer{from{opacity:.4;transform:translateY(4px)}to{opacity:1;transform:none}}
+  @media (prefers-reduced-motion: reduce){
+    *{animation:none !important;transition:none !important}
+  }
 </style>
 </head>
 <body>
@@ -635,6 +694,7 @@
     <div class="home-acciones">
       <button type="button" class="home-accion" data-accion="pedido"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1M9 10h6M9 14h6M9 18h3"/></svg></span>Pedido</button>
       <button type="button" class="home-accion" data-accion="venta"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 3 20h18z"/><path d="M7 13h10"/></svg></span>Venta</button>
+      <button type="button" class="home-accion" data-accion="ingreso"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v10M9.5 9.5c0-1.1 1.1-1.8 2.5-1.8s2.5.7 2.5 1.8-1.1 1.6-2.5 1.8-2.5.8-2.5 1.9 1.1 1.8 2.5 1.8 2.5-.7 2.5-1.8"/></svg></span>Ingreso</button>
       <button type="button" class="home-accion" data-accion="gasto"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18M7 15h3"/></svg></span>Gasto</button>
       <button type="button" class="home-accion" data-accion="evento"><span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 17h16M6 17a6 6 0 0 1 12 0M12 8v3M3 20h18"/><circle cx="12" cy="7" r="1"/></svg></span>Evento</button>
     </div>
@@ -658,39 +718,55 @@
   <!-- ============ PEDIDOS ============ -->
   <section class="tab-panel" id="panel-pedidos">
     <div class="card">
-      <div class="card-titulo">Pedidos a entregar</div>
+      <div class="card-titulo">Agendar pedido</div>
+      <div class="card-nota">Para pizzas que se entregan otro día. Al marcarlo entregado se descuenta del stock.</div>
       <div id="pedidoEditandoAviso"></div>
-      <div class="pedido-campos">
-        <input type="text" id="pedidoCliente" placeholder="Cliente (ej: Paula)">
-        <input type="date" id="pedidoFecha">
-        <input type="time" id="pedidoHora">
+      <div class="form-campos">
+        <label class="campo full"><span>Cliente</span>
+          <input type="text" id="pedidoCliente" list="clientesConocidos" autocomplete="off" placeholder="Ej: Paula"></label>
+        <label class="campo"><span>Día de entrega</span><input type="date" id="pedidoFecha"></label>
+        <label class="campo"><span>Hora <small>· opcional</small></span><input type="time" id="pedidoHora"></label>
+        <label class="campo full"><span>Dirección <small>· opcional (vacío si retira)</small></span>
+          <input type="text" id="pedidoDireccion" placeholder="Ej: Av. Cabildo 1234"></label>
+        <label class="campo full"><span>Notas <small>· opcional</small></span>
+          <input type="text" id="pedidoNotas" placeholder="Ej: tocar timbre 2B"></label>
       </div>
-      <input type="text" id="pedidoDireccion" class="input-full" placeholder="Dirección de entrega (ej: Av. Cabildo 1234)">
-      <input type="text" id="pedidoNotas" class="input-full" placeholder="Notas (opcional): tocar timbre 2B, sin picante…">
-      <div id="pedidoFilas"></div>
-      <div class="footer-row" style="justify-content:flex-start;margin:8px 0 18px">
-        <button type="button" class="link-btn" id="btnPedidoAgregarFila">+ Agregar otro sabor al pedido</button>
+      <div class="campo full"><span>Sabores y cantidad</span></div>
+      <div id="pedidoFilas" style="margin-top:6px"></div>
+      <div class="footer-row" style="justify-content:flex-start;margin:4px 0 8px">
+        <button type="button" class="link-btn" id="btnPedidoAgregarFila">+ Agregar otro sabor</button>
       </div>
+      <div class="card-nota" id="pedidoSugerido" style="margin:0 0 12px"></div>
       <button type="button" class="btn btn-fuego" id="btnAgendarPedido" style="width:100%">Agendar pedido</button>
-      <div class="lista" id="listaPedidos" style="margin-top:24px"></div>
     </div>
 
     <div class="card">
-      <div class="card-titulo">Venta manual</div>
-      <div class="card-nota">
-        Para una venta que no estaba agendada. Descuenta del stock al instante.
-      </div>
-      <div id="ventaFilas"></div>
-      <div class="footer-row" style="justify-content:flex-start;margin:8px 0 10px">
-        <button type="button" class="link-btn" id="btnAgregarFila">+ Agregar otro sabor a la venta</button>
-      </div>
-      <div class="card-nota" id="ventaSugerido" style="margin:0 0 8px"></div>
-      <div class="pedido-campos">
-        <input type="text" id="ventaCliente" placeholder="Cliente (opcional)">
-        <input type="number" id="ventaCobrado" min="0" step="any" inputmode="decimal" placeholder="Cobrado $ (vacío = sin cobrar)">
-      </div>
-      <button type="button" class="btn btn-fuego" id="btnRegistrarVenta" style="width:100%">Registrar venta y descontar stock</button>
+      <div class="card-titulo">Pedidos a entregar <span class="item-fecha" id="pedidosCuenta"></span></div>
+      <div class="lista" id="listaPedidos"></div>
     </div>
+
+    <div class="card" id="cardVenta">
+      <div class="card-titulo">Venta sin pedido</div>
+      <div class="card-nota">Para pizzas que se llevan en el momento. Descuenta del stock al instante.</div>
+      <div class="campo full"><span>Sabores y cantidad</span></div>
+      <div id="ventaFilas" style="margin-top:6px"></div>
+      <div class="footer-row" style="justify-content:flex-start;margin:4px 0 12px">
+        <button type="button" class="link-btn" id="btnAgregarFila">+ Agregar otro sabor</button>
+      </div>
+      <div class="form-campos">
+        <label class="campo full"><span>Cliente <small>· opcional</small></span>
+          <input type="text" id="ventaCliente" list="clientesConocidos" autocomplete="off" placeholder="Ej: Diego vecino"></label>
+        <label class="campo full"><span>Cuánto cobraste <small>· vacío si todavía no cobraste</small></span>
+          <input type="text" id="ventaCobrado" class="inp-plata" inputmode="decimal" autocomplete="off" placeholder="Ej: 14000">
+          <span class="ayuda" id="ventaSugerido"></span></label>
+        <div class="form-campos" id="ventaCobroDatos" style="width:100%;margin:0">
+          <div class="campo full"><span>Cómo te pagaron</span><select id="ventaMedio" class="sel-medio"></select></div>
+          <div class="campo full"><span>Entró a la cuenta de</span><select id="ventaCuenta" class="sel-cuenta"></select></div>
+        </div>
+      </div>
+      <button type="button" class="btn btn-fuego" id="btnRegistrarVenta" style="width:100%">Registrar venta</button>
+    </div>
+    <datalist id="clientesConocidos"></datalist>
   </section>
 
   <!-- ============ CATERING ============ -->
@@ -714,34 +790,35 @@
         <button type="button" class="btn-cerrar" id="btnVistaEventos" style="margin-top:14px">Todos los eventos</button>
       </div>
 
-      <div class="card">
+      <div class="card" id="cardNuevoEvento">
         <div class="card-titulo">Nuevo evento</div>
-        <div class="pedido-campos">
-          <input type="text" id="evNombre" placeholder="Nombre del evento (ej: Casamiento Pérez)">
-          <input type="date" id="evFecha">
-          <input type="time" id="evHora">
+        <div class="card-nota">Con menú y personas, el precio sale solo de la lista. Lo demás se completa después, adentro del evento.</div>
+        <div class="form-campos">
+          <label class="campo full"><span>Nombre del evento</span>
+            <input type="text" id="evNombre" autocomplete="off" placeholder="Ej: Casamiento Pérez 80 pax"></label>
+          <label class="campo"><span>Fecha</span><input type="date" id="evFecha"></label>
+          <label class="campo"><span>Hora <small>· opcional</small></span><input type="time" id="evHora"></label>
+          <label class="campo full"><span>Lugar <small>· opcional</small></span>
+            <input type="text" id="evLugar" placeholder="Ej: Ladislao Martínez 1165, Martínez"></label>
+          <label class="campo"><span>Personas</span><input type="number" id="evPersonas" min="1" inputmode="numeric" placeholder="Ej: 40"></label>
+          <label class="campo"><span>Menú</span><select id="evMenu"></select></label>
+          <label class="campo full"><span>Pizzas a llevar <small>· opcional (vacío = se calcula)</small></span>
+            <input type="number" id="evPizzas" min="1" inputmode="numeric" placeholder="Ej: 45"></label>
         </div>
-        <input type="text" id="evLugar" class="input-full" placeholder="Lugar / dirección">
-        <div class="pedido-campos">
-          <input type="number" id="evPersonas" min="1" placeholder="Personas">
-          <input type="number" id="evPizzas" min="1" placeholder="Pizzas a llevar">
-          <select id="evMenu"></select>
-        </div>
+        <div class="card-nota" id="evPrecioPrevio" style="margin:0 0 12px"></div>
         <div id="evCopiarWrap"></div>
         <button type="button" class="btn btn-fuego" id="btnCrearEvento" style="width:100%">Crear evento</button>
       </div>
 
-      <div class="card">
-        <div class="card-titulo">Lo que llevamos a cada evento</div>
+      <details class="card ajustes" id="ajustesCatering">
+        <summary><div>⚙️ Ajustes de catering<small>Lo que se lleva a cada evento, costos y lista de precios</small></div></summary>
+        <div class="card-titulo" style="margin-top:20px">Lo que llevamos a cada evento</div>
         <div class="card-nota" style="margin:-8px 0 12px">Los eventos nuevos arrancan con estos sabores y esta checklist.</div>
         <div id="plantillaConfig"></div>
-      </div>
-
-      <div class="card">
-        <div class="card-titulo">Costos para calcular la ganancia</div>
+        <div class="card-titulo" style="margin-top:26px">Costos para calcular la ganancia</div>
         <div class="card-nota" style="margin:-8px 0 12px">Valores aproximados: cuando suben los precios, cambiá el costo de la pizza o usá "subir insumos".</div>
         <div id="costosConfig"></div>
-      </div>
+      </details>
 
     </div>
 
@@ -800,17 +877,28 @@
       <div class="card-nota" id="facturadoCuentas" style="margin:12px 0 0"></div>
     </div>
 
-    <div class="card">
-      <form id="form">
-        <input type="date" id="fecha" required>
-        <input type="text" id="desc" placeholder="Descripción (ej: Catering Pérez)" required>
-        <input type="number" id="monto" class="inp-monto" placeholder="Monto $" min="0" step="any" inputmode="decimal" required>
-        <select id="monedaIng" class="sel-moneda" title="Moneda"></select>
-        <input type="number" id="tcIng" class="inp-tc" placeholder="Cotización $ por US$" min="0" step="any" inputmode="decimal" hidden>
-        <select id="medio" class="sel-medio" title="Medio de cobro"></select>
-        <select id="cuenta" class="sel-cuenta" title="Cuenta que recibe"></select>
-        <button type="submit" class="btn btn-fuego" id="btnAnotar">Anotar</button>
+    <div class="card" id="cardIngreso">
+      <div class="card-titulo">Anotar ingreso</div>
+      <div class="card-nota">Las señas y saldos de catering se cargan desde el evento, y las ventas de pizzas desde Pedidos: así quedan enlazados.</div>
+      <form id="form" novalidate>
+        <div class="form-campos" style="width:100%;margin:0">
+          <label class="campo"><span>Monto</span>
+            <input type="text" id="monto" class="inp-monto inp-plata" inputmode="decimal" autocomplete="off" placeholder="Ej: 150000"></label>
+          <label class="campo"><span>Fecha</span><input type="date" id="fecha"></label>
+          <label class="campo full"><span>Descripción</span>
+            <input type="text" id="desc" list="descIngresos" autocomplete="off" placeholder="Ej: Catering Pérez"></label>
+          <div class="campo full"><span>Moneda</span><select id="monedaIng" class="sel-moneda"></select></div>
+          <label class="campo full"><span>Cotización del dólar</span>
+            <input type="text" id="tcIng" class="inp-tc inp-plata" inputmode="decimal" autocomplete="off" placeholder="Ej: 1450 (pesos por 1 US$)" hidden></label>
+          <div class="campo full"><span>Cómo te pagaron</span><select id="medio" class="sel-medio"></select></div>
+          <div class="campo full"><span>Entró a la cuenta de</span><select id="cuenta" class="sel-cuenta"></select></div>
+        </div>
+        <div class="botones" style="width:100%">
+          <button type="submit" class="btn btn-fuego" id="btnAnotar">Anotar ingreso</button>
+          <button type="submit" class="btn btn-sec" data-otro="1">Anotar y cargar otro</button>
+        </div>
       </form>
+      <datalist id="descIngresos"></datalist>
     </div>
 
     <div class="card">
@@ -821,6 +909,30 @@
 
   <!-- ============ GASTOS ============ -->
   <section class="tab-panel" id="panel-gastos">
+    <div class="card" id="cardGasto">
+      <div class="card-titulo">Anotar gasto</div>
+      <form id="formGasto" novalidate>
+        <div class="form-campos" style="width:100%;margin:0">
+          <label class="campo"><span>Monto</span>
+            <input type="text" id="gastoMonto" class="inp-monto inp-plata" inputmode="decimal" autocomplete="off" placeholder="Ej: 25000"></label>
+          <label class="campo"><span>Fecha</span><input type="date" id="gastoFecha"></label>
+          <label class="campo full"><span>Qué fue <small>· opcional</small></span>
+            <input type="text" id="gastoDesc" list="descGastos" autocomplete="off" placeholder="Ej: Mozzarella 5kg, Festa, nafta">
+            <span class="ayuda" id="gastoDescAyuda">Si ya lo cargaste antes, elegilo de la lista y se completa la categoría.</span></label>
+          <div class="campo full"><span>Categoría</span><div class="toggle gasto-cats" id="gastoCats" style="margin:0"></div></div>
+          <div class="campo full"><span>Cómo se pagó</span><select id="gastoMedio" class="sel-medio"></select></div>
+          <div class="campo full"><span>Moneda</span><select id="gastoMoneda" class="sel-moneda"></select></div>
+          <label class="campo full"><span>Cotización del dólar</span>
+            <input type="text" id="gastoTc" class="inp-tc inp-plata" inputmode="decimal" autocomplete="off" placeholder="Ej: 1450 (pesos por 1 US$)"></label>
+        </div>
+        <div class="botones" style="width:100%">
+          <button type="submit" class="btn btn-fuego">Anotar gasto</button>
+          <button type="submit" class="btn btn-sec" data-otro="1">Anotar y cargar otro</button>
+        </div>
+      </form>
+      <datalist id="descGastos"></datalist>
+    </div>
+
     <div class="card">
       <div class="card-titulo">Gastos del negocio</div>
       <div class="totales">
@@ -843,32 +955,23 @@
     </div>
 
     <div class="card">
-      <div class="card-titulo">Anotar gasto</div>
-      <div class="toggle gasto-cats" id="gastoCats"></div>
-      <form id="formGasto">
-        <input type="date" id="gastoFecha" required>
-        <input type="number" id="gastoMonto" class="inp-monto" inputmode="decimal" min="0" step="any" placeholder="Monto $" required>
-        <select id="gastoMoneda" class="sel-moneda" title="Moneda"></select>
-        <input type="number" id="gastoTc" class="inp-tc" placeholder="Cotización $ por US$" min="0" step="any" inputmode="decimal" hidden>
-        <select id="gastoMedio" class="sel-medio" title="Medio de pago"></select>
-        <input type="text" id="gastoDesc" class="input-full" placeholder="Detalle (opcional): mozzarella 5kg, cajas…" style="margin-bottom:0">
-        <button type="submit" class="btn btn-fuego" style="width:100%">Anotar gasto</button>
-      </form>
-    </div>
-
-    <div class="card">
       <div class="card-titulo">Fijos mensuales <span class="item-fecha" id="fijosPagados"></span></div>
       <div class="card-nota">
         Se suman solos todos los meses. Tildá cuando lo pagás; tocá uno para cambiarle el monto.
       </div>
       <div class="lista" id="listaFijos"></div>
-      <form id="formFijo" class="item-nuevo" style="flex-wrap:wrap">
-        <input type="text" id="fijoNombre" placeholder="Nombre (ej: Monotributo)" class="input-full" style="margin-bottom:0">
-        <input type="number" id="fijoMonto" inputmode="decimal" min="0" step="any" placeholder="Monto $">
-        <input type="number" id="fijoDia" min="1" max="31" placeholder="Día">
-        <select id="fijoCat"></select>
-        <button type="submit" class="btn btn-fuego">+</button>
-      </form>
+      <details class="ajustes" style="margin-top:14px" id="fijoNuevoWrap">
+        <summary><div style="font-size:.92rem">+ Agregar gasto fijo</div></summary>
+        <form id="formFijo" novalidate style="margin-top:12px">
+          <div class="form-campos" style="width:100%;margin:0">
+            <label class="campo full"><span>Nombre</span><input type="text" id="fijoNombre" placeholder="Ej: Monotributo"></label>
+            <label class="campo"><span>Monto por mes</span><input type="text" id="fijoMonto" class="inp-plata" inputmode="decimal" autocomplete="off" placeholder="Ej: 45000"></label>
+            <label class="campo"><span>Vence el día <small>· opcional</small></span><input type="number" id="fijoDia" min="1" max="31" inputmode="numeric" placeholder="Ej: 10"></label>
+            <label class="campo full"><span>Categoría</span><select id="fijoCat"></select></label>
+          </div>
+          <button type="submit" class="btn btn-fuego" style="width:100%">Agregar fijo</button>
+        </form>
+      </details>
     </div>
 
     <div class="card">
@@ -907,6 +1010,7 @@
 
   <!-- ============ ESTADÍSTICAS Y VENTAS ============ -->
   <section class="tab-panel" id="panel-stats">
+    <button type="button" class="btn btn-sec" id="btnIrVenta" style="width:100%;margin-bottom:20px">+ Registrar una venta</button>
     <div class="card">
       <div class="card-titulo">Sabores más vendidos</div>
       <div class="toggle" id="toggleResumen">
@@ -949,6 +1053,9 @@
   <button type="button" data-tab="stats"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg></span>Ventas</button>
   <button type="button" data-tab="gastos"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18M7 15h3"/></svg></span>Gastos</button>
 </nav>
+
+<div class="toast" id="toast" role="status" aria-live="polite"><span id="toastTexto"></span><button type="button" id="toastAccion" hidden></button></div>
+<button type="button" class="sync-pill oculto" id="syncPill" aria-live="polite"></button>
 
 <script>
   const FIREBASE_BASE = 'https://objetivo-julio-default-rtdb.firebaseio.com/';
@@ -1069,6 +1176,159 @@
   let filasHistorial = [];
 
   const fmt = n => '$' + Math.round(n).toLocaleString('es-AR');
+
+  // ---------- montos escritos a mano ----------
+  // acepta "15000", "15.000", "$ 15.000" y "1.450,50"; un punto seguido de 3 cifras es separador de miles
+  function parsearMonto(txt){
+    let t = String(txt == null ? '' : txt).replace(/US\$|\$|\s/gi, '');
+    if(!t) return NaN;
+    if(t.includes(',')) t = t.replace(/\./g, '').replace(',', '.');
+    else if(/^\d{1,3}(\.\d{3})+$/.test(t)) t = t.replace(/\./g, '');
+    return /^\d+(\.\d+)?$/.test(t) ? parseFloat(t) : NaN;
+  }
+  // debajo de cada monto se ve cómo se entendió lo que escribiste ("= $15.000")
+  function mostrarPlataPrevia(inp){
+    const campo = inp.closest('.campo');
+    if(!campo) return;
+    let el = campo.querySelector('.plata-previa');
+    if(!el){ el = document.createElement('span'); el.className = 'ayuda plata-previa'; inp.after(el); }
+    const n = parsearMonto(inp.value);
+    const usd = inp.classList.contains('inp-monto') && monedaUltima() === 'USD';
+    el.textContent = !inp.value.trim() ? '' : isNaN(n) ? 'No se entiende el número: usá solo cifras (ej: 15000)'
+      : inp.classList.contains('inp-tc') ? `= ${fmt(n)} por cada dólar` : usd ? `= ${fmtUsd(n)}` : `= ${fmt(n)}`;
+    el.style.color = inp.value.trim() && isNaN(n) ? 'var(--fuego-claro)' : '';
+  }
+  document.addEventListener('input', e => {
+    if(e.target.matches && e.target.matches('.inp-plata')) mostrarPlataPrevia(e.target);
+  });
+
+  // ---------- errores al lado del campo ----------
+  function errorEn(el, msg){
+    limpiarError(el);
+    el.classList.add('invalido');
+    el.setAttribute('aria-invalid', 'true');
+    const m = document.createElement('div');
+    m.className = 'campo-error';
+    m.textContent = msg;
+    const campo = el.closest('.campo');
+    if(campo) campo.appendChild(m); else el.parentElement.after(m);
+    el.focus({ preventScroll: true });
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    return null;
+  }
+  function limpiarError(el){
+    el.classList.remove('invalido');
+    el.removeAttribute('aria-invalid');
+    const campo = el.closest('.campo');
+    const m = campo ? campo.querySelector('.campo-error')
+      : el.parentElement.nextElementSibling && el.parentElement.nextElementSibling.classList.contains('campo-error') ? el.parentElement.nextElementSibling : null;
+    if(m) m.remove();
+  }
+  // apenas corregís, el error desaparece
+  ['input', 'change'].forEach(tipo => document.addEventListener(tipo, e => {
+    if(e.target.classList && e.target.classList.contains('invalido')) limpiarError(e.target);
+  }));
+
+  // ---------- aviso flotante ----------
+  let avisoTimer = null;
+  function ocultarAviso(){ document.getElementById('toast').classList.remove('ver'); }
+  function avisar(texto, op = {}){
+    const t = document.getElementById('toast');
+    const b = document.getElementById('toastAccion');
+    document.getElementById('toastTexto').textContent = texto;
+    b.hidden = !op.accion;
+    b.textContent = op.accionTexto || 'Deshacer';
+    b.onclick = op.accion ? () => { ocultarAviso(); op.accion(); } : null;
+    t.classList.toggle('error', !!op.error);
+    t.classList.add('ver');
+    clearTimeout(avisoTimer);
+    avisoTimer = setTimeout(ocultarAviso, op.duracion || (op.accion ? 7000 : 3500));
+  }
+
+  // ---------- deshacer ----------
+  // foto de los datos antes de un cambio; "Deshacer" vuelve a esa foto y guarda solo lo que cambió
+  function foto(){ return JSON.stringify({ items, gastos, pizzas, pedidos, catering }); }
+  function restaurar(f){
+    const antes = JSON.parse(f), ahora = JSON.parse(foto());
+    const nodos = {
+      items:    [x => items = x,    () => persistirIngresos()],
+      gastos:   [x => gastos = x,   () => persistirGastos()],
+      pizzas:   [x => pizzas = x,   () => persistirPizzas()],
+      pedidos:  [x => pedidos = x,  () => persistirPedidos()],
+      catering: [x => catering = x, () => persistirCatering()]
+    };
+    Object.entries(nodos).forEach(([k, [poner, guardar]]) => {
+      if(JSON.stringify(antes[k]) !== JSON.stringify(ahora[k])){ poner(antes[k]); guardar(); }
+    });
+  }
+  function hecho(texto, f){
+    avisar(texto, f ? { accion: () => { restaurar(f); avisar('Listo, lo deshice.'); } } : {});
+  }
+
+  // ---------- opciones de un toque ----------
+  // los <select> de medio, cuenta y moneda se muestran como botones; el select sigue guardando el valor
+  function chipear(sel){
+    if(!sel || sel.dataset.chips) return;
+    sel.dataset.chips = '1';
+    sel.classList.add('sel-oculto');
+    const cont = document.createElement('div');
+    cont.className = 'toggle seg';
+    cont.setAttribute('role', 'radiogroup');
+    sel.after(cont);
+    cont.addEventListener('click', e => {
+      const b = e.target.closest('button[data-val]');
+      if(!b) return;
+      sel.value = b.dataset.val;
+      sel.dispatchEvent(new Event('change', { bubbles: true }));
+      pintarChips(sel);
+    });
+    pintarChips(sel);
+  }
+  function pintarChips(sel){
+    const cont = sel.nextElementSibling;
+    if(!cont || !cont.classList.contains('seg')) return;
+    cont.innerHTML = [...sel.options].map(o => {
+      const on = o.value === sel.value;
+      return `<button type="button" role="radio" aria-checked="${on}" data-val="${escapeHtml(o.value)}" class="${on ? 'activo' : ''}">${escapeHtml(o.textContent)}</button>`;
+    }).join('');
+  }
+  function refrescarChips(){
+    document.querySelectorAll('.sel-medio, .sel-cuenta, .sel-moneda').forEach(sel => { chipear(sel); pintarChips(sel); });
+  }
+
+  // ---------- borradores ----------
+  // lo que estás escribiendo en los formularios se guarda en el celular hasta que lo anotás
+  // (si se cierra la app o cambiás de pestaña, sigue ahí; vale solo por el día)
+  const CACHE_KEY_BORRADOR = 'lasinergia_borrador';
+  const CAMPOS_BORRADOR = ['gastoMonto', 'gastoDesc', 'gastoFecha', 'monto', 'desc', 'fecha',
+    'pedidoCliente', 'pedidoFecha', 'pedidoHora', 'pedidoDireccion', 'pedidoNotas', 'ventaCliente', 'ventaCobrado',
+    'evNombre', 'evFecha', 'evHora', 'evLugar', 'evPersonas', 'evPizzas', 'evMenu'];
+  function guardarBorrador(){
+    const b = { dia: hoyISO(), catGasto, ventaDraft };
+    CAMPOS_BORRADOR.forEach(id => {
+      // un pedido en edición no se guarda como borrador: al volver se cargaría como pedido nuevo
+      if(editandoPedidoId !== null && id.startsWith('pedido')) return;
+      const el = document.getElementById(id);
+      if(el && el.value) b[id] = el.value;
+    });
+    if(editandoPedidoId === null) b.pedidoDraft = pedidoDraft;
+    guardarCache(CACHE_KEY_BORRADOR, b);
+  }
+  function restaurarBorrador(){
+    const b = leerCache(CACHE_KEY_BORRADOR, null);
+    if(!b || b.dia !== hoyISO()) return;
+    CAMPOS_BORRADOR.forEach(id => {
+      const el = document.getElementById(id);
+      if(el && b[id] != null) el.value = b[id];
+    });
+    if(b.catGasto) catGasto = b.catGasto;
+    if(Array.isArray(b.pedidoDraft) && b.pedidoDraft.length) pedidoDraft = b.pedidoDraft;
+    if(Array.isArray(b.ventaDraft) && b.ventaDraft.length) ventaDraft = b.ventaDraft;
+    document.querySelectorAll('.inp-plata').forEach(mostrarPlataPrevia);
+  }
+  ['input', 'change'].forEach(tipo => document.addEventListener(tipo, e => {
+    if(CAMPOS_BORRADOR.includes(e.target.id) || e.target.closest('#pedidoFilas, #ventaFilas')) guardarBorrador();
+  }));
 
   // ---------- fechas y meses ----------
 
@@ -1204,12 +1464,53 @@
 
   async function guardarJSON(url, data){
     escrituras++;
+    actualizarSync();
     try{
       const res = await fetch(await conAuth(url), { method: 'PUT', body: JSON.stringify(data) });
       if(res.status === 401){ cerrarSesion(); throw new Error('sin permiso'); }
       if(!res.ok) throw new Error('status ' + res.status);
     }finally{
       escrituras--;
+      actualizarSync();
+    }
+  }
+
+  // nodos que se cambiaron en este celular y todavía no llegaron a la nube (por su clave de caché).
+  // Mientras estén pendientes, la sincronización no los pisa con lo del servidor y se reintenta subirlos.
+  const CACHE_KEY_PENDIENTES = 'lasinergia_pendientes';
+  const pendientes = new Set(leerCache(CACHE_KEY_PENDIENTES, []));
+  const URL_DE = {};
+  function marcarPendiente(key, si){
+    if(si) pendientes.add(key); else pendientes.delete(key);
+    guardarCache(CACHE_KEY_PENDIENTES, [...pendientes]);
+  }
+  async function reintentarPendientes(){
+    for(const key of [...pendientes]){
+      const data = leerCache(key, null);
+      if(data == null || !URL_DE[key]){ marcarPendiente(key, false); continue; }
+      try{ await guardarJSON(URL_DE[key], data); marcarPendiente(key, false); }catch(e){}
+    }
+    actualizarSync();
+    if(!pendientes.size) setEstado('Sincronizado ✓', true);
+    return pendientes.size === 0;
+  }
+
+  // cartelito arriba a la derecha: guardando, guardado o sin guardar
+  let syncTimer = null;
+  function actualizarSync(){
+    const pill = document.getElementById('syncPill');
+    if(!pill) return;
+    clearTimeout(syncTimer);
+    if(pendientes.size && escrituras === 0){
+      pill.className = 'sync-pill error';
+      pill.textContent = '⚠ Sin guardar en la nube · Reintentar';
+    }else if(escrituras > 0){
+      pill.className = 'sync-pill';
+      pill.textContent = 'Guardando…';
+    }else if(!pill.classList.contains('oculto')){
+      pill.className = 'sync-pill';
+      pill.textContent = 'Guardado ✓';
+      syncTimer = setTimeout(() => pill.classList.add('oculto'), 1800);
     }
   }
 
@@ -1222,13 +1523,18 @@
   async function refrescarTodo(mostrarCarga){
     if(!sesion || escrituras > 0) return;
 
+    // primero subimos lo que quedó sin guardar (ej: se cortó internet)
+    if(pendientes.size) await reintentarPendientes();
+
     const rev = revLocal;
     if(mostrarCarga) setEstado('Actualizando…', true);
 
+    // lo que sigue pendiente se lee de la copia del celular, no del servidor
+    const traer = (url, key) => pendientes.has(key) ? Promise.reject(new Error('pendiente')) : fetchJSON(url);
     const [rIng, rPiz, rPed, rMet, rCat, rPre, rGas, rCaja, rCos, rPla] = await Promise.allSettled([
-      fetchJSON(INGRESOS_URL), fetchJSON(PIZZAS_URL), fetchJSON(PEDIDOS_URL),
-      fetchJSON(METAS_URL), fetchJSON(CATERING_URL), fetchJSON(PRECIOS_URL),
-      fetchJSON(GASTOS_URL), fetchJSON(CAJA_URL), fetchJSON(COSTOS_URL), fetchJSON(PLANTILLA_URL)
+      traer(INGRESOS_URL, CACHE_KEY_INGRESOS), traer(PIZZAS_URL, CACHE_KEY_PIZZAS), traer(PEDIDOS_URL, CACHE_KEY_PEDIDOS),
+      traer(METAS_URL, CACHE_KEY_METAS), traer(CATERING_URL, CACHE_KEY_CATERING), traer(PRECIOS_URL, CACHE_KEY_PRECIOS),
+      traer(GASTOS_URL, CACHE_KEY_GASTOS), traer(CAJA_URL, CACHE_KEY_CAJA), traer(COSTOS_URL, CACHE_KEY_COSTOS), traer(PLANTILLA_URL, CACHE_KEY_PLANTILLA)
     ]);
 
     // si mientras traíamos datos tocaste algo acá, descartamos lo del servidor
@@ -1291,20 +1597,31 @@
     guardarCache(CACHE_KEY_METAS, metas);
     guardarCache(CACHE_KEY_CATERING, catering);
 
-    setEstado(ok ? 'Sincronizado ✓' : 'Sin conexión — mostrando última copia guardada', ok);
+    setEstado(ok ? 'Sincronizado ✓' : pendientes.size ? 'Hay cambios sin guardar en la nube — se reintenta solo'
+      : 'Sin conexión — mostrando última copia guardada', ok);
     renderTodo();
   }
 
   function hacerPersistidor(url, cacheKey, getData){
+    URL_DE[cacheKey] = url;
     return async function(){
       revLocal++;
       guardarCache(cacheKey, getData());
+      // queda pendiente hasta que el servidor confirme (si se cierra la app a mitad, se reintenta)
+      marcarPendiente(cacheKey, true);
       renderTodo();
       try{
         await guardarJSON(url, getData());
+        marcarPendiente(cacheKey, false);
         setEstado('Sincronizado ✓', true);
+        return true;
       }catch(e){
-        setEstado('No se pudo sincronizar — vas a reintentar al actualizar', false);
+        setEstado('Hay cambios sin guardar en la nube — se reintenta solo', false);
+        avisar('No se pudo guardar en la nube. Quedó en este celular y se reintenta solo.',
+               { error: true, accion: reintentarPendientes, accionTexto: 'Reintentar', duracion: 9000 });
+        return false;
+      }finally{
+        actualizarSync();
       }
     };
   }
@@ -1392,6 +1709,7 @@
     const tabMarcado = tab === 'objetivo' ? 'inicio' : tab;
     document.querySelectorAll('#tabbar button').forEach(b => {
       b.classList.toggle('activo', b.dataset.tab === tabMarcado);
+      if(b.dataset.tab === tabMarcado) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current');
     });
     document.getElementById('cabeceraMes').hidden = !TABS_CON_MES.includes(tab);
     guardarCache(CACHE_KEY_TAB, tab);
@@ -1428,6 +1746,44 @@
     renderGastos();
     renderBadgePedidos();
     renderBadgeCatering();
+    renderSugerencias();
+    mostrarCuentas();
+    refrescarChips();
+  }
+
+  // ---------- autocompletado con lo ya cargado ----------
+  // lo más reciente primero, sin repetir (sin importar mayúsculas)
+  function distintosRecientes(lista, clave, max){
+    const vistos = new Map();
+    lista.slice().sort((a, b) => (b.id || 0) - (a.id || 0)).forEach(x => {
+      const v = String(clave(x) || '').trim();
+      if(v && !vistos.has(v.toLowerCase())) vistos.set(v.toLowerCase(), { valor: v, x });
+    });
+    return [...vistos.values()].slice(0, max);
+  }
+  // el último gasto/ingreso con esa descripción, para completar categoría y medio
+  function ultimoGastoCon(desc){
+    const d = String(desc || '').trim().toLowerCase();
+    return d ? gastos.movs.filter(g => !g.personalId && String(g.desc || '').trim().toLowerCase() === d)
+      .sort((a, b) => b.id - a.id)[0] || null : null;
+  }
+  function ultimoIngresoCon(desc){
+    const d = String(desc || '').trim().toLowerCase();
+    return d ? items.filter(i => i.eventoId == null && String(i.desc || '').trim().toLowerCase() === d)
+      .sort((a, b) => b.id - a.id)[0] || null : null;
+  }
+  let firmaSugerencias = '';
+  function renderSugerencias(){
+    const firma = [items.length, gastos.movs.length, pedidos.length, pizzas.ventas.length].join('|');
+    if(firma === firmaSugerencias) return;
+    firmaSugerencias = firma;
+    const opciones = l => l.map(o => `<option value="${escapeHtml(o.valor)}">`).join('');
+    document.getElementById('descGastos').innerHTML =
+      opciones(distintosRecientes(gastos.movs.filter(g => !g.personalId), g => g.desc, 150));
+    document.getElementById('descIngresos').innerHTML =
+      opciones(distintosRecientes(items.filter(i => i.eventoId == null && i.ventaId == null), i => i.desc, 100));
+    document.getElementById('clientesConocidos').innerHTML =
+      opciones(distintosRecientes(pedidos.concat(pizzas.ventas), x => x.cliente, 150));
   }
 
   function renderCabecera(){
@@ -1512,15 +1868,18 @@
           <div class="item-fecha">${formatoFecha(i.fecha)}${medioTexto(i.medio, i.cuenta)}</div>
         </div>
         <div class="item-monto">${montoTexto(i)}</div>
-        <button class="item-del" data-id="${i.id}" title="Eliminar">✕</button>
+        <button class="item-del" data-id="${i.id}" title="Borrar" aria-label="Borrar ingreso">✕</button>
       </div>
     `).join('');
 
     lista.querySelectorAll('.item-del').forEach(btn => {
       btn.addEventListener('click', () => {
         const id = btn.getAttribute('data-id');
-        items = items.filter(i => String(i.id) !== id);
+        const i = items.find(x => String(x.id) === id);
+        const f = foto();
+        items = items.filter(x => String(x.id) !== id);
         persistirIngresos();
+        hecho(`Borraste "${i ? i.desc : 'el ingreso'}".`, f);
       });
     });
   }
@@ -1637,6 +1996,7 @@
     guardarCache(CACHE_KEY_MEDIO, id);
     document.querySelectorAll('.sel-medio').forEach(sel => sel.value = id);
     mostrarCuentas();
+    refrescarChips();
     return id;
   }
   // el efectivo no entra a ninguna cuenta
@@ -1648,10 +2008,11 @@
   function elegirCuenta(id){
     guardarCache(CACHE_KEY_CUENTA, id);
     document.querySelectorAll('.sel-cuenta').forEach(sel => sel.value = id);
+    refrescarChips();
     return id;
   }
   function opcionesCuenta(sel){
-    return CUENTAS.map(c => `<option value="${c.id}" ${c.id === sel ? 'selected' : ''}>👤 Cuenta de ${c.nombre}</option>`).join('');
+    return CUENTAS.map(c => `<option value="${c.id}" ${c.id === sel ? 'selected' : ''}>👤 ${c.nombre}</option>`).join('');
   }
   function monedaUltima(){ return leerCache(CACHE_KEY_MONEDA, 'ARS') === 'USD' ? 'USD' : 'ARS'; }
   function tcUltimo(){ const t = Number(leerCache(CACHE_KEY_TC, 0)); return t > 0 ? t : ''; }
@@ -1659,6 +2020,7 @@
     guardarCache(CACHE_KEY_MONEDA, m);
     document.querySelectorAll('.sel-moneda').forEach(sel => sel.value = m);
     mostrarMonedas();
+    refrescarChips();
     return m;
   }
   function opcionesMoneda(sel){
@@ -1668,16 +2030,29 @@
   // con dólares aparece la cotización y el monto se pide en US$
   function mostrarMonedas(){
     const usd = monedaUltima() === 'USD';
-    document.querySelectorAll('.inp-tc').forEach(inp => { inp.hidden = !usd; if(usd && !inp.value) inp.value = tcUltimo(); });
-    document.querySelectorAll('.inp-monto').forEach(inp => inp.placeholder = usd ? 'Monto US$' : 'Monto $');
+    document.querySelectorAll('.inp-tc').forEach(inp => {
+      inp.hidden = false;
+      (inp.closest('.campo') || inp).hidden = !usd;
+      if(usd && !inp.value) inp.value = tcUltimo();
+    });
+    document.querySelectorAll('.inp-monto').forEach(inp => {
+      const et = inp.closest('.campo') && inp.closest('.campo').querySelector(':scope > span');
+      if(et) et.textContent = usd ? 'Monto en dólares (US$)' : 'Monto';
+      else inp.placeholder = usd ? 'Monto US$' : 'Monto $';
+      mostrarPlataPrevia(inp);
+    });
   }
-  // lee monto, moneda y cotización de un formulario; en dólares guarda usd y tc, y monto en pesos
+  // lee monto, moneda y cotización de un formulario; en dólares guarda usd y tc, y monto en pesos.
+  // Si falta algo, lo marca en el campo y devuelve null.
   function leerMonto(idMonto, idMoneda, idTc){
-    const valor = parseFloat(document.getElementById(idMonto).value);
-    if(!valor || valor <= 0) return null;
+    const el = document.getElementById(idMonto);
+    const valor = parsearMonto(el.value);
+    if(!(valor > 0)) return errorEn(el, el.value.trim()
+      ? 'No se entiende el número: usá solo cifras, ej: 15000' : 'Falta el monto, ej: 15000');
     if(elegirMoneda(document.getElementById(idMoneda).value) !== 'USD') return { monto: valor };
-    const tc = parseFloat(document.getElementById(idTc).value);
-    if(!tc || tc <= 0){ alert('Poné la cotización del dólar (cuántos pesos vale 1 US$).'); return null; }
+    const elTc = document.getElementById(idTc);
+    const tc = parsearMonto(elTc.value);
+    if(!(tc > 0)) return errorEn(elTc, 'Falta la cotización: cuántos pesos vale 1 dólar, ej: 1450');
     guardarCache(CACHE_KEY_TC, tc);
     return { monto: Math.round(valor * tc), moneda: 'USD', usd: valor, tc };
   }
@@ -1700,9 +2075,10 @@
       ? `${fmtUsd(x.usd)} <span class="item-fecha">${fmt(x.monto)}</span>` : fmt(x.monto);
   }
 
+  // el efectivo no entra a ninguna cuenta: ahí no se pregunta
   function mostrarCuentas(){
     const ef = medioUltimo() === 'efectivo';
-    document.querySelectorAll('.sel-cuenta').forEach(sel => sel.hidden = ef);
+    document.querySelectorAll('.sel-cuenta').forEach(sel => { (sel.closest('.campo') || sel).hidden = ef; });
   }
   function opcionesMedio(sel){
     return MEDIOS.map(m => `<option value="${m.id}" ${m.id === sel ? 'selected' : ''}>${m.emoji} ${m.nombre}</option>`).join('');
@@ -1779,10 +2155,12 @@
       (entroEf || salioEf
         ? `<br>Efectivo del mes: entró <b>${fmt(entroEf)}</b> · salió <b>${fmt(salioEf)}</b>`
         : '');
-    for(const id of ['gastoMedio', 'medio']){
+    for(const id of ['gastoMedio', 'medio', 'ventaMedio']){
       const sel = document.getElementById(id);
       if(!sel.options.length) sel.innerHTML = opcionesMedio(medioUltimo());
     }
+    const selVc = document.getElementById('ventaCuenta');
+    if(!selVc.options.length) selVc.innerHTML = opcionesCuenta(cuentaUltima());
     for(const id of ['gastoMoneda', 'monedaIng']){
       const sel = document.getElementById(id);
       if(!sel.options.length) sel.innerHTML = opcionesMoneda(monedaUltima());
@@ -1840,7 +2218,7 @@
           <div class="item-fecha">${formatoFecha(g.fecha)}${g.desc ? ' · ' + c.nombre : ''}${medioTexto(g.medio)}</div>
         </div>
         <div class="item-monto gasto">${montoTexto(g)}</div>
-        <button class="item-del" data-borrar="${g.id}" title="Eliminar">✕</button>
+        <button class="item-del" data-borrar="${g.id}" title="Borrar" aria-label="Borrar gasto">✕</button>
       </div>`;
     }).join('') : `<div class="vacio">No hay gastos anotados en ${nombreMes(mesSel)}.</div>`;
   }
@@ -1921,19 +2299,24 @@
 
     cont.innerHTML = pedidoDraft.map((fila, idx) => `
       <div class="venta-fila">
-        <select class="pedido-select" data-idx="${idx}">
+        <select class="pedido-select" data-idx="${idx}" aria-label="Sabor">
           ${nombres.map(n => `<option value="${escapeHtml(n)}" ${n === fila.sabor ? 'selected' : ''}>${escapeHtml(n)}</option>`).join('')}
         </select>
-        <input type="number" class="pedido-cantidad" data-idx="${idx}" min="1" value="${fila.cantidad}">
-        ${pedidoDraft.length > 1 ? `<button type="button" class="item-del pedido-quitar" data-idx="${idx}">✕</button>` : ''}
+        <input type="number" class="pedido-cantidad" data-idx="${idx}" min="1" inputmode="numeric" value="${fila.cantidad}" aria-label="Cantidad">
+        ${pedidoDraft.length > 1 ? `<button type="button" class="item-del pedido-quitar" data-idx="${idx}" aria-label="Quitar sabor">✕</button>` : ''}
       </div>
     `).join('');
 
+    const sugerido = () => {
+      const t = textoPrecioCongeladas(pedidoDraft.map(f => ({ nombre: f.sabor, cantidad: f.cantidad })));
+      document.getElementById('pedidoSugerido').innerHTML = t ? `💲 Precio de lista: <b>${t}</b>` : '';
+    };
+    sugerido();
     cont.querySelectorAll('.pedido-select').forEach(sel => {
-      sel.addEventListener('change', () => { pedidoDraft[+sel.dataset.idx].sabor = sel.value; });
+      sel.addEventListener('change', () => { pedidoDraft[+sel.dataset.idx].sabor = sel.value; sugerido(); });
     });
     cont.querySelectorAll('.pedido-cantidad').forEach(inp => {
-      inp.addEventListener('input', () => { pedidoDraft[+inp.dataset.idx].cantidad = parseInt(inp.value) || 1; });
+      inp.addEventListener('input', () => { pedidoDraft[+inp.dataset.idx].cantidad = parseInt(inp.value) || 1; sugerido(); });
     });
     cont.querySelectorAll('.pedido-quitar').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -1943,14 +2326,18 @@
     });
   }
 
+  let entregandoId = null;   // pedido que se está marcando como entregado (muestra cuánto se cobró)
+
   function renderPedidosLista(){
     const cont = document.getElementById('listaPedidos');
+    if(escribiendoEn(cont)) return;
     const hoy = hoyISO();
     const ordenados = pedidos.slice().sort((a,b) =>
       (a.fecha + (a.hora || '99:99')).localeCompare(b.fecha + (b.hora || '99:99')));
+    document.getElementById('pedidosCuenta').textContent = ordenados.length ? `· ${ordenados.length}` : '';
 
     if(ordenados.length === 0){
-      cont.innerHTML = '<div class="vacio">No hay pedidos agendados.</div>';
+      cont.innerHTML = '<div class="vacio">No hay pedidos para entregar.</div>';
       return;
     }
 
@@ -1965,6 +2352,27 @@
         ? `<a class="pedido-mapa" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(p.direccion)}" target="_blank" rel="noopener">📍 ${escapeHtml(p.direccion)}</a>`
         : '';
       const notas = p.notas ? `<div class="pedido-notas">${escapeHtml(p.notas)}</div>` : '';
+      const sugerido = precioCongeladas(p.items).total;
+      const panel = entregandoId === p.id ? `
+          <div class="entregar-panel">
+            <div class="form-campos">
+              <label class="campo full"><span>Cuánto cobraste <small>· vacío si todavía no cobraste</small></span>
+                <input type="text" id="entCobrado" class="inp-plata" inputmode="decimal" autocomplete="off" value="${sugerido || ''}" placeholder="Ej: 52000">
+                ${sugerido ? `<span class="ayuda">Precio de lista: <b>${fmt(sugerido)}</b></span>` : ''}</label>
+              <div class="campo full"><span>Cómo te pagaron</span><select id="entMedio" class="sel-medio">${opcionesMedio(medioUltimo())}</select></div>
+              <div class="campo full"><span>Entró a la cuenta de</span><select id="entCuenta" class="sel-cuenta">${opcionesCuenta(cuentaUltima())}</select></div>
+            </div>
+            <div class="botones">
+              <button type="button" class="btn btn-fuego" data-confirmar-entrega="${p.id}">Confirmar entrega</button>
+              <button type="button" class="btn btn-sec" data-volver-entrega>Volver</button>
+            </div>
+            <div class="card-nota" style="margin:10px 0 0">Se descuentan ${totalPizzas} pizzas del stock y el cobro se suma a los ingresos.</div>
+          </div>` : `
+          <div class="pedido-acciones">
+            <button type="button" class="btn-mini" data-entregar="${p.id}">Entregado ✓</button>
+            <button type="button" class="link-btn" data-editar-pedido="${p.id}">Editar</button>
+            <button type="button" class="link-btn" data-borrar-pedido="${p.id}">Cancelar pedido</button>
+          </div>`;
 
       return `
         <div class="pedido">
@@ -1976,16 +2384,27 @@
           ${textoPrecioCongeladas(p.items) ? `<div class="pedido-items">💲 Precio de lista: <b>${textoPrecioCongeladas(p.items)}</b></div>` : ''}
           ${mapa}
           ${notas}
-          <div class="pedido-acciones">
-            <button type="button" class="btn-mini" data-entregar="${p.id}">Entregado ✓</button>
-            <button type="button" class="link-btn" data-editar-pedido="${p.id}">Editar</button>
-            <button type="button" class="link-btn" data-borrar-pedido="${p.id}">Cancelar pedido</button>
-          </div>
+          ${panel}
         </div>`;
     }).join('');
 
+    refrescarChips();
+    mostrarCuentas();
+    const ent = document.getElementById('entCobrado');
+    if(ent) mostrarPlataPrevia(ent);
+
     cont.querySelectorAll('[data-entregar]').forEach(btn => {
-      btn.addEventListener('click', () => entregarPedido(Number(btn.getAttribute('data-entregar'))));
+      btn.addEventListener('click', () => {
+        entregandoId = Number(btn.getAttribute('data-entregar'));
+        renderPedidosLista();
+        cont.querySelector('.entregar-panel').scrollIntoView({ behavior: 'smooth', block: 'center' });
+      });
+    });
+    cont.querySelectorAll('[data-volver-entrega]').forEach(btn => {
+      btn.addEventListener('click', () => { entregandoId = null; renderPedidosLista(); });
+    });
+    cont.querySelectorAll('[data-confirmar-entrega]').forEach(btn => {
+      btn.addEventListener('click', () => entregarPedido(Number(btn.getAttribute('data-confirmar-entrega'))));
     });
     cont.querySelectorAll('[data-editar-pedido]').forEach(btn => {
       btn.addEventListener('click', () => editarPedido(Number(btn.getAttribute('data-editar-pedido'))));
@@ -1995,10 +2414,11 @@
         const id = Number(btn.getAttribute('data-borrar-pedido'));
         const p = pedidos.find(x => x.id === id);
         if(!p) return;
-        if(!confirm(`¿Cancelar el pedido de ${p.cliente}? No toca el stock.`)) return;
-        pedidos = pedidos.filter(x => x.id !== id);
+        const f = foto();
+        pedidos = pedidos.filter(x => x !== p);
         if(editandoPedidoId === id){ editandoPedidoId = null; limpiarFormPedido(); }
         persistirPedidos();
+        hecho(`Cancelaste el pedido de ${p.cliente}. El stock no cambia.`, f);
       });
     });
   }
@@ -2006,8 +2426,14 @@
   function entregarPedido(id){
     const p = pedidos.find(x => x.id === id);
     if(!p) return;
+    const inpCobro = document.getElementById('entCobrado');
+    const texto = inpCobro ? inpCobro.value.trim() : '';
+    const monto = parsearMonto(texto);
+    if(texto && !(monto > 0)) return errorEn(inpCobro, 'No se entiende el número: usá solo cifras, ej: 52000');
+    const medio = elegirMedio(document.getElementById('entMedio').value);
+    const cuenta = cuentaPara(medio, elegirCuenta(document.getElementById('entCuenta').value));
     const totalPizzas = p.items.reduce((s,i) => s + i.cantidad, 0);
-    if(!confirm(`¿Marcar como entregado el pedido de ${p.cliente} (${totalPizzas} pizzas)? Se descuenta del stock.`)) return;
+    const f = foto();
 
     p.items.forEach(i => {
       const s = pizzas.stock.find(x => x.nombre === i.nombre);
@@ -2021,31 +2447,24 @@
       cliente: p.cliente,
       items: p.items.map(i => ({ nombre: i.nombre, cantidad: i.cantidad }))
     });
+    if(monto > 0){
+      items.push({
+        id: ventaId + 1,
+        ventaId: ventaId,          // enlaza el ingreso con su venta en el historial
+        fecha: hoyISO(),
+        desc: `${p.cliente} x${totalPizzas}`,
+        monto, medio, cuenta
+      });
+    }
 
     pedidos = pedidos.filter(x => x.id !== id);
     if(editandoPedidoId === id){ editandoPedidoId = null; limpiarFormPedido(); }
+    entregandoId = null;
 
-    // guardamos primero: si tardás en contestar el monto, el pedido ya quedó entregado
     persistirPizzas();
     persistirPedidos();
-
-    const sugerido = precioCongeladas(p.items).total;
-    const montoStr = prompt(`¿Cuánto cobraste por el pedido de ${p.cliente}? (precio de lista ${fmt(sugerido)}; dejalo vacío si todavía no cobrás)`, sugerido || '');
-    if(montoStr !== null && montoStr.trim() !== ''){
-      const monto = parseFloat(montoStr);
-      if(monto > 0){
-        items.push({
-          id: ventaId + 1,
-          ventaId: ventaId,          // enlaza el ingreso con su venta en el historial
-          fecha: hoyISO(),
-          desc: `${p.cliente} x${totalPizzas}`,
-          monto,
-          medio: medioUltimo(),
-          cuenta: cuentaPara(medioUltimo(), cuentaUltima())
-        });
-        persistirIngresos();
-      }
-    }
+    if(monto > 0) persistirIngresos();
+    hecho(`Entregado a ${p.cliente}: ${totalPizzas} pizzas${monto > 0 ? `, cobrado ${fmt(monto)}` : ', sin cobrar'}. Stock descontado.`, f);
   }
 
   function renderStockLista(){
@@ -2122,17 +2541,20 @@
 
     cont.innerHTML = ventaDraft.map((fila, idx) => `
       <div class="venta-fila">
-        <select class="venta-select" data-idx="${idx}">
+        <select class="venta-select" data-idx="${idx}" aria-label="Sabor">
           ${nombres.map(n => `<option value="${escapeHtml(n)}" ${n === fila.sabor ? 'selected' : ''}>${escapeHtml(n)}</option>`).join('')}
         </select>
-        <input type="number" class="venta-cantidad" data-idx="${idx}" min="1" value="${fila.cantidad}">
-        ${ventaDraft.length > 1 ? `<button type="button" class="item-del venta-quitar" data-idx="${idx}">✕</button>` : ''}
+        <input type="number" class="venta-cantidad" data-idx="${idx}" min="1" inputmode="numeric" value="${fila.cantidad}" aria-label="Cantidad">
+        ${ventaDraft.length > 1 ? `<button type="button" class="item-del venta-quitar" data-idx="${idx}" aria-label="Quitar sabor">✕</button>` : ''}
       </div>
     `).join('');
 
     const sugerido = () => {
-      const t = textoPrecioCongeladas(ventaDraft.map(f => ({ nombre: f.sabor, cantidad: f.cantidad })));
-      document.getElementById('ventaSugerido').innerHTML = t ? `💲 Precio de lista: <b>${t}</b>` : '';
+      const lista = ventaDraft.map(f => ({ nombre: f.sabor, cantidad: f.cantidad }));
+      const t = textoPrecioCongeladas(lista);
+      const total = precioCongeladas(lista).total;
+      document.getElementById('ventaSugerido').innerHTML = t ? `Precio de lista: <b>${t}</b>
+        <button type="button" class="atajo" id="btnVentaLista" data-monto="${total}">Cobré ${fmt(total)}</button>` : '';
     };
     sugerido();
     cont.querySelectorAll('.venta-select').forEach(sel => {
@@ -2425,7 +2847,7 @@
     if(f.monto != null) partes.push(`${fmt(f.monto)} de los ingresos del mes`);
     if(f.ventaId != null) partes.push(`${f.pizzas} pizzas (se reponen al stock)`);
 
-    if(!confirm(`¿Borrar "${f.titulo}"?\n\nSe descuenta ${partes.join(' y ')}.`)) return;
+    const antes = foto();
 
     if(f.ingresoId != null){
       items = items.filter(i => i.id !== f.ingresoId);
@@ -2442,6 +2864,7 @@
         persistirPizzas();
       }
     }
+    hecho(`Borraste "${f.titulo}": se sacó ${partes.join(' y ')}.`, antes);
   }
 
   // ---------- catering ----------
@@ -2463,6 +2886,14 @@
     return items.filter(i => i.eventoId === ev.id).sort((a,b) => a.fecha.localeCompare(b.fecha) || a.id - b.id);
   }
   function personalDe(ev){ return ev.personal || []; }
+  // lo que se le pagó la última vez a esa persona; si es nueva, la tarifa de siempre
+  const PAGO_PERSONAL = 40000;
+  function pagoPersonalDe(nombre){
+    const n = String(nombre || '').trim().toLowerCase();
+    const prev = n ? catering.flatMap(e => personalDe(e)).filter(p => String(p.nombre || '').trim().toLowerCase() === n && Number(p.monto) > 0)
+      .sort((a, b) => b.id - a.id)[0] : null;
+    return prev ? Number(prev.monto) : PAGO_PERSONAL;
+  }
   // un pago al personal "ya está en gastos" si existe el gasto que lo referencia
   function gastoDePersonal(p){ return gastos.movs.find(g => g.personalId === p.id) || null; }
 
@@ -2508,7 +2939,7 @@
   }
   function costoKm(){ return costos.kmTanque > 0 ? costos.tanque / costos.kmTanque : 0; }
   function opcionesMenu(sel){
-    return `<option value="">Menú…</option>` + MENUS.map(m =>
+    return `<option value="">Sin definir todavía</option>` + MENUS.map(m =>
       `<option value="${m.id}" ${m.id === sel ? 'selected' : ''}>${m.nombre}</option>`).join('');
   }
 
@@ -2850,14 +3281,18 @@
     renderPlantilla();
     renderCostosConfig();
     // opción de copiar checklist y personal de un evento anterior
+    // (conserva lo elegido: esto se redibuja con cada sincronización)
     const wrap = document.getElementById('evCopiarWrap');
     const previos = catering.slice().sort((a,b) => b.fecha.localeCompare(a.fecha));
-    wrap.innerHTML = previos.length
-      ? `<select id="evCopiar" class="input-full">
-           <option value="">Empezar de cero</option>
-           ${previos.map(e => `<option value="${e.id}">Copiar checklist y personal de: ${escapeHtml(e.nombre)}</option>`).join('')}
-         </select>`
+    const elegido = document.getElementById('evCopiar') ? document.getElementById('evCopiar').value : '';
+    if(!escribiendoEn(wrap)) wrap.innerHTML = previos.length
+      ? `<label class="campo full" style="margin-bottom:12px"><span>Checklist y personal <small>· opcional</small></span>
+         <select id="evCopiar">
+           <option value="">Los de siempre (la checklist fija)</option>
+           ${previos.map(e => `<option value="${e.id}" ${String(e.id) === elegido ? 'selected' : ''}>Copiar de: ${escapeHtml(e.nombre)}</option>`).join('')}
+         </select></label>`
       : '';
+    mostrarPrecioPrevio();
 
     const cont = document.getElementById('listaEventos');
     const ordenados = catering.slice().sort((a,b) =>
@@ -2932,17 +3367,21 @@
           <div class="ev-titulo">${escapeHtml(ev.nombre)}</div>
           <div class="ev-sub">${formatoFecha(ev.fecha)}${ev.hora ? ' · ' + ev.hora : ''}${ratio ? ' · ' + ratio : ''}</div>
         </div>
-        <div class="pedido-campos" style="margin-top:18px">
-          <input type="text" data-campo="nombre" value="${escapeHtml(ev.nombre)}" placeholder="Nombre">
-          <input type="date" data-campo="fecha" value="${ev.fecha || ''}">
-          <input type="time" data-campo="hora" value="${ev.hora || ''}">
+        <div class="card-nota" style="margin:10px 0 14px">Los cambios se guardan solos al salir de cada campo.</div>
+        <div class="form-campos">
+          <label class="campo full"><span>Nombre del evento</span>
+            <input type="text" data-campo="nombre" value="${escapeHtml(ev.nombre)}" placeholder="Ej: Casamiento Pérez"></label>
+          <label class="campo"><span>Fecha</span><input type="date" data-campo="fecha" value="${ev.fecha || ''}"></label>
+          <label class="campo"><span>Hora</span><input type="time" data-campo="hora" value="${ev.hora || ''}"></label>
+          <label class="campo full"><span>Lugar</span>
+            <input type="text" data-campo="lugar" value="${escapeHtml(ev.lugar || '')}" placeholder="Ej: Ladislao Martínez 1165, Martínez"></label>
+          <label class="campo"><span>Personas</span>
+            <input type="number" data-campo="personas" min="0" inputmode="numeric" value="${ev.personas || ''}" placeholder="Ej: 40"></label>
+          <label class="campo"><span>Pizzas a llevar</span>
+            <input type="number" data-campo="pizzas" min="0" inputmode="numeric" value="${ev.pizzas || ''}" placeholder="Ej: 45"></label>
+          <label class="campo full"><span>Notas <small>· opcional</small></span>
+            <input type="text" data-campo="notas" value="${escapeHtml(ev.notas || '')}" placeholder="Ej: llegar 18 h, entrada por cochera"></label>
         </div>
-        <input type="text" class="input-full" data-campo="lugar" value="${escapeHtml(ev.lugar || '')}" placeholder="Lugar / dirección">
-        <div class="pedido-campos">
-          <input type="number" data-campo="personas" min="0" value="${ev.personas || ''}" placeholder="Personas">
-          <input type="number" data-campo="pizzas" min="0" value="${ev.pizzas || ''}" placeholder="Pizzas a llevar">
-        </div>
-        <input type="text" class="input-full" data-campo="notas" value="${escapeHtml(ev.notas || '')}" placeholder="Notas del evento">
         ${ev.lugar ? `<a class="pedido-mapa" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(ev.lugar)}" target="_blank" rel="noopener">📍 Cómo llegar</a>` : ''}
         <div class="footer-row" style="justify-content:flex-start;margin-top:16px">
           <button type="button" class="link-btn" id="btnBorrarEvento">Borrar evento</button>
@@ -2951,9 +3390,9 @@
 
       <div class="card">
         <div class="card-titulo">Cobro</div>
-        <div class="card-nota" style="margin:-8px 0 8px">Precio total del evento</div>
-        <div class="pedido-campos">
-          <input type="number" data-campo="precio" min="0" step="any" inputmode="decimal" value="${ev.precio || ''}" placeholder="$">
+        <div class="form-campos">
+          <label class="campo full"><span>Precio total del evento</span>
+            <input type="number" data-campo="precio" min="0" step="any" inputmode="decimal" value="${ev.precio || ''}" placeholder="Ej: 940000"></label>
         </div>
         ${precioDeLista(ev.menu, Number(ev.personas)) ? `<div class="card-nota" style="margin:-4px 0 8px">Precio de lista: <b>${fmt(precioDeLista(ev.menu, Number(ev.personas)))}</b>
           (${Math.max(Number(ev.personas), Number(costos.minPersonas) || 0)} × ${fmt(costos.precios[ev.menu])} + logística ${fmt(costos.precios.logistica)})
@@ -2970,16 +3409,22 @@
               <button type="button" class="item-del" data-cobro-del="${c.id}" title="Eliminar cobro">✕</button>
             </div>`).join('')}
         </div>
-        <div class="cobro-acciones">
-          <input type="number" id="cobroMonto" class="inp-monto" min="0" step="any" inputmode="decimal" placeholder="${monedaUltima() === 'USD' ? 'Monto US$' : 'Monto $'}">
-          <select id="cobroMoneda" class="sel-moneda" title="Moneda">${opcionesMoneda(monedaUltima())}</select>
-          <input type="number" id="cobroTc" class="inp-tc" placeholder="Cotización $ por US$" min="0" step="any" inputmode="decimal" value="${tcUltimo()}" ${monedaUltima() === 'USD' ? '' : 'hidden'}>
-          <select id="cobroMedio" class="sel-medio" title="Medio de cobro">${opcionesMedio(medioUltimo())}</select>
-          <select id="cobroCuenta" class="sel-cuenta" title="Cuenta que recibe" ${medioUltimo() === 'efectivo' ? 'hidden' : ''}>${opcionesCuenta(cuentaUltima())}</select>
-          <button type="button" class="btn btn-fuego" id="btnSena">Registrar seña</button>
+        <div class="check-grupo" style="margin-top:18px">Anotar un cobro</div>
+        <div class="form-campos" style="margin-top:8px">
+          <div class="campo full"><span>Cómo te pagaron</span><select id="cobroMedio" class="sel-medio">${opcionesMedio(medioUltimo())}</select></div>
+          <div class="campo full"><span>Entró a la cuenta de</span><select id="cobroCuenta" class="sel-cuenta">${opcionesCuenta(cuentaUltima())}</select></div>
+          <div class="campo full"><span>Moneda</span><select id="cobroMoneda" class="sel-moneda">${opcionesMoneda(monedaUltima())}</select></div>
+          <label class="campo full"><span>Cotización del dólar</span>
+            <input type="text" id="cobroTc" class="inp-tc inp-plata" inputmode="decimal" autocomplete="off" placeholder="Ej: 1450 (pesos por 1 US$)" value="${tcUltimo()}"></label>
         </div>
         ${r.falta > 0 ? `
-          <button type="button" class="btn-cerrar" id="btnSaldo">✓ Cobrar saldo · ${fmt(r.falta)}</button>` : ''}
+          <button type="button" class="btn btn-fuego" id="btnSaldo" style="width:100%">Cobrar ${r.cobrado > 0 ? 'el saldo' : 'todo'} · ${fmt(r.falta)}</button>
+          <div class="card-nota" style="margin:12px 0 8px;text-align:center">o anotá una seña o pago parcial:</div>` : ''}
+        <div class="cobro-acciones" style="margin-top:0;align-items:flex-end">
+          <label class="campo"><span>Monto</span>
+            <input type="text" id="cobroMonto" class="inp-monto inp-plata" inputmode="decimal" autocomplete="off" placeholder="Ej: 200000"></label>
+          <button type="button" class="btn ${r.falta > 0 ? 'btn-sec' : 'btn-fuego'}" id="btnSena" style="flex:0 1 auto">Registrar seña</button>
+        </div>
         <div class="costo-totales">
           <div><div class="label">Cobrado</div><div class="val">${fmt(r.cobrado)}</div></div>
           <div><div class="label">Falta cobrar</div><div class="val">${fmt(r.falta)}</div></div>
@@ -2991,11 +3436,14 @@
 
       <div class="card">
         <div class="card-titulo">Costos y ganancia</div>
-        <div class="pedido-campos">
-          <select data-campo="menu">${opcionesMenu(ev.menu)}</select>
-          <input type="number" data-campo="km" min="0" step="any" inputmode="decimal" value="${ev.km || ''}" placeholder="Km ida y vuelta">
-          <input type="number" data-campo="peajes" min="0" step="any" inputmode="decimal" value="${ev.peajes || ''}" placeholder="Peajes $">
-          <input type="number" data-campo="pizzasSalieron" min="0" value="${ev.pizzasSalieron || ''}" placeholder="Pizzas que salieron">
+        <div class="form-campos">
+          <label class="campo full"><span>Menú</span><select data-campo="menu">${opcionesMenu(ev.menu)}</select></label>
+          <label class="campo"><span>Km ida y vuelta</span>
+            <input type="number" data-campo="km" min="0" step="any" inputmode="decimal" value="${ev.km || ''}" placeholder="Ej: 60"></label>
+          <label class="campo"><span>Peajes $</span>
+            <input type="number" data-campo="peajes" min="0" step="any" inputmode="decimal" value="${ev.peajes || ''}" placeholder="Ej: 4000"></label>
+          <label class="campo full"><span>Pizzas que salieron <small>· después del evento</small></span>
+            <input type="number" data-campo="pizzasSalieron" min="0" inputmode="numeric" value="${ev.pizzasSalieron || ''}" placeholder="Vacío = se estima por persona"></label>
         </div>
         <div class="lista">
           <div class="item"><div class="item-info"><div class="item-desc">Precio</div></div><div class="item-monto">${fmt(r.precio || r.cobrado)}</div></div>
@@ -3039,11 +3487,15 @@
             </div>`;
           }).join('')}
         </div>
-        <form id="formPersonal" class="item-nuevo">
-          <input type="text" id="persNombre" placeholder="Nombre o rol (ej: Mozo)">
-          <input type="number" id="persMonto" min="0" step="any" inputmode="decimal" placeholder="$" style="flex:0 0 104px">
-          <button type="submit" class="btn btn-fuego">+</button>
+        <form id="formPersonal" class="item-nuevo" novalidate style="align-items:flex-end">
+          <label class="campo" style="flex:2 1 140px"><span>Nombre o rol</span>
+            <input type="text" id="persNombre" list="personalConocido" autocomplete="off" placeholder="Ej: Jordi"></label>
+          <label class="campo" style="flex:1 1 90px"><span>Paga</span>
+            <input type="text" id="persMonto" class="inp-plata" inputmode="decimal" autocomplete="off" value="${pagoPersonalDe('')}"></label>
+          <button type="submit" class="btn btn-fuego" aria-label="Agregar persona">+ Agregar</button>
         </form>
+        <datalist id="personalConocido">${distintosRecientes(catering.flatMap(e => personalDe(e)), x => x.nombre, 80)
+          .map(o => `<option value="${escapeHtml(o.valor)}">`).join('')}</datalist>
         ${sinPasar.length ? `
           <button type="button" class="btn-cerrar" id="btnPersonalAGastos">
             Anotar ${sinPasar.length === 1 ? 'el pago' : `los ${sinPasar.length} pagos`} en gastos · ${fmt(sinPasar.reduce((s,p) => s + Number(p.monto), 0))}
@@ -3118,10 +3570,12 @@
     });
 
     document.getElementById('btnBorrarEvento').addEventListener('click', () => {
-      if(!confirm(`¿Borrar el evento "${ev.nombre}"? Se pierde su checklist y personal.\n\nLos cobros y gastos ya anotados quedan en Objetivo y Gastos.`)) return;
+      if(!confirm(`¿Borrar el evento "${ev.nombre}"? Se borra con su checklist y personal.\n\nLos cobros y gastos ya anotados quedan en Objetivo y Gastos.`)) return;
+      const f = foto();
       catering = catering.filter(e => e.id !== ev.id);
       eventoAbierto = null;
       persistirCatering();
+      hecho(`Borraste el evento "${ev.nombre}".`, f);
     });
 
     // campos sueltos del evento
@@ -3158,8 +3612,10 @@
     });
     cont.querySelectorAll('[data-sabor-del]').forEach(btn => {
       btn.addEventListener('click', () => {
-        ev.sabores.splice(+btn.getAttribute('data-sabor-del'), 1);
+        const f = foto();
+        const [quitado] = ev.sabores.splice(+btn.getAttribute('data-sabor-del'), 1);
         persistirCatering();
+        hecho(`Quitaste ${quitado && quitado.nombre ? quitado.nombre : 'el sabor'}.`, f);
       });
     });
     document.getElementById('btnAgregarSaborEv').addEventListener('click', () => {
@@ -3169,15 +3625,18 @@
     });
 
     // cobros: cada uno es un ingreso enlazado al evento
+    // en vez de preguntar "¿seguro?", se anota y se puede deshacer
     const registrarCobro = (m, tipo) => {
+      const f = foto();
       const medio = elegirMedio(document.getElementById('cobroMedio').value);
       const cuenta = cuentaPara(medio, elegirCuenta(document.getElementById('cobroCuenta').value));
       items.push({ id: Date.now(), fecha: hoyISO(), ...m, tipo, eventoId: ev.id, medio, cuenta,
                    desc: `${tipo === 'seña' ? 'Seña' : 'Saldo'} · ${ev.nombre}` });
       persistirIngresos();
+      const mm = MEDIOS.find(x => x.id === medio);
+      hecho(`${tipo === 'seña' ? 'Seña' : 'Saldo'} de ${montoCorto(m)} anotado${mm ? ` (${mm.nombre})` : ''}. Ya suma en los ingresos.`, f);
     };
     document.getElementById('btnSena').addEventListener('click', () => {
-      if(!(parseFloat(document.getElementById('cobroMonto').value) > 0)){ alert('Poné el monto de la seña.'); return; }
       const m = leerMonto('cobroMonto', 'cobroMoneda', 'cobroTc');
       if(!m) return;
       document.getElementById('cobroMonto').value = '';
@@ -3189,22 +3648,21 @@
       const { falta } = resumenEvento(ev);
       // el saldo se calcula en pesos; si lo cobrás en dólares, se pasa a US$ con la cotización
       if(elegirMoneda(document.getElementById('cobroMoneda').value) === 'USD'){
-        const tc = parseFloat(document.getElementById('cobroTc').value);
-        if(!tc || tc <= 0){ alert('Poné la cotización del dólar (cuántos pesos vale 1 US$).'); return; }
+        const elTc = document.getElementById('cobroTc');
+        const tc = parsearMonto(elTc.value);
+        if(!(tc > 0)) return errorEn(elTc, 'Falta la cotización: cuántos pesos vale 1 dólar, ej: 1450');
         guardarCache(CACHE_KEY_TC, tc);
-        const usd = Math.round(falta / tc * 100) / 100;
-        if(!confirm(`¿Registrar el cobro del saldo de ${fmtUsd(usd)} (${fmt(falta)})?`)) return;
-        registrarCobro({ monto: falta, moneda: 'USD', usd, tc }, 'saldo');
+        registrarCobro({ monto: falta, moneda: 'USD', usd: Math.round(falta / tc * 100) / 100, tc }, 'saldo');
         return;
       }
-      if(!confirm(`¿Registrar el cobro del saldo de ${fmt(falta)}?`)) return;
       registrarCobro({ monto: falta }, 'saldo');
     });
     cont.querySelectorAll('[data-cobro-del]').forEach(btn => {
       btn.addEventListener('click', () => {
-        if(!confirm('¿Eliminar este cobro? También se saca de los ingresos.')) return;
+        const f = foto();
         items = items.filter(i => i.id !== Number(btn.getAttribute('data-cobro-del')));
         persistirIngresos();
+        hecho('Borraste el cobro (también salió de los ingresos).', f);
       });
     });
 
@@ -3212,8 +3670,10 @@
     document.getElementById('formPersonal').addEventListener('submit', e => {
       e.preventDefault();
       const nombre = document.getElementById('persNombre').value.trim();
-      const monto = parseFloat(document.getElementById('persMonto').value) || 0;
-      if(!nombre && !monto) return;
+      const elMonto = document.getElementById('persMonto');
+      const monto = elMonto.value.trim() ? parsearMonto(elMonto.value) : 0;
+      if(!nombre) return errorEn(document.getElementById('persNombre'), 'Falta el nombre o el rol, ej: Mozo');
+      if(isNaN(monto)) return errorEn(elMonto, 'No se entiende el número: usá solo cifras, ej: 40000');
       ev.personal = personalDe(ev);
       ev.personal.push({ id: Date.now(), nombre, monto });
       document.activeElement.blur();
@@ -3225,10 +3685,11 @@
         const pp = personalDe(ev).find(x => x.id === Number(btn.getAttribute('data-pers-del')));
         if(!pp) return;
         const g = gastoDePersonal(pp);
-        if(g && !confirm(`"${pp.nombre}" ya está anotado en gastos. ¿Lo saco también de gastos?`)) return;
+        const f = foto();
         ev.personal = personalDe(ev).filter(x => x !== pp);
         if(g){ gastos.movs = gastos.movs.filter(x => x !== g); persistirGastos(); }
         persistirCatering();
+        hecho(`Quitaste a ${pp.nombre || 'la persona'}${g ? ' (también de gastos)' : ''}.`, f);
       });
     });
     const btnAGastos = document.getElementById('btnPersonalAGastos');
@@ -3292,10 +3753,20 @@
     });
     cont.querySelectorAll('[data-chk-del]').forEach(btn => {
       btn.addEventListener('click', () => {
-        ev.checklist.splice(+btn.getAttribute('data-chk-del'), 1);
+        const f = foto();
+        const [quitado] = ev.checklist.splice(+btn.getAttribute('data-chk-del'), 1);
         persistirCatering();
+        hecho(`Quitaste "${quitado ? quitado.nombre : 'el ítem'}" de la checklist.`, f);
       });
     });
+    // al elegir alguien que ya trabajó, se completa lo que se le pagó la última vez
+    document.getElementById('persNombre').addEventListener('change', e => {
+      document.getElementById('persMonto').value = pagoPersonalDe(e.target.value);
+      mostrarPlataPrevia(document.getElementById('persMonto'));
+    });
+    mostrarMonedas();
+    mostrarCuentas();
+    refrescarChips();
     document.getElementById('formChecklist').addEventListener('submit', e => {
       e.preventDefault();
       const inpNombre = document.getElementById('nuevoItem');
@@ -3480,8 +3951,14 @@
     const el = document.getElementById(id);
     if(!el) return;
     el.closest('.card').scrollIntoView({ behavior: 'smooth', block: 'start' });
-    setTimeout(() => el.focus({ preventScroll: true }), 350);
+    if(el.matches('input, select')) setTimeout(() => el.focus({ preventScroll: true }), 350);
   }
+  document.getElementById('btnIrVenta').addEventListener('click', () => irYMostrar('pedidos', 'ventaFilas'));
+  document.getElementById('syncPill').addEventListener('click', async () => {
+    if(!pendientes.size) return;
+    if(await reintentarPendientes()) avisar('Listo, quedó todo guardado en la nube.');
+    else avisar('Sigue sin conexión. Los cambios quedan en este celular y se reintenta solo.', { error: true });
+  });
   document.getElementById('homeObjetivo').addEventListener('click', () => {
     mesSel = mesActual();
     renderTodo();
@@ -3492,7 +3969,8 @@
     if(!b) return;
     const a = b.dataset.accion;
     if(a === 'pedido') irYMostrar('pedidos', 'pedidoCliente');
-    if(a === 'venta') irYMostrar('pedidos', 'btnRegistrarVenta');
+    if(a === 'venta') irYMostrar('pedidos', 'ventaFilas');
+    if(a === 'ingreso'){ mesSel = mesActual(); renderTodo(); irYMostrar('objetivo', 'monto'); }
     if(a === 'gasto'){ mesSel = mesActual(); renderTodo(); irYMostrar('gastos', 'gastoMonto'); }
     if(a === 'evento'){ eventoAbierto = null; renderCatering(); irYMostrar('catering', 'evNombre'); }
   });
@@ -3538,24 +4016,44 @@
     renderResumenVentas();
   });
 
+  // texto corto de un monto recién anotado (en dólares muestra los US$)
+  function montoCorto(m){ return m.moneda === 'USD' ? fmtUsd(m.usd) : fmt(m.monto); }
+
   document.getElementById('form').addEventListener('submit', e => {
     e.preventDefault();
-    const fecha = document.getElementById('fecha').value;
-    const desc = document.getElementById('desc').value.trim();
-    if(!fecha || !desc) return;
+    const otro = e.submitter && e.submitter.dataset.otro;
+    const elFecha = document.getElementById('fecha');
+    const elDesc = document.getElementById('desc');
     const m = leerMonto('monto', 'monedaIng', 'tcIng');
     if(!m) return;
+    if(!elFecha.value) return errorEn(elFecha, 'Elegí la fecha del cobro');
+    const desc = elDesc.value.trim();
+    if(!desc) return errorEn(elDesc, 'Escribí de qué es, ej: Catering Pérez');
+    const fecha = elFecha.value;
 
+    const f = foto();
     const medio = elegirMedio(document.getElementById('medio').value);
     const cuenta = cuentaPara(medio, elegirCuenta(document.getElementById('cuenta').value));
     items.push({ id: Date.now(), fecha, desc, ...m, medio, cuenta });
 
     // si anotás un ingreso de otro mes, saltamos a ese mes para que lo veas
-    if(mesDe(fecha) !== mesSel) mesSel = mesDe(fecha);
+    const otroMes = mesDe(fecha) !== mesSel;
+    if(otroMes) mesSel = mesDe(fecha);
 
-    document.getElementById('desc').value = '';
+    elDesc.value = '';
     document.getElementById('monto').value = '';
+    mostrarPlataPrevia(document.getElementById('monto'));
     persistirIngresos();
+    guardarBorrador();
+    if(otro) document.getElementById('monto').focus(); else document.activeElement.blur();
+    hecho(`Ingreso anotado: ${montoCorto(m)} · ${desc}${otroMes ? ` (en ${nombreMes(mesSel)})` : ''}.`, f);
+  });
+  // si la descripción ya se usó, completamos cómo se cobró y a qué cuenta entró
+  document.getElementById('desc').addEventListener('change', e => {
+    const prev = ultimoIngresoCon(e.target.value);
+    if(!prev || !prev.medio) return;
+    elegirMedio(prev.medio);
+    if(prev.cuenta) elegirCuenta(prev.cuenta);
   });
 
   document.getElementById('gastoCats').addEventListener('click', e => {
@@ -3563,35 +4061,62 @@
     if(!btn) return;
     catGasto = btn.dataset.cat;
     renderGastos();
+    guardarBorrador();
+  });
+  // si el detalle ya se usó, completamos la categoría y el medio de la última vez
+  document.getElementById('gastoDesc').addEventListener('change', e => {
+    const prev = ultimoGastoCon(e.target.value);
+    const ayuda = document.getElementById('gastoDescAyuda');
+    if(!prev){ ayuda.textContent = 'Si ya lo cargaste antes, elegilo de la lista y se completa la categoría.'; return; }
+    catGasto = catGastoDe(prev.cat).id;
+    if(prev.medio) elegirMedio(prev.medio);
+    renderGastos();
+    const m = MEDIOS.find(x => x.id === prev.medio);
+    ayuda.innerHTML = `✓ Puse <b>${catGastoDe(prev.cat).nombre}</b>${m ? ` y <b>${m.nombre}</b>` : ''}, como la última vez (${fmt(prev.monto)} el ${formatoFecha(prev.fecha).slice(0, 5)}).`;
+    guardarBorrador();
   });
 
   document.getElementById('formGasto').addEventListener('submit', e => {
     e.preventDefault();
-    const fecha = document.getElementById('gastoFecha').value || hoyISO();
+    const otro = e.submitter && e.submitter.dataset.otro;
     const m = leerMonto('gastoMonto', 'gastoMoneda', 'gastoTc');
     if(!m) return;
-    gastos.movs.push({ id: Date.now(), fecha, cat: catGasto, ...m,
-      desc: document.getElementById('gastoDesc').value.trim(),
+    const elFecha = document.getElementById('gastoFecha');
+    if(!elFecha.value) return errorEn(elFecha, 'Elegí la fecha del gasto');
+    const fecha = elFecha.value;
+    const desc = document.getElementById('gastoDesc').value.trim();
+    const f = foto();
+    gastos.movs.push({ id: Date.now(), fecha, cat: catGasto, ...m, desc,
       medio: elegirMedio(document.getElementById('gastoMedio').value) });
-    if(mesDe(fecha) !== mesSel) mesSel = mesDe(fecha);
+    const otroMes = mesDe(fecha) !== mesSel;
+    if(otroMes) mesSel = mesDe(fecha);
     document.getElementById('gastoMonto').value = '';
     document.getElementById('gastoDesc').value = '';
-    document.activeElement.blur();
+    mostrarPlataPrevia(document.getElementById('gastoMonto'));
+    document.getElementById('gastoDescAyuda').textContent = 'Si ya lo cargaste antes, elegilo de la lista y se completa la categoría.';
     persistirGastos();
+    guardarBorrador();
+    if(otro) document.getElementById('gastoMonto').focus(); else document.activeElement.blur();
+    const c = catGastoDe(catGasto);
+    hecho(`Gasto anotado: ${montoCorto(m)} en ${c.nombre}${desc ? ` · ${desc}` : ''}${otroMes ? ` (en ${nombreMes(mesSel)})` : ''}.`, f);
   });
 
   document.getElementById('formFijo').addEventListener('submit', e => {
     e.preventDefault();
     const nombre = document.getElementById('fijoNombre').value.trim();
-    const monto = parseFloat(document.getElementById('fijoMonto').value);
+    const elMonto = document.getElementById('fijoMonto');
+    const monto = parsearMonto(elMonto.value);
     const dia = parseInt(document.getElementById('fijoDia').value) || null;
-    if(!nombre){ alert('Poné el nombre del gasto fijo.'); return; }
-    if(!monto || monto <= 0){ alert('Poné el monto.'); return; }
+    if(!nombre) return errorEn(document.getElementById('fijoNombre'), 'Falta el nombre, ej: Monotributo');
+    if(!(monto > 0)) return errorEn(elMonto, elMonto.value.trim() ? 'No se entiende el número: usá solo cifras, ej: 45000' : 'Falta el monto por mes');
+    const f = foto();
     gastos.fijos.push({ id: Date.now(), nombre, monto, dia: dia && Math.min(dia, 31),
       cat: document.getElementById('fijoCat').value, desde: mesSel });
     ['fijoNombre','fijoMonto','fijoDia'].forEach(id => document.getElementById(id).value = '');
+    mostrarPlataPrevia(elMonto);
     document.activeElement.blur();
     persistirGastos();
+    hecho(`"${nombre}" agregado: ${fmt(monto)} todos los meses desde ${nombreMes(mesSel)}.`, f);
   });
 
   document.getElementById('listaFijos').addEventListener('click', e => {
@@ -3606,11 +4131,13 @@
     const baja = e.target.closest('[data-baja]');
     if(baja){
       const f = gastos.fijos.find(x => x.id === Number(baja.dataset.baja));
-      if(!f || !confirm(`¿Dar de baja "${f.nombre}" desde ${nombreMes(mesSel)}?\n\nLos meses anteriores no cambian.`)) return;
+      if(!f) return;
+      const antes = foto();
       const hasta = correrMes(mesSel, -1);
       if(f.desde > hasta) gastos.fijos = gastos.fijos.filter(x => x !== f);
       else f.hasta = hasta;
       persistirGastos();
+      hecho(`"${f.nombre}" dado de baja desde ${nombreMes(mesSel)}. Los meses anteriores no cambian.`, antes);
       return;
     }
     const fila = e.target.closest('[data-fijo]');
@@ -3653,8 +4180,11 @@
   document.getElementById('listaGastos').addEventListener('click', e => {
     const btn = e.target.closest('[data-borrar]');
     if(!btn) return;
-    gastos.movs = gastos.movs.filter(g => g.id !== Number(btn.dataset.borrar));
+    const f = foto();
+    const g = gastos.movs.find(x => x.id === Number(btn.dataset.borrar));
+    gastos.movs = gastos.movs.filter(x => x !== g);
     persistirGastos();
+    hecho(`Borraste el gasto de ${g ? fmt(g.monto) : ''}.`, f);
   });
 
   document.getElementById('btnRefrescar').addEventListener('click', () => refrescarTodo(true));
@@ -3689,11 +4219,13 @@
     const direccion = document.getElementById('pedidoDireccion').value.trim();
     const notas = document.getElementById('pedidoNotas').value.trim();
 
-    if(!cliente){ alert('Poné el nombre del cliente.'); return; }
-    if(!fecha){ alert('Elegí la fecha de entrega.'); return; }
+    if(!cliente) return errorEn(document.getElementById('pedidoCliente'), 'Falta el nombre del cliente, ej: Paula');
+    if(!fecha) return errorEn(document.getElementById('pedidoFecha'), 'Elegí el día de entrega');
 
     const validas = pedidoDraft.filter(f => f.sabor && f.cantidad > 0);
-    if(validas.length === 0){ alert('Elegí al menos un sabor.'); return; }
+    if(validas.length === 0){ avisar('Primero agregá sabores en Producción › Stock de pizzas.', { error: true }); return; }
+    const f = foto();
+    const editando = editandoPedidoId !== null;
 
     const datos = {
       cliente, fecha, hora, direccion, notas,
@@ -3715,34 +4247,62 @@
 
     limpiarFormPedido();
     persistirPedidos();
+    guardarBorrador();
+    const n = validas.reduce((t, x) => t + x.cantidad, 0);
+    hecho(editando ? `Cambios guardados en el pedido de ${cliente}.`
+      : `Pedido de ${cliente} agendado: ${n} ${n === 1 ? 'pizza' : 'pizzas'} para ${fechaCorta(fecha).toLowerCase() === 'hoy' ? 'hoy' : formatoFecha(fecha).slice(0, 5)}.`, f);
+  });
+
+  // medio y cuenta del cobro se piden solo si cobraste algo
+  function mostrarCobroVenta(){
+    document.getElementById('ventaCobroDatos').hidden = !document.getElementById('ventaCobrado').value.trim();
+  }
+  document.getElementById('ventaCobrado').addEventListener('input', mostrarCobroVenta);
+  document.getElementById('ventaSugerido').addEventListener('click', e => {
+    const b = e.target.closest('#btnVentaLista');
+    if(!b) return;
+    const inp = document.getElementById('ventaCobrado');
+    inp.value = b.dataset.monto;
+    limpiarError(inp);
+    mostrarPlataPrevia(inp);
+    mostrarCobroVenta();
+    guardarBorrador();
   });
 
   document.getElementById('btnRegistrarVenta').addEventListener('click', () => {
     const validas = ventaDraft.filter(f => f.sabor && f.cantidad > 0);
     if(validas.length === 0) return;
+    const inpCobro = document.getElementById('ventaCobrado');
+    const cobrado = parsearMonto(inpCobro.value);
+    if(inpCobro.value.trim() && !(cobrado > 0)) return errorEn(inpCobro, 'No se entiende el número: usá solo cifras, ej: 14000');
 
+    const f = foto();
     const detalle = [];
-    validas.forEach(f => {
-      const stockItem = pizzas.stock.find(s => s.nombre === f.sabor);
-      if(stockItem) stockItem.cantidad = Math.max(0, stockItem.cantidad - f.cantidad);
-      detalle.push({ nombre: f.sabor, cantidad: f.cantidad });
+    validas.forEach(fila => {
+      const stockItem = pizzas.stock.find(s => s.nombre === fila.sabor);
+      if(stockItem) stockItem.cantidad = Math.max(0, stockItem.cantidad - fila.cantidad);
+      detalle.push({ nombre: fila.sabor, cantidad: fila.cantidad });
     });
+    const n = detalle.reduce((t, i) => t + i.cantidad, 0);
 
     const ventaId = Date.now();
     const cliente = document.getElementById('ventaCliente').value.trim();
     pizzas.ventas.push({ id: ventaId, fecha: hoyISO(), items: detalle, ...(cliente ? { cliente } : {}) });
-    // si anotaste lo cobrado, entra como ingreso enlazado a la venta (con el último medio elegido)
-    const cobrado = parseFloat(document.getElementById('ventaCobrado').value);
+    // si anotaste lo cobrado, entra como ingreso enlazado a la venta
     if(cobrado > 0){
-      const n = detalle.reduce((t, i) => t + i.cantidad, 0);
-      items.push({ id: ventaId + 1, ventaId, fecha: hoyISO(), desc: `${cliente || 'Venta'} x${n}`, monto: cobrado,
-                   medio: medioUltimo(), cuenta: cuentaPara(medioUltimo(), cuentaUltima()) });
+      const medio = elegirMedio(document.getElementById('ventaMedio').value);
+      const cuenta = cuentaPara(medio, elegirCuenta(document.getElementById('ventaCuenta').value));
+      items.push({ id: ventaId + 1, ventaId, fecha: hoyISO(), desc: `${cliente || 'Venta'} x${n}`, monto: cobrado, medio, cuenta });
       persistirIngresos();
     }
     document.getElementById('ventaCliente').value = '';
-    document.getElementById('ventaCobrado').value = '';
+    inpCobro.value = '';
+    mostrarPlataPrevia(inpCobro);
+    mostrarCobroVenta();
     ventaDraft = [{ sabor: null, cantidad: 1 }];
     persistirPizzas();
+    guardarBorrador();
+    hecho(`Venta registrada: ${n} ${n === 1 ? 'pizza' : 'pizzas'}${cobrado > 0 ? `, cobrado ${fmt(cobrado)}` : ', sin cobrar'}. Stock descontado.`, f);
   });
 
   document.getElementById('btnCalcularProd').addEventListener('click', () => {
@@ -3753,8 +4313,9 @@
   document.getElementById('btnCrearEvento').addEventListener('click', () => {
     const nombre = document.getElementById('evNombre').value.trim();
     const fecha = document.getElementById('evFecha').value;
-    if(!nombre){ alert('Poné un nombre para el evento.'); return; }
-    if(!fecha){ alert('Elegí la fecha del evento.'); return; }
+    if(!nombre) return errorEn(document.getElementById('evNombre'), 'Falta el nombre, ej: Casamiento Pérez 80 pax');
+    if(!fecha) return errorEn(document.getElementById('evFecha'), 'Elegí la fecha del evento');
+    const f = foto();
 
     const personasEv = parseInt(document.getElementById('evPersonas').value) || 0;
     let pizzasEv = parseInt(document.getElementById('evPizzas').value) || 0;
@@ -3797,11 +4358,25 @@
     document.getElementById('evLugar').value = '';
     document.getElementById('evPersonas').value = '';
     document.getElementById('evPizzas').value = '';
+    document.getElementById('evMenu').value = '';
+    mostrarPrecioPrevio();
 
     eventoAbierto = nuevo.id;
     persistirCatering();
+    guardarBorrador();
     window.scrollTo(0, 0);
+    hecho(`Evento creado${nuevo.precio ? ` con precio de lista ${fmt(nuevo.precio)}` : ''}. Completá acá lo que falte.`, f);
   });
+  // el precio de lista se ve antes de crear el evento
+  function mostrarPrecioPrevio(){
+    const menu = document.getElementById('evMenu').value;
+    const pax = parseInt(document.getElementById('evPersonas').value) || 0;
+    const precio = precioDeLista(menu, pax);
+    document.getElementById('evPrecioPrevio').innerHTML = precio
+      ? `💲 Precio de lista: <b>${fmt(precio)}</b> (${Math.max(pax, Number(costos.minPersonas) || 0)} × ${fmt(costos.precios[menu])} + logística ${fmt(costos.precios.logistica)}). Se puede cambiar después.`
+      : '';
+  }
+  ['evMenu', 'evPersonas'].forEach(id => document.getElementById(id).addEventListener('input', mostrarPrecioPrevio));
 
   document.getElementById('btnExport').addEventListener('click', () => {
     const blob = new Blob([JSON.stringify({ ingresos: items, pizzas, pedidos, metas, catering, precios, gastos }, null, 2)], {type:'application/json'});
@@ -3878,7 +4453,9 @@
   });
 
   document.getElementById('btnLogout').addEventListener('click', () => {
-    if(!confirm('¿Cerrar sesión en este dispositivo?')) return;
+    if(!confirm(pendientes.size
+      ? '⚠ Hay cambios que todavía no se guardaron en la nube y se perderían.\n\n¿Cerrar sesión igual?'
+      : '¿Cerrar sesión en este dispositivo?')) return;
     cerrarSesion(' ');
     items = []; pizzas = { stock: [], ventas: [] }; pedidos = []; metas = {};
     catering = []; precios = []; gastos = { fijos: [], movs: [], pagos: {} };
@@ -3888,6 +4465,9 @@
   // la app siempre abre en Inicio
   irATab('inicio');
   renderTodo();
+  restaurarBorrador();
+  renderTodo();
+  mostrarCobroVenta();
   if(sesion) refrescarTodo(true);
   else mostrarLogin();
 
