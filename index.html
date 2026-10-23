@@ -847,7 +847,7 @@
       </div>
 
       <details class="card ajustes" id="ajustesCatering">
-        <summary><div>⚙️ Ajustes de catering<small>Lo que se lleva a cada evento, costos y lista de precios</small></div></summary>
+        <summary><div>⚙️ Ajustes de catering<small>Lo que se lleva a cada evento, costos, lista de precios y precio de las servilletas</small></div></summary>
         <div class="card-titulo" style="margin-top:20px">Lo que llevamos a cada evento</div>
         <div class="card-nota" style="margin:-8px 0 12px">Los eventos nuevos arrancan con estos sabores y esta checklist.</div>
         <div id="plantillaConfig"></div>
@@ -1296,7 +1296,7 @@
 
   // ---------- deshacer ----------
   // foto de los datos antes de un cambio; "Deshacer" vuelve a esa foto y guarda solo lo que cambió
-  function foto(){ return JSON.stringify({ items, gastos, pizzas, pedidos, catering }); }
+  function foto(){ return JSON.stringify({ items, gastos, pizzas, pedidos, catering, costos }); }
   function restaurar(f){
     const antes = JSON.parse(f), ahora = JSON.parse(foto());
     const nodos = {
@@ -1304,7 +1304,8 @@
       gastos:   [x => gastos = x,   () => persistirGastos()],
       pizzas:   [x => pizzas = x,   () => persistirPizzas()],
       pedidos:  [x => pedidos = x,  () => persistirPedidos()],
-      catering: [x => catering = x, () => persistirCatering()]
+      catering: [x => catering = x, () => persistirCatering()],
+      costos:   [x => costos = x,   () => persistirCostos()]
     };
     Object.entries(nodos).forEach(([k, [poner, guardar]]) => {
       if(JSON.stringify(antes[k]) !== JSON.stringify(ahora[k])){ poner(antes[k]); guardar(); }
@@ -3056,7 +3057,7 @@
     const usando = o => o.cantidad === costos.servPaquete && o.precio === costos.servPrecio;
     const fmtU = v => fmt(Math.round(v * 100) / 100);
     return `
-      <div class="serv-box">
+      <div class="serv-box" id="servBox">
         <div class="check-grupo" style="margin-top:0">🧻 Servilletas</div>
         <div class="card-nota" style="margin:4px 0 8px">Usando <b>${costos.servPaquete} por ${fmt(costos.servPrecio)}</b> →
           ${fmtU(costoServilleta())} c/u · <b>${fmt(Math.round(costoServilleta() * costos.servilletasPorPizza))}</b> por pizza</div>
@@ -3072,15 +3073,35 @@
               : `<button type="button" class="link-btn" data-serv-usar="${o.id}">usar</button>`}
             <button type="button" class="item-del" data-serv-del="${o.id}" title="Borrar">✕</button>
           </div>`).join('')}
-        <form id="formServ" class="item-nuevo" style="flex-wrap:wrap">
-          <input type="text" id="servDonde" placeholder="Dónde (ej: Makro)" style="flex:1 1 120px">
-          <input type="text" id="servMedida" placeholder="Medida (ej: 33×33 doble)" style="flex:1 1 120px">
-          <input type="number" id="servCant" min="1" inputmode="numeric" placeholder="Cantidad" style="flex:0 0 96px">
-          <input type="number" id="servPrecio" min="0" step="any" inputmode="decimal" placeholder="Precio $" style="flex:0 0 104px">
-          <button type="submit" class="btn btn-fuego">Anotar precio</button>
+        <form id="formServ" novalidate style="margin-top:14px">
+          <div class="check-grupo" style="margin:0 0 8px;width:100%">Nuevo precio</div>
+          <div class="form-campos" style="width:100%;margin:0">
+            <label class="campo"><span>Servilletas por paquete</span>
+              <input type="number" id="servCant" min="1" inputmode="numeric" placeholder="Ej: 1000" value="${costos.servPaquete || ''}"></label>
+            <label class="campo"><span>Precio del paquete</span>
+              <input type="text" id="servPrecio" class="inp-plata" inputmode="decimal" autocomplete="off" placeholder="Ej: 16500"></label>
+            <label class="campo"><span>Dónde <small>· opcional</small></span>
+              <input type="text" id="servDonde" placeholder="Ej: Makro"></label>
+            <label class="campo"><span>Medida <small>· opcional</small></span>
+              <input type="text" id="servMedida" placeholder="Ej: 33×33 doble hoja"></label>
+          </div>
+          <div class="botones" style="width:100%">
+            <button type="submit" class="btn btn-fuego" data-usar="1">Usar este precio</button>
+            <button type="submit" class="btn btn-sec">Solo anotar para comparar</button>
+          </div>
         </form>
-        <div class="card-nota" style="margin:6px 0 0">Anotá los precios que veas; la más barata queda primera y con "usar" pasa a los costos de los eventos.</div>
+        <div class="card-nota" style="margin:8px 0 0">"Usar este precio" lo pasa a los costos de todos los eventos. Los precios anotados quedan en la lista, el más barato primero.</div>
       </div>`;
+  }
+  // abre Ajustes de catering en la parte de servilletas, lista para anotar el precio nuevo
+  function irAServilletas(){
+    eventoAbierto = null;
+    irATab('catering');
+    renderCatering();
+    document.getElementById('ajustesCatering').open = true;
+    const box = document.getElementById('servBox');
+    box.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    setTimeout(() => document.getElementById('servPrecio').focus({ preventScroll: true }), 400);
   }
   function usarServilletas(cantidad, precio){
     costos.servPaquete = cantidad;
@@ -3090,25 +3111,36 @@
     cont.querySelectorAll('[data-serv-usar]').forEach(b => b.addEventListener('click', () => {
       const o = costos.servOfertas.find(x => String(x.id) === b.dataset.servUsar);
       if(!o) return;
+      const f = foto();
       usarServilletas(o.cantidad, o.precio);
       persistirCostos();
+      hecho(`Ahora se usa ${o.cantidad} por ${fmt(o.precio)} para los costos de los eventos.`, f);
     }));
     cont.querySelectorAll('[data-serv-del]').forEach(b => b.addEventListener('click', () => {
+      const f = foto();
       costos.servOfertas = costos.servOfertas.filter(x => String(x.id) !== b.dataset.servDel);
       persistirCostos();
+      hecho('Borraste ese precio de servilletas.', f);
     }));
     document.getElementById('formServ').addEventListener('submit', e => {
       e.preventDefault();
-      const cantidad = parseInt(document.getElementById('servCant').value);
-      const precio = parseFloat(document.getElementById('servPrecio').value);
-      if(!(cantidad > 0) || !(precio > 0)){ alert('Poné la cantidad del paquete y el precio.'); return; }
+      const usar = !!(e.submitter && e.submitter.dataset.usar);
+      const elCant = document.getElementById('servCant');
+      const elPrecio = document.getElementById('servPrecio');
+      const cantidad = parseInt(elCant.value);
+      const precio = parsearMonto(elPrecio.value);
+      if(!(cantidad > 0)) return errorEn(elCant, 'Falta cuántas servilletas trae el paquete, ej: 1000');
+      if(!(precio > 0)) return errorEn(elPrecio, elPrecio.value.trim() ? 'No se entiende el número: usá solo cifras, ej: 16500' : 'Falta el precio del paquete, ej: 16500');
+      const f = foto();
       const o = { id: Date.now(), donde: document.getElementById('servDonde').value.trim(),
                   medida: document.getElementById('servMedida').value.trim(), cantidad, precio, fecha: hoyISO() };
       costos.servOfertas.push(o);
-      // si sale más barata que la que usás, pasa a ser la que se usa; si no, queda para comparar
-      if(porUnidad(o) < costoServilleta()) usarServilletas(cantidad, precio);
+      if(usar) usarServilletas(cantidad, precio);
       document.activeElement.blur();
       persistirCostos();
+      const pp = fmt(Math.round(porUnidad(o) * costos.servilletasPorPizza));
+      hecho(usar ? `Listo: servilletas a ${fmt(precio)} los ${cantidad} (${pp} por pizza) en todos los eventos.`
+                 : `Anotado para comparar: ${cantidad} por ${fmt(precio)}. Los eventos siguen con el precio de antes.`, f);
     });
   }
 
@@ -3870,16 +3902,9 @@
       ev.precio = nuevo;
       persistirCatering();
     });
+    // el precio de las servilletas se cambia en un solo lugar: Ajustes de catering
     const btnServ = document.getElementById('btnServPrecio');
-    if(btnServ) btnServ.addEventListener('click', () => {
-      const cant = parseInt(prompt('¿Cuántas servilletas trae el paquete?', costos.servPaquete));
-      if(!(cant > 0)) return;
-      const precio = parseFloat(String(prompt(`¿Cuánto sale el paquete de ${cant}?`, costos.servPrecio) || '').replace(/[^\d.]/g, ''));
-      if(!(precio > 0)) return;
-      costos.servOfertas.push({ id: Date.now(), donde: '', medida: '', cantidad: cant, precio, fecha: hoyISO() });
-      usarServilletas(cant, precio);
-      persistirCostos();
-    });
+    if(btnServ) btnServ.addEventListener('click', irAServilletas);
     ['btnChecklistPlantilla', 'btnSaboresPlantilla'].forEach(id => {
       const b = document.getElementById(id);
       if(b) b.addEventListener('click', () => { aplicarPlantilla(ev); persistirCatering(); });
