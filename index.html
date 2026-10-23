@@ -611,6 +611,25 @@
   .ajustes[open] > summary::after{transform:rotate(90deg)}
   .ajustes > summary small{display:block;font-weight:500;font-size:.8rem;color:var(--gris)}
 
+  /* ---------- torta: cómo nos conocieron ---------- */
+  .torta{display:flex;gap:18px;align-items:center;flex-wrap:wrap}
+  .torta svg{width:190px;height:190px;flex:none;margin:0 auto}
+  .torta-porcion path{stroke:var(--negro-2);stroke-width:2;cursor:pointer;transition:opacity .15s}
+  .torta-porcion.apagada{opacity:.3}
+  .torta-pct{fill:#fff;font-size:12px;font-weight:800;text-anchor:middle;pointer-events:none}
+  .torta-num{fill:var(--crema);font-size:24px;font-weight:900;text-anchor:middle}
+  .torta-sub{fill:var(--gris);font-size:11px;font-weight:700;text-anchor:middle}
+  .torta-leyenda{flex:1 1 200px;display:flex;flex-direction:column;gap:2px;min-width:0}
+  .torta-fila{display:grid;grid-template-columns:12px 1fr auto;column-gap:8px;align-items:center;text-align:left;
+    background:none;border:1px solid transparent;border-radius:12px;padding:7px 8px;color:var(--crema);font:inherit;cursor:pointer}
+  .torta-fila.activo{border-color:var(--linea);background:rgba(244,236,225,.04)}
+  .torta-fila i{width:12px;height:12px;border-radius:4px}
+  .torta-nombre{font-size:.88rem;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .torta-val{font-weight:900;font-size:.95rem}
+  .torta-fila small{grid-column:2 / 4;color:var(--gris);font-size:.74rem}
+  .torta-meta{margin-top:14px;padding:12px 14px;border-radius:14px;background:rgba(57,135,229,.1);border:1px solid rgba(57,135,229,.3);font-size:.85rem}
+  .torta-meta .item-fecha{display:block;margin-top:2px}
+
   /* ---------- aviso flotante: qué pasó, con "Deshacer" ---------- */
   .toast{
     position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom, 0px));z-index:80;
@@ -804,10 +823,27 @@
           <label class="campo"><span>Menú</span><select id="evMenu"></select></label>
           <label class="campo full"><span>Pizzas a llevar <small>· opcional (vacío = se calcula)</small></span>
             <input type="number" id="evPizzas" min="1" inputmode="numeric" placeholder="Ej: 45"></label>
+          <div class="campo full"><span>Cómo nos conoció <small>· opcional</small></span>
+            <select id="evOrigen" class="sel-chips"></select></div>
         </div>
         <div class="card-nota" id="evPrecioPrevio" style="margin:0 0 12px"></div>
         <div id="evCopiarWrap"></div>
         <button type="button" class="btn btn-fuego" id="btnCrearEvento" style="width:100%">Crear evento</button>
+      </div>
+
+      <div class="card" id="cardOrigen">
+        <div class="card-titulo">¿Cómo nos conocieron?</div>
+        <div class="toggle" id="origenPeriodo" style="margin-bottom:8px">
+          <button type="button" data-periodo="mes">Este mes</button>
+          <button type="button" data-periodo="anio" class="activo">Este año</button>
+          <button type="button" data-periodo="todo">Todo</button>
+        </div>
+        <div class="toggle" id="origenMedida">
+          <button type="button" data-medida="clientes" class="activo">Clientes</button>
+          <button type="button" data-medida="pax">Personas (pax)</button>
+          <button type="button" data-medida="plata">Facturación</button>
+        </div>
+        <div id="origenGrafico"></div>
       </div>
 
       <details class="card ajustes" id="ajustesCatering">
@@ -1145,6 +1181,19 @@
     congeladas: { escalones: [{ desde: 1, precio: 14000 }, { desde: 4, precio: 13000 }, { desde: 6, precio: 12500 }],
                   premium: 1000, premiumSabores: ['diavola', '4 formaggi'] }
   };
+  // cómo nos conoció cada cliente de catering (para saber qué canal trae eventos); el orden fija el color del gráfico
+  const ORIGENES = [
+    { id: 'meta',         nombre: 'Anuncio de Meta',    emoji: '📣', color: '#3987e5' },
+    { id: 'instagram',    nombre: 'Instagram',          emoji: '📸', color: '#d95926' },
+    { id: 'recomendacion', nombre: 'Recomendación',     emoji: '🤝', color: '#199e70' },
+    { id: 'cliente',      nombre: 'Ya era cliente',     emoji: '🔁', color: '#c98500' },
+    { id: 'evento',       nombre: 'Probó en un evento', emoji: '🍕', color: '#d55181' },
+    { id: 'otro',         nombre: 'Otro',               emoji: '•',  color: '#008300' }
+  ];
+  function opcionesOrigen(sel){
+    return `<option value="">Sin dato</option>` + ORIGENES.map(o =>
+      `<option value="${o.id}" ${o.id === sel ? 'selected' : ''}>${o.emoji} ${o.nombre}</option>`).join('');
+  }
   const MENUS = [
     { id: 'op1',   nombre: 'Opción 1 · Pizza party' },
     { id: 'op2',   nombre: 'Opción 2 · Pizza + tapeos' },
@@ -1278,7 +1327,8 @@
     cont.addEventListener('click', e => {
       const b = e.target.closest('button[data-val]');
       if(!b) return;
-      sel.value = b.dataset.val;
+      const vacia = [...sel.options].some(o => o.value === '');
+      sel.value = vacia && b.dataset.val === sel.value ? '' : b.dataset.val;
       sel.dispatchEvent(new Event('change', { bubbles: true }));
       pintarChips(sel);
     });
@@ -1287,13 +1337,13 @@
   function pintarChips(sel){
     const cont = sel.nextElementSibling;
     if(!cont || !cont.classList.contains('seg')) return;
-    cont.innerHTML = [...sel.options].map(o => {
+    cont.innerHTML = [...sel.options].filter(o => o.value !== '').map(o => {
       const on = o.value === sel.value;
       return `<button type="button" role="radio" aria-checked="${on}" data-val="${escapeHtml(o.value)}" class="${on ? 'activo' : ''}">${escapeHtml(o.textContent)}</button>`;
     }).join('');
   }
   function refrescarChips(){
-    document.querySelectorAll('.sel-medio, .sel-cuenta, .sel-moneda').forEach(sel => { chipear(sel); pintarChips(sel); });
+    document.querySelectorAll('.sel-medio, .sel-cuenta, .sel-moneda, .sel-chips').forEach(sel => { chipear(sel); pintarChips(sel); });
   }
 
   // ---------- borradores ----------
@@ -1302,7 +1352,7 @@
   const CACHE_KEY_BORRADOR = 'lasinergia_borrador';
   const CAMPOS_BORRADOR = ['gastoMonto', 'gastoDesc', 'gastoFecha', 'monto', 'desc', 'fecha',
     'pedidoCliente', 'pedidoFecha', 'pedidoHora', 'pedidoDireccion', 'pedidoNotas', 'ventaCliente', 'ventaCobrado',
-    'evNombre', 'evFecha', 'evHora', 'evLugar', 'evPersonas', 'evPizzas', 'evMenu'];
+    'evNombre', 'evFecha', 'evHora', 'evLugar', 'evPersonas', 'evPizzas', 'evMenu', 'evOrigen'];
   function guardarBorrador(){
     const b = { dia: hoyISO(), catGasto, ventaDraft };
     CAMPOS_BORRADOR.forEach(id => {
@@ -3274,9 +3324,113 @@
   document.getElementById('calNext').addEventListener('click', () => { calMes = correrMes(calMes, 1); renderCalendario(); });
   document.getElementById('btnVistaEventos').addEventListener('click', () => { vistaLista = !vistaLista; renderCalendario(); });
 
+  // ---------- cómo nos conocieron: torta por canal ----------
+  let origenPeriodo = 'anio', origenMedida = 'clientes', origenActivo = null;
+  function enPeriodo(fecha, periodo){
+    if(periodo === 'mes') return mesDe(fecha) === mesActual();
+    if(periodo === 'anio') return (fecha || '').slice(0, 4) === hoyISO().slice(0, 4);
+    return true;
+  }
+  // publicidad del período: gastos sueltos y fijos de la categoría publicidad
+  function publicidadEn(periodo){
+    const movs = gastos.movs.filter(g => g.cat === 'publicidad' && enPeriodo(g.fecha, periodo)).reduce((t, g) => t + g.monto, 0);
+    const hasta = mesActual();
+    let desde = periodo === 'mes' ? hasta : periodo === 'anio' ? hasta.slice(0, 4) + '-01'
+      : gastos.fijos.filter(f => f.cat === 'publicidad').map(f => f.desde).sort()[0] || hasta;
+    let fijos = 0;
+    for(let ym = desde; ym <= hasta; ym = correrMes(ym, 1))
+      fijos += fijosDe(ym).filter(f => f.cat === 'publicidad').reduce((t, f) => t + f.monto, 0);
+    return movs + fijos;
+  }
+  // $2.502.500 → $2,5M · $450.000 → $450k (para el centro de la torta)
+  function plataCorta(n){
+    return n >= 1e6 ? `$${(n / 1e6).toLocaleString('es-AR', { maximumFractionDigits: 1 })}M` : `$${Math.round(n / 1000)}k`;
+  }
+  // arco de una porción de anillo (ángulos en radianes, 0 = arriba)
+  function arcoAnillo(cx, cy, r, ri, a0, a1){
+    const p = (rad, a) => `${(cx + rad * Math.sin(a)).toFixed(2)} ${(cy - rad * Math.cos(a)).toFixed(2)}`;
+    const grande = a1 - a0 > Math.PI ? 1 : 0;
+    return `M${p(r, a0)} A${r} ${r} 0 ${grande} 1 ${p(r, a1)} L${p(ri, a1)} A${ri} ${ri} 0 ${grande} 0 ${p(ri, a0)} Z`;
+  }
+  function renderOrigenes(){
+    const cont = document.getElementById('origenGrafico');
+    const evs = catering.filter(e => enPeriodo(e.fecha, origenPeriodo));
+    const valor = e => origenMedida === 'pax' ? (Number(e.personas) || 0)
+      : origenMedida === 'plata' ? (resumenEvento(e).precio || resumenEvento(e).cobrado) : 1;
+    const unidad = n => origenMedida === 'pax' ? `${n} ${n === 1 ? 'persona' : 'personas'}`
+      : origenMedida === 'plata' ? fmt(n) : `${n} ${n === 1 ? 'cliente' : 'clientes'}`;
+    const filas = ORIGENES.map(o => {
+      const lista = evs.filter(e => e.origen === o.id);
+      return { ...o, n: lista.length, pax: lista.reduce((t, e) => t + (Number(e.personas) || 0), 0),
+               plata: lista.reduce((t, e) => t + (resumenEvento(e).precio || resumenEvento(e).cobrado), 0),
+               valor: lista.reduce((t, e) => t + valor(e), 0) };
+    }).filter(f => f.valor > 0);
+    const sinDato = evs.filter(e => !ORIGENES.some(o => o.id === e.origen)).length;
+    const total = filas.reduce((t, f) => t + f.valor, 0);
+    const notaSinDato = sinDato
+      ? `<div class="card-nota" style="margin:12px 0 0">${sinDato} ${sinDato === 1 ? 'evento' : 'eventos'} sin dato no ${sinDato === 1 ? 'entra' : 'entran'} en el gráfico: cargalo adentro de cada evento, en "Cómo nos conoció".</div>` : '';
+    if(!total){
+      cont.innerHTML = `<div class="vacio">Todavía no hay eventos con "Cómo nos conoció" ${origenPeriodo === 'mes' ? 'este mes' : origenPeriodo === 'anio' ? 'este año' : ''}.</div>` + notaSinDato;
+      return;
+    }
+    const pct = v => Math.round(v / total * 100);
+    // porciones en el orden fijo de ORIGENES (el color sigue al canal, no al tamaño)
+    let a = 0;
+    const porciones = filas.map(f => {
+      const a0 = a, a1 = a + f.valor / total * Math.PI * 2;
+      a = a1;
+      const d = filas.length === 1
+        ? arcoAnillo(100, 100, 92, 54, 0, Math.PI) + arcoAnillo(100, 100, 92, 54, Math.PI, Math.PI * 2 - 1e-6)
+        : arcoAnillo(100, 100, 92, 54, a0, a1);
+      const medio = (a0 + a1) / 2;
+      const etiqueta = pct(f.valor) >= 9 && filas.length > 1
+        ? `<text x="${(100 + 73 * Math.sin(medio)).toFixed(1)}" y="${(100 - 73 * Math.cos(medio) + 4).toFixed(1)}" class="torta-pct">${pct(f.valor)}%</text>` : '';
+      return `<g class="torta-porcion ${origenActivo && origenActivo !== f.id ? 'apagada' : ''}" data-origen="${f.id}">
+        <path d="${d}" fill="${f.color}"></path>${etiqueta}<title>${f.nombre}: ${unidad(f.valor)} (${pct(f.valor)}%)</title></g>`;
+    }).join('');
+    const act = filas.find(f => f.id === origenActivo);
+    const centro = act
+      ? `<text x="100" y="98" class="torta-num">${pct(act.valor)}%</text><text x="100" y="118" class="torta-sub">${origenMedida === 'plata' ? plataCorta(act.valor) : unidad(act.valor)}</text>`
+      : `<text x="100" y="98" class="torta-num">${origenMedida === 'plata' ? plataCorta(total) : total}</text>
+         <text x="100" y="118" class="torta-sub">${origenMedida === 'pax' ? 'personas' : origenMedida === 'plata' ? 'facturado' : 'clientes'}</text>`;
+    const meta = filas.find(f => f.id === 'meta');
+    const publicidad = publicidadEn(origenPeriodo);
+    const lineaMeta = meta || publicidad ? `<div class="torta-meta">📣 <b>Meta</b>: ${meta ? `${meta.n} ${meta.n === 1 ? 'evento' : 'eventos'} · ${fmt(meta.plata)} facturado` : 'ningún evento todavía'}
+      · publicidad ${fmt(publicidad)}${meta && publicidad ? ` → cada $1 de publicidad trajo <b>$${(meta.plata / publicidad).toLocaleString('es-AR', { maximumFractionDigits: 1 })}</b> en eventos` : ''}
+      <span class="item-fecha">(publicidad sin percepciones ni IVA, que van en Impuestos)</span></div>` : '';
+    cont.innerHTML = `
+      <div class="torta">
+        <svg viewBox="0 0 200 200" role="img" aria-label="Cómo nos conocieron, en ${origenMedida === 'pax' ? 'personas' : origenMedida === 'plata' ? 'facturación' : 'clientes'}">${porciones}${centro}</svg>
+        <div class="torta-leyenda" role="list">
+          ${filas.map(f => `<button type="button" role="listitem" class="torta-fila ${origenActivo === f.id ? 'activo' : ''}" data-origen="${f.id}">
+            <i style="background:${f.color}"></i><span class="torta-nombre">${f.emoji} ${f.nombre}</span>
+            <span class="torta-val">${pct(f.valor)}%</span>
+            <small>${f.n} ${f.n === 1 ? 'cliente' : 'clientes'} · ${f.pax} pax · ${fmt(f.plata)}</small></button>`).join('')}
+        </div>
+      </div>
+      ${lineaMeta}${notaSinDato}`;
+    // tocar una porción o una fila la resalta; tocarla de nuevo vuelve al total
+    cont.querySelectorAll('[data-origen]').forEach(el => el.addEventListener('click', () => {
+      origenActivo = origenActivo === el.dataset.origen ? null : el.dataset.origen;
+      renderOrigenes();
+    }));
+  }
+  [['origenPeriodo', 'periodo'], ['origenMedida', 'medida']].forEach(([id, attr]) => {
+    document.getElementById(id).addEventListener('click', e => {
+      const b = e.target.closest(`button[data-${attr}]`);
+      if(!b) return;
+      if(attr === 'periodo') origenPeriodo = b.dataset.periodo; else origenMedida = b.dataset.medida;
+      document.querySelectorAll(`#${id} button`).forEach(x => x.classList.toggle('activo', x === b));
+      renderOrigenes();
+    });
+  });
+
   function renderListaEventos(){
     const selMenu = document.getElementById('evMenu');
     if(!selMenu.options.length) selMenu.innerHTML = opcionesMenu('');
+    const selOrigen = document.getElementById('evOrigen');
+    if(!selOrigen.options.length) selOrigen.innerHTML = opcionesOrigen('');
+    renderOrigenes();
     renderCalendario();
     renderPlantilla();
     renderCostosConfig();
@@ -3381,6 +3535,8 @@
             <input type="number" data-campo="pizzas" min="0" inputmode="numeric" value="${ev.pizzas || ''}" placeholder="Ej: 45"></label>
           <label class="campo full"><span>Notas <small>· opcional</small></span>
             <input type="text" data-campo="notas" value="${escapeHtml(ev.notas || '')}" placeholder="Ej: llegar 18 h, entrada por cochera"></label>
+          <div class="campo full"><span>Cómo nos conoció</span>
+            <select data-campo="origen" class="sel-chips">${opcionesOrigen(ev.origen)}</select></div>
         </div>
         ${ev.lugar ? `<a class="pedido-mapa" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(ev.lugar)}" target="_blank" rel="noopener">📍 Cómo llegar</a>` : ''}
         <div class="footer-row" style="justify-content:flex-start;margin-top:16px">
@@ -3583,6 +3739,7 @@
       inp.addEventListener('change', () => {
         const campo = inp.getAttribute('data-campo');
         ev[campo] = inp.type === 'number' ? (parseFloat(inp.value) || 0) : inp.value;
+        if(campo === 'origen' && !ev.origen) delete ev.origen;
         persistirCatering();
       });
     });
@@ -4337,6 +4494,7 @@
       personas: personasEv,
       pizzas: pizzasEv,
       menu: document.getElementById('evMenu').value || undefined,
+      origen: document.getElementById('evOrigen').value || undefined,
       // con menú y personas, el precio sale de la lista de precios (se puede cambiar después)
       precio: precioDeLista(document.getElementById('evMenu').value, personasEv) || undefined,
       notas: '',
@@ -4359,6 +4517,7 @@
     document.getElementById('evPersonas').value = '';
     document.getElementById('evPizzas').value = '';
     document.getElementById('evMenu').value = '';
+    document.getElementById('evOrigen').value = '';
     mostrarPrecioPrevio();
 
     eventoAbierto = nuevo.id;
