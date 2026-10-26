@@ -32,6 +32,8 @@ Para estimar la ganancia del evento: `menu` (`op1` | `op2` | `papas`), `km` (ida
 `pizzasSalieron` (las que salieron, se carga después del evento; si falta se estima por persona).
 Cada sabor lleva `cantidad` (las que se llevan) y `salieron` (las que salieron, después del evento); al cargar `salieron`
 la app actualiza `pizzasSalieron` con la suma.
+`costosExtra` (opcional): `[{ id, desc, monto, cat }]`, costos puntuales del evento (hielo, alquiler, viáticos) que restan
+de su ganancia; con "Anotar en gastos" se crea un `gastos.movs` con `costoExtraId` y `eventoId`, la fecha del evento y la `cat` elegida.
 `origen` (opcional): cómo nos conoció el cliente, `meta` (anuncio de Meta), `instagram`, `recomendacion`, `cliente`
 (ya era cliente), `evento` (probó en otro evento) u `otro`; sin el campo = sin dato. Catering muestra una torta por canal
 (clientes, personas o facturación) y compara lo facturado por Meta con los gastos de `publicidad`.

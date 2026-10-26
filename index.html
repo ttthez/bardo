@@ -2947,6 +2947,9 @@
   }
   // un pago al personal "ya está en gastos" si existe el gasto que lo referencia
   function gastoDePersonal(p){ return gastos.movs.find(g => g.personalId === p.id) || null; }
+  // costos puntuales de un evento (hielo, alquiler, viáticos…): restan de su ganancia y se pueden pasar a Gastos
+  function costosExtraDe(ev){ return Object.values(ev.costosExtra || {}); }
+  function gastoDeCostoExtra(x){ return gastos.movs.find(g => g.costoExtraId === x.id) || null; }
 
   function resumenEvento(ev){
     const precio = Number(ev.precio) || 0;
@@ -2955,11 +2958,12 @@
     const falta = Math.max(precio - cobrado, 0);
     const c = costosEvento(ev);
     // si todavía no pusiste el precio, la ganancia se calcula sobre lo cobrado
-    const ganancia = (precio || cobrado) - personal - c.insumos - c.servilletas - c.nafta - c.peajes;
+    const extra = costosExtraDe(ev).reduce((s,x) => s + (Number(x.monto) || 0), 0);
+    const ganancia = (precio || cobrado) - personal - extra - c.insumos - c.servilletas - c.nafta - c.peajes;
     // la ganancia "real" si los dueños cobraran como personal
     const sueldos = (Number(costos.duenos) || 0) * (Number(costos.sueldoDueno) || 0);
     const bajoMinimo = (precio || cobrado) > 0 && ganancia < (Number(costos.gananciaMinima) || 0);
-    return { precio, cobrado, personal, falta, ganancia, sueldos, gananciaConSueldos: ganancia - sueldos, bajoMinimo, ...c };
+    return { precio, cobrado, personal, extra, falta, ganancia, sueldos, gananciaConSueldos: ganancia - sueldos, bajoMinimo, ...c };
   }
 
   // costo aproximado del evento: insumos por persona según el menú, y nafta por km.
@@ -3647,7 +3651,33 @@
             <div class="item-fecha">${ev.km ? `${ev.km} km × ${fmt(Math.round(costoKm()))}/km` : 'poné los km ida y vuelta'}</div></div>
             <div class="item-monto gasto">−${fmt(r.nafta)}</div></div>
           ${r.peajes ? `<div class="item"><div class="item-info"><div class="item-desc">Peajes</div></div><div class="item-monto gasto">−${fmt(r.peajes)}</div></div>` : ''}
+          ${costosExtraDe(ev).map(x => {
+            const c = catGastoDe(x.cat);
+            return `<div class="item"><div class="item-info"><div class="item-desc">${escapeHtml(x.desc)}</div>
+              <div class="item-fecha">${c.emoji} ${c.nombre} · ${gastoDeCostoExtra(x) ? '<span class="tag-ok">✓ anotado en gastos</span>' : 'sin anotar en gastos'}</div></div>
+              <div class="item-monto gasto">−${fmt(Number(x.monto) || 0)}</div>
+              <button type="button" class="item-del" data-extra-del="${x.id}" title="Quitar" aria-label="Quitar costo">✕</button></div>`;
+          }).join('')}
         </div>
+        <form id="formCostoExtra" novalidate style="margin-top:16px">
+          <div class="check-grupo" style="margin:0 0 8px;width:100%">Agregar otro costo de este evento</div>
+          <div class="form-campos" style="width:100%;margin:0">
+            <label class="campo full"><span>Qué fue</span>
+              <input type="text" id="extraDesc" list="extrasConocidos" autocomplete="off" placeholder="Ej: hielo, alquiler de mesas, viáticos"></label>
+            <label class="campo"><span>Monto</span>
+              <input type="text" id="extraMonto" class="inp-plata" inputmode="decimal" autocomplete="off" placeholder="Ej: 15000"></label>
+            <label class="campo"><span>Categoría</span>
+              <select id="extraCat">${CATS_GASTO.map(c => `<option value="${c.id}" ${c.id === 'otros' ? 'selected' : ''}>${c.emoji} ${c.nombre}</option>`).join('')}</select></label>
+          </div>
+          <button type="submit" class="btn btn-fuego" style="width:100%">+ Agregar costo</button>
+        </form>
+        <datalist id="extrasConocidos">${distintosRecientes(catering.flatMap(e => costosExtraDe(e)), x => x.desc, 60)
+          .map(o => `<option value="${escapeHtml(o.valor)}">`).join('')}</datalist>
+        ${(() => {
+          const pend = costosExtraDe(ev).filter(x => !gastoDeCostoExtra(x) && Number(x.monto) > 0);
+          return pend.length ? `<button type="button" class="btn-cerrar" id="btnExtrasAGastos">
+            Anotar ${pend.length === 1 ? 'este costo' : `los ${pend.length} costos`} en gastos · ${fmt(pend.reduce((t, x) => t + Number(x.monto), 0))}</button>` : '';
+        })()}
         <div class="costo-totales">
           <div><div class="label">Ganancia ${r.pizzasReales ? '' : 'estimada'}</div><div class="val plata" style="${r.ganancia < 0 ? 'color:var(--fuego-claro)' : ''}">${fmt(r.ganancia)}</div></div>
           <div><div class="label">Margen</div><div class="val">${(r.precio || r.cobrado) ? Math.round(r.ganancia / (r.precio || r.cobrado) * 100) + '%' : '—'}</div></div>
@@ -3656,7 +3686,7 @@
         ${r.sueldos ? `<div class="card-nota" style="margin:10px 0 0">👥 Con sueldo de los dueños (${costos.duenos} × ${fmt(costos.sueldoDueno)}):
           <b style="${r.gananciaConSueldos < 0 ? 'color:var(--fuego-claro)' : ''}">${fmt(r.gananciaConSueldos)}</b>${(r.precio || r.cobrado) ? ` · margen ${Math.round(r.gananciaConSueldos / (r.precio || r.cobrado) * 100)}%` : ''}</div>` : ''}
         ${r.bajoMinimo ? `<div class="alerta-sabores" style="margin:10px 0 0">⚠️ Este evento deja menos que el mínimo de ${fmt(costos.gananciaMinima)}. Revisá el precio, la logística o el personal.</div>` : ''}
-        <div class="card-nota" style="margin:12px 0 0">Son costos aproximados para ver cuánto deja el evento; los gastos reales se anotan en Gastos.</div>
+        <div class="card-nota" style="margin:12px 0 0">Insumos, servilletas y nafta son aproximados. Los costos que agregás acá son reales: con "Anotar en gastos" pasan también a Gastos del mes.</div>
       </div>
 
       <div class="card">
@@ -3891,6 +3921,51 @@
         medio: medioUltimo()
       }));
       persistirGastos();
+    });
+
+    // otros costos del evento
+    document.getElementById('formCostoExtra').addEventListener('submit', e => {
+      e.preventDefault();
+      const elDesc = document.getElementById('extraDesc');
+      const elMonto = document.getElementById('extraMonto');
+      const desc = elDesc.value.trim();
+      const monto = parsearMonto(elMonto.value);
+      if(!desc) return errorEn(elDesc, 'Escribí qué fue, ej: hielo');
+      if(!(monto > 0)) return errorEn(elMonto, elMonto.value.trim() ? 'No se entiende el número: usá solo cifras, ej: 15000' : 'Falta el monto, ej: 15000');
+      const f = foto();
+      ev.costosExtra = costosExtraDe(ev);
+      ev.costosExtra.push({ id: Date.now(), desc, monto, cat: document.getElementById('extraCat').value });
+      document.activeElement.blur();
+      persistirCatering();
+      hecho(`Costo agregado: ${desc} ${fmt(monto)}. La ganancia del evento ya lo descuenta.`, f);
+    });
+    // si ese costo ya se cargó en otro evento, sugerimos la misma categoría
+    document.getElementById('extraDesc').addEventListener('change', e => {
+      const d = e.target.value.trim().toLowerCase();
+      const prev = catering.flatMap(x => costosExtraDe(x)).filter(x => String(x.desc).toLowerCase() === d).sort((a, b) => b.id - a.id)[0];
+      if(prev && prev.cat) document.getElementById('extraCat').value = prev.cat;
+    });
+    cont.querySelectorAll('[data-extra-del]').forEach(btn => btn.addEventListener('click', () => {
+      const x = costosExtraDe(ev).find(y => String(y.id) === btn.dataset.extraDel);
+      if(!x) return;
+      const g = gastoDeCostoExtra(x);
+      const f = foto();
+      ev.costosExtra = costosExtraDe(ev).filter(y => y !== x);
+      if(g){ gastos.movs = gastos.movs.filter(y => y !== g); persistirGastos(); }
+      persistirCatering();
+      hecho(`Quitaste "${x.desc}"${g ? ' (también de gastos)' : ''}.`, f);
+    }));
+    const btnExtras = document.getElementById('btnExtrasAGastos');
+    if(btnExtras) btnExtras.addEventListener('click', () => {
+      const pend = costosExtraDe(ev).filter(x => !gastoDeCostoExtra(x) && Number(x.monto) > 0);
+      const f = foto();
+      // con la fecha del evento, así cae en el mes en que se hizo
+      pend.forEach((x, i) => gastos.movs.push({
+        id: Date.now() + i, fecha: ev.fecha || hoyISO(), cat: x.cat || 'otros', monto: Number(x.monto),
+        desc: `${x.desc} · ${ev.nombre}`, costoExtraId: x.id, eventoId: ev.id, medio: medioUltimo()
+      }));
+      persistirGastos();
+      hecho(`${pend.length === 1 ? 'Anotado' : `Anotados ${pend.length} costos`} en Gastos de ${nombreMes(mesDe(ev.fecha || hoyISO()))}.`, f);
     });
 
     // checklist de ítems: normalizamos al formato {nombre, cantidad, hecho, grupo} antes de tocarla
