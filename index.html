@@ -216,6 +216,7 @@
     padding:3px 9px;border-radius:999px;white-space:nowrap;
   }
   .badge-hoy{background:rgba(226,58,22,.18);color:var(--fuego-claro);border:1px solid rgba(226,58,22,.35)}
+  .badge-entrega{background:transparent;color:var(--crema-tenue);border:1px solid var(--linea);font-weight:600}
   .badge-atrasado{background:rgba(226,58,22,.85);color:#fff}
 
   .edit-aviso{
@@ -374,6 +375,7 @@
   .costo-totales .label{color:var(--gris);font-size:.7rem;text-transform:uppercase;letter-spacing:.04em}
   .costo-totales .val{font-size:1.2rem;font-weight:900;margin-top:2px}
   .costo-totales .val.plata{color:var(--verde);font-size:1.45rem}
+  .costo-totales .val.rojo{color:var(--fuego-claro)}
   .costo-aviso{font-size:.82rem;color:var(--fuego-claro);font-weight:700;margin-top:12px}
 
   .badge-cerrado{background:rgba(63,174,92,.15);color:var(--verde);border:1px solid rgba(63,174,92,.35)}
@@ -745,7 +747,9 @@
           <input type="text" id="pedidoCliente" list="clientesConocidos" autocomplete="off" placeholder="Ej: Paula"></label>
         <label class="campo"><span>Día de entrega</span><input type="date" id="pedidoFecha"></label>
         <label class="campo"><span>Hora <small>· opcional</small></span><input type="time" id="pedidoHora"></label>
-        <label class="campo full"><span>Dirección <small>· opcional (vacío si retira)</small></span>
+        <div class="campo full"><span>Entrega</span>
+          <select id="pedidoEntrega" class="sel-chips"><option value="envio">🛵 Se lo enviamos</option><option value="retira">🏠 Lo retira</option></select></div>
+        <label class="campo full" id="pedidoDireccionCampo"><span>Dirección <small>· opcional</small></span>
           <input type="text" id="pedidoDireccion" placeholder="Ej: Av. Cabildo 1234"></label>
         <label class="campo full"><span>Notas <small>· opcional</small></span>
           <input type="text" id="pedidoNotas" placeholder="Ej: tocar timbre 2B"></label>
@@ -1062,6 +1066,11 @@
     </div>
 
     <div class="card">
+      <div class="card-titulo">Envíos del mes</div>
+      <div id="enviosMes"></div>
+    </div>
+
+    <div class="card">
       <div class="card-titulo">Historial del mes</div>
       <div class="hist-tot" id="histTotales"></div>
       <div class="lista" id="listaHistorial"></div>
@@ -1134,8 +1143,17 @@
     { id: 'equipo',    nombre: 'Equipamiento', emoji: '🔧' },
     { id: 'publicidad',nombre: 'Publicidad',  emoji: '📣' },
     { id: 'personal',  nombre: 'Personal',    emoji: '👥' },
+    { id: 'envios',    nombre: 'Envíos',      emoji: '🛵' },
     { id: 'otros',     nombre: 'Otros',       emoji: '•' }
   ];
+  // cómo se llevó un pedido de congeladas que se envía (lo que costó cada envío va a Gastos › Envíos)
+  const VIAS_ENVIO = [
+    { id: 'uber', nombre: 'Uber', emoji: '🚕' },
+    { id: 'bici', nombre: 'Bici', emoji: '🚲' },
+    { id: 'auto', nombre: 'Auto', emoji: '🚗' },
+    { id: 'otro', nombre: 'Otro', emoji: '•' }
+  ];
+  const CACHE_KEY_VIA = 'lasinergia_via';
 
   // con qué se pagó o cobró: sirve para saber cuánto efectivo hay y para controlar contra los extractos
   const MEDIOS = [
@@ -1178,7 +1196,9 @@
     minPersonas: 25,           // los términos cobran como mínimo 25 cubiertos
     sabores: {},               // costo por sabor con packaging (planilla de costos); el que falta usa costoPizza
     // lista de precios de congeladas: precio por pizza según cuántas lleva en total (packs), igual para todos los sabores
-    congeladas: { escalones: [{ desde: 1, precio: 14000 }, { desde: 4, precio: 13000 }, { desde: 6, precio: 12500 }] }
+    congeladas: { escalones: [{ desde: 1, precio: 14000 }, { desde: 4, precio: 13000 }, { desde: 6, precio: 12500 }] },
+    // envío de congeladas: un precio fijo para todos, gratis desde cierta cantidad de pizzas
+    envio: { precio: 5000, gratisDesde: 11 }
   };
   // cómo nos conoció cada cliente de catering (para saber qué canal trae eventos); el orden fija el color del gráfico
   const ORIGENES = [
@@ -1351,7 +1371,7 @@
   // (si se cierra la app o cambiás de pestaña, sigue ahí; vale solo por el día)
   const CACHE_KEY_BORRADOR = 'lasinergia_borrador';
   const CAMPOS_BORRADOR = ['gastoMonto', 'gastoDesc', 'gastoFecha', 'monto', 'desc', 'fecha',
-    'pedidoCliente', 'pedidoFecha', 'pedidoHora', 'pedidoDireccion', 'pedidoNotas', 'ventaCliente', 'ventaCobrado',
+    'pedidoCliente', 'pedidoFecha', 'pedidoHora', 'pedidoEntrega', 'pedidoDireccion', 'pedidoNotas', 'ventaCliente', 'ventaCobrado',
     'evNombre', 'evFecha', 'evHora', 'evLugar', 'evPersonas', 'evPizzas', 'evMenu', 'evOrigen'];
   function guardarBorrador(){
     const b = { dia: hoyISO(), catGasto, ventaDraft };
@@ -1633,6 +1653,7 @@
                precios: { ...COSTOS_DEFAULT.precios, ...((c && c.precios) || {}) },
                sabores: { ...((c && c.sabores) || {}) },
                congeladas: { ...COSTOS_DEFAULT.congeladas, ...((c && c.congeladas) || {}) },
+               envio: { ...COSTOS_DEFAULT.envio, ...((c && c.envio) || {}) },
                servOfertas: Object.values((c && c.servOfertas) || {}) };
     guardarCache(CACHE_KEY_COSTOS, costos);
     const pl = (rPla.status === 'fulfilled' ? rPla.value : leerCache(CACHE_KEY_PLANTILLA, null)) || {};
@@ -2308,6 +2329,7 @@
     document.getElementById('pedidoCliente').value = '';
     document.getElementById('pedidoFecha').value = hoyISO();
     document.getElementById('pedidoHora').value = '';
+    document.getElementById('pedidoEntrega').value = 'envio';
     document.getElementById('pedidoDireccion').value = '';
     document.getElementById('pedidoNotas').value = '';
     pedidoDraft = [{ sabor: null, cantidad: 1 }];
@@ -2327,6 +2349,7 @@
     document.getElementById('pedidoCliente').value = p.cliente || '';
     document.getElementById('pedidoFecha').value = p.fecha || hoyISO();
     document.getElementById('pedidoHora').value = p.hora || '';
+    document.getElementById('pedidoEntrega').value = entregaDe(p);
     document.getElementById('pedidoDireccion').value = p.direccion || '';
     document.getElementById('pedidoNotas').value = p.notas || '';
     pedidoDraft = p.items.map(i => ({ sabor: i.nombre, cantidad: i.cantidad }));
@@ -2357,10 +2380,7 @@
       </div>
     `).join('');
 
-    const sugerido = () => {
-      const t = textoPrecioCongeladas(pedidoDraft.map(f => ({ nombre: f.sabor, cantidad: f.cantidad })));
-      document.getElementById('pedidoSugerido').innerHTML = t ? `💲 Precio de lista: <b>${t}</b>` : '';
-    };
+    const sugerido = pintarSugeridoPedido;
     sugerido();
     cont.querySelectorAll('.pedido-select').forEach(sel => {
       sel.addEventListener('change', () => { pedidoDraft[+sel.dataset.idx].sabor = sel.value; sugerido(); });
@@ -2375,6 +2395,15 @@
       });
     });
   }
+
+  // precio de lista del pedido que se está cargando, con el envío si se lo llevamos
+  function pintarSugeridoPedido(){
+    const entrega = document.getElementById('pedidoEntrega').value;
+    document.getElementById('pedidoDireccionCampo').hidden = entrega === 'retira';
+    const t = textoPrecioPedido(pedidoDraft.map(f => ({ nombre: f.sabor, cantidad: f.cantidad })), entrega);
+    document.getElementById('pedidoSugerido').innerHTML = t ? `💲 Precio de lista: <b>${t}</b>` : '';
+  }
+  document.getElementById('pedidoEntrega').addEventListener('change', pintarSugeridoPedido);
 
   let entregandoId = null;   // pedido que se está marcando como entregado (muestra cuánto se cobró)
 
@@ -2402,15 +2431,24 @@
         ? `<a class="pedido-mapa" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(p.direccion)}" target="_blank" rel="noopener">📍 ${escapeHtml(p.direccion)}</a>`
         : '';
       const notas = p.notas ? `<div class="pedido-notas">${escapeHtml(p.notas)}</div>` : '';
-      const sugerido = precioCongeladas(p.items).total;
+      const entrega = entregaDe(p);
+      const envio = entrega === 'envio' ? cargoEnvio(p.items) : 0;
+      const sugerido = precioCongeladas(p.items).total + envio;
+      const precioLista = textoPrecioPedido(p.items, entrega);
+      const datosEnvio = entrega === 'envio' ? `
+              <div class="campo full"><span>Cómo lo llevaste</span><select id="entVia" class="sel-chips">${opcionesVia(viaUltima())}</select></div>
+              <label class="campo full"><span>Cuánto nos salió el envío <small>· opcional (vacío si no hubo gasto)</small></span>
+                <input type="text" id="entEnvioCosto" class="inp-plata" inputmode="decimal" autocomplete="off" placeholder="Ej: 4800 (lo que marcó el Uber)">
+                <span class="ayuda">Queda en Gastos › Envíos, para ver a fin de mes si el envío se paga solo.</span></label>` : '';
       const panel = entregandoId === p.id ? `
           <div class="entregar-panel">
             <div class="form-campos">
               <label class="campo full"><span>Cuánto cobraste <small>· vacío si todavía no cobraste</small></span>
                 <input type="text" id="entCobrado" class="inp-plata" inputmode="decimal" autocomplete="off" value="${sugerido || ''}" placeholder="Ej: 52000">
-                ${sugerido ? `<span class="ayuda">Precio de lista: <b>${fmt(sugerido)}</b></span>` : ''}</label>
+                ${sugerido ? `<span class="ayuda">Precio de lista: <b>${precioLista}</b></span>` : ''}</label>
               <div class="campo full"><span>Cómo te pagaron</span><select id="entMedio" class="sel-medio">${opcionesMedio(medioUltimo())}</select></div>
               <div class="campo full"><span>Entró a la cuenta de</span><select id="entCuenta" class="sel-cuenta">${opcionesCuenta(cuentaUltima())}</select></div>
+              ${datosEnvio}
             </div>
             <div class="botones">
               <button type="button" class="btn btn-fuego" data-confirmar-entrega="${p.id}">Confirmar entrega</button>
@@ -2427,11 +2465,11 @@
       return `
         <div class="pedido">
           <div class="pedido-top">
-            <div class="pedido-cliente">${escapeHtml(p.cliente)} ${badge}</div>
+            <div class="pedido-cliente">${escapeHtml(p.cliente)} ${badge}<span class="badge badge-entrega">${entrega === 'envio' ? '🛵 Envío' : '🏠 Retira'}</span></div>
             <div class="pedido-cuando">${formatoFecha(p.fecha)}${p.hora ? ' · ' + p.hora : ''}</div>
           </div>
           <div class="pedido-items"><b>${totalPizzas} pizza${totalPizzas === 1 ? '' : 's'}</b> — ${detalle}</div>
-          ${textoPrecioCongeladas(p.items) ? `<div class="pedido-items">💲 Precio de lista: <b>${textoPrecioCongeladas(p.items)}</b></div>` : ''}
+          ${precioLista ? `<div class="pedido-items">💲 Precio de lista: <b>${precioLista}</b></div>` : ''}
           ${mapa}
           ${notas}
           ${panel}
@@ -2442,6 +2480,8 @@
     mostrarCuentas();
     const ent = document.getElementById('entCobrado');
     if(ent) mostrarPlataPrevia(ent);
+    const via = document.getElementById('entVia');
+    if(via) via.addEventListener('change', () => guardarCache(CACHE_KEY_VIA, via.value));
 
     cont.querySelectorAll('[data-entregar]').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -2480,6 +2520,11 @@
     const texto = inpCobro ? inpCobro.value.trim() : '';
     const monto = parsearMonto(texto);
     if(texto && !(monto > 0)) return errorEn(inpCobro, 'No se entiende el número: usá solo cifras, ej: 52000');
+    const entrega = entregaDe(p);
+    const inpCosto = document.getElementById('entEnvioCosto');
+    const textoCosto = inpCosto ? inpCosto.value.trim() : '';
+    const costoEnvio = parsearMonto(textoCosto);
+    if(textoCosto && !(costoEnvio >= 0)) return errorEn(inpCosto, 'No se entiende el número: usá solo cifras, ej: 4800');
     const medio = elegirMedio(document.getElementById('entMedio').value);
     const cuenta = cuentaPara(medio, elegirCuenta(document.getElementById('entCuenta').value));
     const totalPizzas = p.items.reduce((s,i) => s + i.cantidad, 0);
@@ -2495,8 +2540,20 @@
       id: ventaId,
       fecha: hoyISO(),
       cliente: p.cliente,
-      items: p.items.map(i => ({ nombre: i.nombre, cantidad: i.cantidad }))
+      items: p.items.map(i => ({ nombre: i.nombre, cantidad: i.cantidad })),
+      entrega
     });
+    // el envío: lo que se cobró (de lo cobrado, hasta el precio del envío) y cómo se llevó
+    let via = null;
+    if(entrega === 'envio'){
+      via = document.getElementById('entVia') ? document.getElementById('entVia').value : viaUltima();
+      guardarCache(CACHE_KEY_VIA, via);
+      pizzas.ventas[pizzas.ventas.length - 1].envio = { cobrado: monto > 0 ? Math.min(cargoEnvio(p.items), monto) : 0, via };
+      if(costoEnvio > 0){
+        gastos.movs.push({ id: ventaId + 2, ventaId, fecha: hoyISO(), cat: 'envios', monto: costoEnvio,
+          desc: `Envío ${nombreVia(via)} · ${p.cliente}` });
+      }
+    }
     if(monto > 0){
       items.push({
         id: ventaId + 1,
@@ -2514,7 +2571,9 @@
     persistirPizzas();
     persistirPedidos();
     if(monto > 0) persistirIngresos();
-    hecho(`Entregado a ${p.cliente}: ${totalPizzas} pizzas${monto > 0 ? `, cobrado ${fmt(monto)}` : ', sin cobrar'}. Stock descontado.`, f);
+    if(costoEnvio > 0) persistirGastos();
+    hecho(`Entregado a ${p.cliente}: ${totalPizzas} pizzas${monto > 0 ? `, cobrado ${fmt(monto)}` : ', sin cobrar'}` +
+      `${costoEnvio > 0 ? `, envío ${fmt(costoEnvio)} a Gastos` : ''}. Stock descontado.`, f);
   }
 
   function renderStockLista(){
@@ -2689,7 +2748,7 @@
         titulo: v.cliente || (ing ? tituloSinCantidad(ing.desc, cantPizzas) : 'Venta'),
         monto: ing ? ing.monto : null,
         pizzas: cantPizzas,
-        detalle: v.items.map(i => `${i.cantidad}x ${i.nombre}`).join(', '),
+        detalle: v.items.map(i => `${i.cantidad}x ${i.nombre}`).join(', ') + (v.entrega === 'envio' ? ' · 🛵 envío' : ''),
         ventaId: v.id,
         ingresoId: ing ? ing.id : null
       });
@@ -2724,6 +2783,31 @@
     return p.n ? `${fmt(p.total)} (${p.n} × ${fmt(p.unitario)})` : '';
   }
 
+  // ---------- envío de congeladas ----------
+  // los pedidos de antes no tienen `entrega`: con dirección se enviaban, sin dirección se retiraban
+  function entregaDe(p){ return p.entrega || (p.direccion ? 'envio' : 'retira'); }
+  // el envío cuesta lo mismo a cualquier lado; desde cierta cantidad de pizzas es gratis
+  function cargoEnvio(lista){
+    const n = lista.reduce((t, i) => t + (Number(i.cantidad) || 0), 0);
+    const gratis = Number(costos.envio.gratisDesde) || 0;
+    if(!n || (gratis > 0 && n >= gratis)) return 0;
+    return Number(costos.envio.precio) || 0;
+  }
+  function textoPrecioPedido(lista, entrega){
+    const t = textoPrecioCongeladas(lista);
+    if(!t || entrega !== 'envio') return t;
+    const p = precioCongeladas(lista), env = cargoEnvio(lista);
+    return env ? `${fmt(p.total + env)} (${p.n} × ${fmt(p.unitario)} + envío ${fmt(env)})` : `${t} · envío gratis`;
+  }
+  function viaUltima(){
+    const v = leerCache(CACHE_KEY_VIA, 'uber');
+    return VIAS_ENVIO.some(x => x.id === v) ? v : 'uber';
+  }
+  function opcionesVia(sel){
+    return VIAS_ENVIO.map(v => `<option value="${v.id}" ${v.id === sel ? 'selected' : ''}>${v.emoji} ${v.nombre}</option>`).join('');
+  }
+  function nombreVia(id){ const v = VIAS_ENVIO.find(x => x.id === id); return v ? v.nombre : 'Envío'; }
+
   // ---------- ganancia de las pizzas vendidas (congeladas) ----------
   function costoSabor(nombre){
     const v = costos.sabores[String(nombre || '').toLowerCase()];
@@ -2745,7 +2829,7 @@
           costo += i.cantidad * costoSabor(i.nombre);
           porSabor[i.nombre] = (porSabor[i.nombre] || 0) + i.cantidad;
         });
-        facturado += f.monto;
+        facturado += f.monto - envioCobradoDe(v);
       } else if(f.ingresoId != null){
         // ventas viejas sin sabores ("Rubio x6"): se costean con el promedio
         const ing = ingresoPorId[f.ingresoId];
@@ -2822,8 +2906,71 @@
     if(!escribiendoEn(document.getElementById('margenCongeladas'))) renderMargenCongeladas();
   }, 0));
 
+  // ---------- envíos de congeladas: lo que se cobró de envío contra lo que costó ----------
+  function envioCobradoDe(v){ return v && v.envio ? Number(v.envio.cobrado) || 0 : 0; }
+  function renderEnvios(){
+    const cont = document.getElementById('enviosMes');
+    if(escribiendoEn(cont)) return;
+    const cobradas = new Set(armarHistorial().filter(f => f.ventaId != null && f.monto != null).map(f => f.ventaId));
+    const envios = pizzas.ventas.filter(v => mesDe(v.fecha) === mesSel && v.entrega === 'envio');
+    const gastosEnvio = gastos.movs.filter(g => g.cat === 'envios' && mesDe(g.fecha) === mesSel);
+    const cobrado = envios.filter(v => cobradas.has(v.id)).reduce((t, v) => t + envioCobradoDe(v), 0);
+    const costo = gastosEnvio.reduce((t, g) => t + g.monto, 0);
+    const gratis = envios.filter(v => cobradas.has(v.id) && !envioCobradoDe(v)).length;
+    const retiros = pizzas.ventas.filter(v => mesDe(v.fecha) === mesSel && v.entrega === 'retira').length;
+    // por cómo se llevó: cuántos y cuánto costaron (los gastos de envío cargados a mano van aparte)
+    const porVia = VIAS_ENVIO.map(x => {
+      const vs = envios.filter(v => v.envio && v.envio.via === x.id);
+      const gs = gastosEnvio.filter(g => vs.some(v => v.id === g.ventaId));
+      return { ...x, n: vs.length, conCosto: gs.length, costo: gs.reduce((t, g) => t + g.monto, 0) };
+    }).filter(x => x.n);
+    const sueltos = gastosEnvio.filter(g => !envios.some(v => v.id === g.ventaId));
+    const resultado = cobrado - costo;
+    const e = costos.envio;
+    cont.innerHTML = (envios.length || costo ? `
+      <div class="costo-totales" style="margin-top:0">
+        <div><div class="label">Envíos</div><div class="val">${envios.length}</div></div>
+        <div><div class="label">Cobrado</div><div class="val">${fmt(cobrado)}</div></div>
+        <div><div class="label">Costó</div><div class="val">${fmt(costo)}</div></div>
+        <div><div class="label">${resultado >= 0 ? 'Ganancia' : 'Pérdida'}</div><div class="val ${resultado >= 0 ? 'plata' : 'rojo'}">${fmt(Math.abs(resultado))}</div></div>
+      </div>
+      <div class="card-nota" style="margin:10px 0">${retiros} ${retiros === 1 ? 'pedido retirado' : 'pedidos retirados'}${gratis ? ` · ${gratis} ${gratis === 1 ? 'envío gratis' : 'envíos gratis'} (${e.gratisDesde} pizzas o más)` : ''}.
+        Lo cobrado de envío no suma a la ganancia de congeladas.</div>
+      <div class="lista">${porVia.map(x => `
+        <div class="item"><div class="item-info"><div class="item-desc">${x.emoji} ${x.nombre} <span class="item-fecha">× ${x.n}</span></div>
+          <div class="item-fecha">${x.conCosto ? `promedio ${fmt(Math.round(x.costo / x.conCosto))} por envío` : 'sin costo anotado'}${x.conCosto && x.conCosto < x.n ? ` · ${x.n - x.conCosto} sin costo anotado` : ''}</div></div>
+          <div class="item-monto">${fmt(x.costo)}</div></div>`).join('')}${sueltos.length ? `
+        <div class="item"><div class="item-info"><div class="item-desc">Cargados en Gastos <span class="item-fecha">× ${sueltos.length}</span></div>
+          <div class="item-fecha">gastos de Envíos sin pedido</div></div>
+          <div class="item-monto">${fmt(sueltos.reduce((t, g) => t + g.monto, 0))}</div></div>` : ''}</div>`
+      : `<div class="vacio">Sin envíos en ${nombreMes(mesSel)}.</div>`) + `
+      <details class="pl-check" style="margin-top:14px" data-det="envio">
+        <summary>Precio del envío</summary>
+        <div class="costos-grid" style="margin-top:10px">
+          <label class="costo-campo"><span>Envío $</span>
+            <input type="number" min="0" step="any" inputmode="decimal" data-envio="precio" value="${e.precio}"></label>
+          <label class="costo-campo"><span>Gratis desde (pizzas)</span>
+            <input type="number" min="0" step="1" inputmode="numeric" data-envio="gratisDesde" value="${e.gratisDesde}"></label>
+        </div>
+        <div class="card-nota" style="margin:8px 0 0">El mismo precio a cualquier lado. 0 en "gratis desde" = siempre se cobra.</div>
+      </details>`;
+    const det = cont.querySelector('details[data-det]');
+    det.open = cont.dataset.abierto === '1';
+    det.addEventListener('toggle', () => { cont.dataset.abierto = det.open ? '1' : ''; });
+    cont.querySelectorAll('[data-envio]').forEach(inp => inp.addEventListener('change', () => {
+      const v = parseFloat(inp.value);
+      if(!(v >= 0)) return;
+      costos.envio[inp.dataset.envio] = inp.dataset.envio === 'gratisDesde' ? Math.round(v) : v;
+      persistirCostos();
+    }));
+  }
+  document.getElementById('enviosMes').addEventListener('focusout', () => setTimeout(() => {
+    if(!escribiendoEn(document.getElementById('enviosMes'))) renderEnvios();
+  }, 0));
+
   function renderHistorial(){
     renderMargenCongeladas();
+    renderEnvios();
     filasHistorial = armarHistorial();
 
     const plata = filasHistorial.reduce((s,f) => s + (f.monto || 0), 0);
@@ -2875,6 +3022,8 @@
     const partes = [];
     if(f.monto != null) partes.push(`${fmt(f.monto)} de los ingresos del mes`);
     if(f.ventaId != null) partes.push(`${f.pizzas} pizzas (se reponen al stock)`);
+    const gastoEnvio = f.ventaId != null ? gastos.movs.find(g => g.ventaId === f.ventaId) : null;
+    if(gastoEnvio) partes.push(`el envío de Gastos`);
 
     const antes = foto();
 
@@ -2891,6 +3040,10 @@
         });
         pizzas.ventas = pizzas.ventas.filter(x => x.id !== f.ventaId);
         persistirPizzas();
+      }
+      if(gastoEnvio){
+        gastos.movs = gastos.movs.filter(g => g !== gastoEnvio);
+        persistirGastos();
       }
     }
     hecho(`Borraste "${f.titulo}": se sacó ${partes.join(' y ')}.`, antes);
@@ -4451,7 +4604,8 @@
     const cliente = document.getElementById('pedidoCliente').value.trim();
     const fecha = document.getElementById('pedidoFecha').value;
     const hora = document.getElementById('pedidoHora').value;
-    const direccion = document.getElementById('pedidoDireccion').value.trim();
+    const entrega = document.getElementById('pedidoEntrega').value === 'retira' ? 'retira' : 'envio';
+    const direccion = entrega === 'retira' ? '' : document.getElementById('pedidoDireccion').value.trim();
     const notas = document.getElementById('pedidoNotas').value.trim();
 
     if(!cliente) return errorEn(document.getElementById('pedidoCliente'), 'Falta el nombre del cliente, ej: Paula');
@@ -4463,7 +4617,7 @@
     const editando = editandoPedidoId !== null;
 
     const datos = {
-      cliente, fecha, hora, direccion, notas,
+      cliente, fecha, hora, entrega, direccion, notas,
       items: validas.map(f => ({ nombre: f.sabor, cantidad: f.cantidad }))
     };
 
