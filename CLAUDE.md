@@ -42,7 +42,8 @@ Campos viejos que la app ya no muestra (`ingredientes`, `cerrado`, `cerradoEl`):
 **`gastos`**: `{ fijos: [...], movs: [...], pagos: { 'YYYY-MM': [idFijo, ...] } }`
 - `fijos`: `{ id, nombre, monto, dia, cat, desde: 'YYYY-MM', hasta?: 'YYYY-MM' }`. Se repiten cada mes de `desde` a `hasta`.
 - `movs`: `{ id, fecha, cat, monto, desc }`. El pago de personal de un evento lleva además `personalId` y `eventoId`, con `desc` tipo `"Mozo Juan · Casamiento Pérez"` y la fecha del evento.
-- Categorías (`cat`): `insumos`, `packaging`, `impuestos`, `auto`, `servicios`, `equipo`, `publicidad`, `personal`, `otros`.
+- Categorías (`cat`): `insumos`, `packaging`, `impuestos`, `auto`, `servicios`, `equipo`, `publicidad`, `personal`, `envios`, `otros`.
+  `envios` es lo que costó llevar congeladas (Uber, cadete); la nafta del auto sigue en `auto`.
 
 **Medio de pago** (`medio`, opcional en ingresos de `datos` y en `gastos.movs`): `efectivo`, `mp` (Mercado Pago),
 `transferencia` (otra cuenta) o `tarjeta`. Al cargar desde un extracto, poné el medio que corresponde.
@@ -52,9 +53,13 @@ Los ingresos que no son en efectivo llevan además `cuenta`: `thiago` o `juan`, 
 **Dólares**: un ingreso o gasto en dólares lleva `moneda: 'USD'`, `usd` (lo que fue en dólares) y `tc` (pesos por US$);
 `monto` sigue en pesos (`usd × tc`, redondeado) para que todos los totales sigan en pesos.
 
-**`pedidos`**: `{ id, cliente, fecha, hora, direccion, notas, items: [{nombre, cantidad}] }` (pendientes de entrega).
+**`pedidos`**: `{ id, cliente, fecha, hora, entrega, direccion, notas, items: [{nombre, cantidad}] }` (pendientes de entrega).
+`entrega`: `envio` (se lo llevamos) o `retira`; sin el campo, con dirección = envío y sin dirección = retira.
 
-**`pizzas`**: `{ stock: [{nombre, cantidad}], ventas: [{id, fecha, cliente?, items: [{nombre, cantidad}]}] }`.
+**`pizzas`**: `{ stock: [{nombre, cantidad}], ventas: [{id, fecha, cliente?, items: [{nombre, cantidad}], entrega?, envio?}] }`.
+Las ventas de pedidos llevan `entrega`; las enviadas, `envio: { cobrado, via }`: lo que se cobró de envío (incluido en el
+ingreso, no cuenta como venta de pizzas) y cómo se llevó (`uber`, `bici`, `auto`, `otro`). Lo que costó el envío es un
+`gastos.movs` con `cat: 'envios'` y `ventaId`. Pizzas › Envíos del mes compara lo cobrado contra lo que costó.
 
 **`metas`**: `{ 'YYYY-MM': monto }`, meta de ganancia (ingresos − gastos) de cada mes.
 
@@ -75,6 +80,8 @@ con el trabajo de los dueños pagado). `servOfertas` son precios de servilletas 
 ganancia de las congeladas en Ventas; los sabores que faltan usan `costoPizza`.
 `congeladas: { escalones: [{ desde, precio }] }` es la lista de precios de congeladas: todos los sabores valen lo mismo y el
 precio por pizza es el del escalón más alto que alcanza el total de pizzas de la compra (packs, mezclando sabores).
+`envio: { precio, gratisDesde }`: envío de congeladas, mismo precio a cualquier lado ($5.000), gratis desde `gratisDesde`
+pizzas (11, o sea más de 10; 0 = siempre se cobra).
 Insumos = pizzas × costoPizza × (1 + merma) + pax × extra del menú; nafta = km × tanque / kmTanque;
 servilletas = pizzas × servilletasPorPizza × servPrecio / servPaquete.
 
