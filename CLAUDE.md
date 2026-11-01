@@ -116,6 +116,9 @@ de pago. Esos datos van solo en Bardo (`catering.precio`, notas del evento e ing
 
 - Todo lo de Mercado Pago (cuenta y tarjeta) es de la empresa; la tarjeta Visa Santander es personal. Ante la duda, preguntar.
 - Los dueños no cobran como personal de eventos. Sus gastos personales no se cargan en Bardo: se arma un texto aparte para descontarlos de su parte a fin de mes.
+- Desde noviembre 2026 cada dueño cobra un sueldo fijo (`gastos.fijos` "Sueldo Thiago" y "Sueldo Juan", $1.000.000, día 5, cat `personal`),
+  así la ganancia del mes ya viene con los sueldos descontados. Lo que se lleve cada uno por encima del sueldo es retiro y se descuenta en la liquidación.
+- Las señas de eventos futuros son parte del colchón de la empresa, pero el colchón no baja de lo que cuestan esos eventos (~28% de su precio).
 - Personal de eventos: $40.000 por persona salvo que se indique otro monto.
 - No son gastos: pagos de resumen de tarjeta, transferencias entre cuentas propias o a socios para liquidez, reservas de dinero.
 - Compras en cuotas: cada cuota en el mes del resumen en que aparece; las largas, como gasto fijo con `desde`/`hasta`.
