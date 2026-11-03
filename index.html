@@ -631,6 +631,7 @@
   .torta-fila small{grid-column:2 / 4;color:var(--gris);font-size:.74rem}
   .torta-meta{margin-top:14px;padding:12px 14px;border-radius:14px;background:rgba(57,135,229,.1);border:1px solid rgba(57,135,229,.3);font-size:.85rem}
   .torta-meta .item-fecha{display:block;margin-top:2px}
+  .canal-color{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:8px;vertical-align:1px}
 
   /* ---------- aviso flotante: qué pasó, con "Deshacer" ---------- */
   .toast{
@@ -848,6 +849,16 @@
           <button type="button" data-medida="plata">Facturación</button>
         </div>
         <div id="origenGrafico"></div>
+        <details class="pl-check" id="origenCanales" style="margin-top:14px">
+          <summary>Agregar o quitar canales</summary>
+          <div class="card-nota" style="margin:10px 0">Sumá los canales que no están en la lista (por ejemplo TikTok, Google o una feria). Aparecen al cargar "Cómo nos conoció" y en el gráfico.</div>
+          <div class="lista" id="origenCanalesLista"></div>
+          <div class="form-campos" style="margin-top:10px">
+            <label class="campo"><span>Nuevo canal</span><input type="text" id="canalNombre" autocomplete="off" placeholder="Ej: TikTok"></label>
+            <label class="campo"><span>Emoji <small>· opcional</small></span><input type="text" id="canalEmoji" maxlength="4" autocomplete="off" placeholder="Ej: 🎵"></label>
+          </div>
+          <button type="button" class="btn btn-sec" id="btnAgregarCanal" style="width:100%">Agregar canal</button>
+        </details>
       </div>
 
       <details class="card ajustes" id="ajustesCatering">
@@ -1198,7 +1209,8 @@
     // lista de precios de congeladas: precio por pizza según cuántas lleva en total (packs), igual para todos los sabores
     congeladas: { escalones: [{ desde: 1, precio: 14000 }, { desde: 4, precio: 13000 }, { desde: 6, precio: 12500 }] },
     // envío de congeladas: un precio fijo para todos, gratis desde cierta cantidad de pizzas
-    envio: { precio: 5000, gratisDesde: 11 }
+    envio: { precio: 5000, gratisDesde: 11 },
+    origenes: []               // canales de "Cómo nos conoció" que agregaron ellos: { id, nombre, emoji, color }
   };
   // cómo nos conoció cada cliente de catering (para saber qué canal trae eventos); el orden fija el color del gráfico
   const ORIGENES = [
@@ -1209,9 +1221,16 @@
     { id: 'evento',       nombre: 'Probó en un evento', emoji: '🍕', color: '#d55181' },
     { id: 'otro',         nombre: 'Otro',               emoji: '•',  color: '#008300' }
   ];
+  // colores para los canales que se agregan (los de ORIGENES ya tienen el suyo)
+  const COLORES_CANAL = ['#7b61d9', '#0e9aa7', '#a8742a', '#c43c6b', '#5d8f1f', '#4f6bd8', '#b8562e', '#2b8a8a'];
+  // los fijos, después los que agregaron ellos, y "Otro" siempre al final
+  function origenes(){
+    const propios = (costos.origenes || []).map(o => ({ emoji: '•', ...o }));
+    return ORIGENES.slice(0, -1).concat(propios, ORIGENES.slice(-1));
+  }
   function opcionesOrigen(sel){
-    return `<option value="">Sin dato</option>` + ORIGENES.map(o =>
-      `<option value="${o.id}" ${o.id === sel ? 'selected' : ''}>${o.emoji} ${o.nombre}</option>`).join('');
+    return `<option value="">Sin dato</option>` + origenes().map(o =>
+      `<option value="${o.id}" ${o.id === sel ? 'selected' : ''}>${escapeHtml(o.emoji)} ${escapeHtml(o.nombre)}</option>`).join('');
   }
   const MENUS = [
     { id: 'op1',   nombre: 'Opción 1 · Pizza party' },
@@ -1654,7 +1673,8 @@
                sabores: { ...((c && c.sabores) || {}) },
                congeladas: { ...COSTOS_DEFAULT.congeladas, ...((c && c.congeladas) || {}) },
                envio: { ...COSTOS_DEFAULT.envio, ...((c && c.envio) || {}) },
-               servOfertas: Object.values((c && c.servOfertas) || {}) };
+               servOfertas: Object.values((c && c.servOfertas) || {}),
+               origenes: Object.values((c && c.origenes) || {}) };
     guardarCache(CACHE_KEY_COSTOS, costos);
     const pl = (rPla.status === 'fulfilled' ? rPla.value : leerCache(CACHE_KEY_PLANTILLA, null)) || {};
     plantilla = { sabores: Object.values(pl.sabores || {}), pizzaDelMes: pl.pizzaDelMes || '',
@@ -3526,13 +3546,14 @@
       : origenMedida === 'plata' ? (resumenEvento(e).precio || resumenEvento(e).cobrado) : 1;
     const unidad = n => origenMedida === 'pax' ? `${n} ${n === 1 ? 'persona' : 'personas'}`
       : origenMedida === 'plata' ? fmt(n) : `${n} ${n === 1 ? 'cliente' : 'clientes'}`;
-    const filas = ORIGENES.map(o => {
+    const canales = origenes();
+    const filas = canales.map(o => {
       const lista = evs.filter(e => e.origen === o.id);
       return { ...o, n: lista.length, pax: lista.reduce((t, e) => t + (Number(e.personas) || 0), 0),
                plata: lista.reduce((t, e) => t + (resumenEvento(e).precio || resumenEvento(e).cobrado), 0),
                valor: lista.reduce((t, e) => t + valor(e), 0) };
     }).filter(f => f.valor > 0);
-    const sinDato = evs.filter(e => !ORIGENES.some(o => o.id === e.origen)).length;
+    const sinDato = evs.filter(e => !canales.some(o => o.id === e.origen)).length;
     const total = filas.reduce((t, f) => t + f.valor, 0);
     const notaSinDato = sinDato
       ? `<div class="card-nota" style="margin:12px 0 0">${sinDato} ${sinDato === 1 ? 'evento' : 'eventos'} sin dato no ${sinDato === 1 ? 'entra' : 'entran'} en el gráfico: cargalo adentro de cada evento, en "Cómo nos conoció".</div>` : '';
@@ -3541,7 +3562,7 @@
       return;
     }
     const pct = v => Math.round(v / total * 100);
-    // porciones en el orden fijo de ORIGENES (el color sigue al canal, no al tamaño)
+    // porciones en el orden fijo de los canales (el color sigue al canal, no al tamaño)
     let a = 0;
     const porciones = filas.map(f => {
       const a0 = a, a1 = a + f.valor / total * Math.PI * 2;
@@ -3553,7 +3574,7 @@
       const etiqueta = pct(f.valor) >= 9 && filas.length > 1
         ? `<text x="${(100 + 73 * Math.sin(medio)).toFixed(1)}" y="${(100 - 73 * Math.cos(medio) + 4).toFixed(1)}" class="torta-pct">${pct(f.valor)}%</text>` : '';
       return `<g class="torta-porcion ${origenActivo && origenActivo !== f.id ? 'apagada' : ''}" data-origen="${f.id}">
-        <path d="${d}" fill="${f.color}"></path>${etiqueta}<title>${f.nombre}: ${unidad(f.valor)} (${pct(f.valor)}%)</title></g>`;
+        <path d="${d}" fill="${f.color}"></path>${etiqueta}<title>${escapeHtml(f.nombre)}: ${unidad(f.valor)} (${pct(f.valor)}%)</title></g>`;
     }).join('');
     const act = filas.find(f => f.id === origenActivo);
     const centro = act
@@ -3570,7 +3591,7 @@
         <svg viewBox="0 0 200 200" role="img" aria-label="Cómo nos conocieron, en ${origenMedida === 'pax' ? 'personas' : origenMedida === 'plata' ? 'facturación' : 'clientes'}">${porciones}${centro}</svg>
         <div class="torta-leyenda" role="list">
           ${filas.map(f => `<button type="button" role="listitem" class="torta-fila ${origenActivo === f.id ? 'activo' : ''}" data-origen="${f.id}">
-            <i style="background:${f.color}"></i><span class="torta-nombre">${f.emoji} ${f.nombre}</span>
+            <i style="background:${f.color}"></i><span class="torta-nombre">${escapeHtml(f.emoji)} ${escapeHtml(f.nombre)}</span>
             <span class="torta-val">${pct(f.valor)}%</span>
             <small>${f.n} ${f.n === 1 ? 'cliente' : 'clientes'} · ${f.pax} pax · ${fmt(f.plata)}</small></button>`).join('')}
         </div>
@@ -3582,6 +3603,52 @@
       renderOrigenes();
     }));
   }
+  function renderCanales(){
+    const cont = document.getElementById('origenCanalesLista');
+    const propios = costos.origenes || [];
+    cont.innerHTML = propios.length ? propios.map(o => {
+      const usos = catering.filter(e => e.origen === o.id).length;
+      return `<div class="item"><div class="item-info"><div class="item-desc"><i class="canal-color" style="background:${o.color}"></i>${escapeHtml(o.emoji || '•')} ${escapeHtml(o.nombre)}</div>
+        <div class="item-fecha">${usos ? `${usos} ${usos === 1 ? 'evento' : 'eventos'}` : 'Sin eventos todavía'}</div></div>
+        ${usos ? '' : `<button type="button" class="item-del" data-quitar-canal="${o.id}" aria-label="Quitar ${escapeHtml(o.nombre)}">✕</button>`}</div>`;
+    }).join('') + `<div class="card-nota" style="margin:6px 0 0">Un canal con eventos no se puede quitar: primero cambiale el canal a esos eventos.</div>`
+      : '<div class="vacio" style="padding:8px 0">Todavía no agregaron canales propios.</div>';
+  }
+  // el select del formulario de evento nuevo se arma una sola vez: al cambiar los canales se vuelve a armar
+  function refrescarSelectOrigen(){
+    const sel = document.getElementById('evOrigen');
+    const valor = sel.value;
+    sel.innerHTML = opcionesOrigen(valor);
+    refrescarChips();
+  }
+  document.getElementById('btnAgregarCanal').addEventListener('click', () => {
+    const inpNombre = document.getElementById('canalNombre');
+    const nombre = inpNombre.value.trim();
+    if(!nombre) return errorEn(inpNombre, 'Falta el nombre del canal, ej: TikTok');
+    if(origenes().some(o => o.nombre.toLowerCase() === nombre.toLowerCase())) return errorEn(inpNombre, `"${nombre}" ya está en la lista`);
+    const f = foto();
+    const propios = costos.origenes || [];
+    const usados = origenes().map(o => o.color);
+    const color = COLORES_CANAL.find(c => !usados.includes(c)) || COLORES_CANAL[propios.length % COLORES_CANAL.length];
+    costos.origenes = propios.concat({ id: 'c' + Date.now(), nombre, emoji: document.getElementById('canalEmoji').value.trim() || '•', color });
+    inpNombre.value = ''; document.getElementById('canalEmoji').value = '';
+    persistirCostos();
+    renderCanales(); refrescarSelectOrigen(); renderOrigenes();
+    hecho(`Canal "${nombre}" agregado: ya aparece en "Cómo nos conoció".`, f);
+  });
+  document.getElementById('origenCanalesLista').addEventListener('click', e => {
+    const b = e.target.closest('[data-quitar-canal]');
+    if(!b) return;
+    const canal = (costos.origenes || []).find(o => o.id === b.dataset.quitarCanal);
+    if(!canal || catering.some(ev => ev.origen === canal.id)) return;
+    const f = foto();
+    costos.origenes = costos.origenes.filter(o => o !== canal);
+    if(document.getElementById('evOrigen').value === canal.id) document.getElementById('evOrigen').value = '';
+    persistirCostos();
+    renderCanales(); refrescarSelectOrigen(); renderOrigenes();
+    hecho(`Canal "${canal.nombre}" quitado.`, f);
+  });
+
   [['origenPeriodo', 'periodo'], ['origenMedida', 'medida']].forEach(([id, attr]) => {
     document.getElementById(id).addEventListener('click', e => {
       const b = e.target.closest(`button[data-${attr}]`);
@@ -3596,8 +3663,10 @@
     const selMenu = document.getElementById('evMenu');
     if(!selMenu.options.length) selMenu.innerHTML = opcionesMenu('');
     const selOrigen = document.getElementById('evOrigen');
-    if(!selOrigen.options.length) selOrigen.innerHTML = opcionesOrigen('');
+    // se rearma si cambiaron los canales (por ejemplo, los agregó el otro socio)
+    if(selOrigen.options.length !== origenes().length + 1){ selOrigen.innerHTML = opcionesOrigen(selOrigen.value); refrescarChips(); }
     renderOrigenes();
+    renderCanales();
     renderCalendario();
     renderPlantilla();
     renderCostosConfig();
