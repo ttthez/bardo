@@ -35,7 +35,7 @@ la app actualiza `pizzasSalieron` con la suma.
 `costosExtra` (opcional): `[{ id, desc, monto, cat }]`, costos puntuales del evento (hielo, alquiler, viáticos) que restan
 de su ganancia; con "Anotar en gastos" se crea un `gastos.movs` con `costoExtraId` y `eventoId`, la fecha del evento y la `cat` elegida.
 `origen` (opcional): cómo nos conoció el cliente, `meta` (anuncio de Meta), `instagram`, `recomendacion`, `cliente`
-(ya era cliente), `evento` (probó en otro evento) u `otro`; sin el campo = sin dato. Catering muestra una torta por canal
+(ya era cliente), `evento` (probó en otro evento) u `otro`, o el `id` de un canal propio de `costos.origenes`; sin el campo = sin dato. Catering muestra una torta por canal
 (clientes, personas o facturación) y compara lo facturado por Meta con los gastos de `publicidad`.
 Campos viejos que la app ya no muestra (`ingredientes`, `cerrado`, `cerradoEl`): dejarlos como están.
 
@@ -80,6 +80,8 @@ con el trabajo de los dueños pagado). `servOfertas` son precios de servilletas 
 ganancia de las congeladas en Ventas; los sabores que faltan usan `costoPizza`.
 `congeladas: { escalones: [{ desde, precio }] }` es la lista de precios de congeladas: todos los sabores valen lo mismo y el
 precio por pizza es el del escalón más alto que alcanza el total de pizzas de la compra (packs, mezclando sabores).
+`origenes: [{ id, nombre, emoji, color }]`: canales propios de "Cómo nos conoció" (ej. TikTok), que se agregan desde la torta
+en Catering y aparecen antes de "Otro"; un canal con eventos no se puede quitar.
 `envio: { precio, gratisDesde }`: envío de congeladas, mismo precio a cualquier lado ($5.000), gratis desde `gratisDesde`
 pizzas (11, o sea más de 10; 0 = siempre se cobra).
 Insumos = pizzas × costoPizza × (1 + merma) + pax × extra del menú; nafta = km × tanque / kmTanque;
