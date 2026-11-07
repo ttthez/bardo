@@ -113,6 +113,13 @@ los titulares nuevos que el usuario aclare.
 - Medio, cuenta y moneda se eligen con botones (`chipear` sobre los `<select class="sel-medio|sel-cuenta|sel-moneda">`).
 - Si un guardado falla, el nodo queda en `lasinergia_pendientes`: la sincronización no lo pisa y lo reintenta sola.
 
+## Novedades (notas de cambios)
+
+Cada cambio de la app que se mergea a `main` suma una entrada **al principio** de `NOVEDADES` en `index.html`:
+`{ id: <el siguiente>, fecha: 'YYYY-MM-DD', titulo, cambios: ['…'] }`, de 1 a 3 líneas en lenguaje simple, escritas para
+Juan (qué cambió y dónde se ve). Al abrir la app, cada celular ve una vez las entradas nuevas; todas quedan en "Novedades",
+abajo de todo. Los cambios internos o solo de documentación no llevan entrada.
+
 ## Calendario de eventos
 
 Los eventos de catering también se anotan en Google Calendar ("La Sinergia | Eventos"), con cliente, PAX, menú,
