@@ -597,6 +597,26 @@
   .login form{width:100%;max-width:340px;display:flex;flex-direction:column;gap:12px}
   .login input{flex:none;width:100%}
   .login .btn{width:100%;margin-top:4px}
+  /* ---------- novedades ---------- */
+  .novedades{
+    margin:auto;width:min(520px, calc(100vw - 32px));max-height:min(80vh, 640px);padding:0;border:1px solid var(--linea);border-radius:22px;
+    background:var(--negro-2);color:var(--crema);box-shadow:0 20px 60px rgba(0,0,0,.6);
+  }
+  .novedades::backdrop{background:rgba(0,0,0,.6)}
+  .novedades-caja{display:flex;flex-direction:column;max-height:min(80vh, 640px)}
+  .novedades-cab{padding:22px 22px 6px}
+  .novedades-cab h2{font-size:1.3rem;letter-spacing:-.3px}
+  .novedades-cab p{color:var(--gris);font-size:.84rem;margin-top:4px}
+  .novedades-lista{overflow-y:auto;padding:8px 22px 4px}
+  .novedades-lista:focus{outline:none}
+  .novedad{padding:14px 0;border-bottom:1px solid var(--linea)}
+  .novedad:last-child{border-bottom:none}
+  .novedad-fecha{color:var(--gris);font-size:.7rem;font-weight:800;text-transform:uppercase;letter-spacing:.08em}
+  .novedad-titulo{font-weight:800;font-size:1rem;margin:3px 0 6px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .novedad ul{margin:0;padding-left:18px;color:var(--crema-tenue);font-size:.88rem;line-height:1.45}
+  .novedad li + li{margin-top:4px}
+  .novedades-pie{padding:14px 22px 20px;border-top:1px solid var(--linea)}
+  .novedades-pie .btn{width:100%}
   .login-error{color:var(--fuego-claro);font-size:.85rem;font-weight:700;text-align:center;min-height:1.2em}
 
   /* ---------- gastos del negocio ---------- */
@@ -710,6 +730,17 @@
     <div class="login-error" id="loginError"></div>
   </form>
 </div>
+
+<dialog class="novedades" id="novedades" aria-labelledby="novedadesTitulo">
+  <div class="novedades-caja">
+    <div class="novedades-cab">
+      <h2 id="novedadesTitulo">Novedades en Bardo</h2>
+      <p id="novedadesSub"></p>
+    </div>
+    <div class="novedades-lista" id="novedadesLista"></div>
+    <div class="novedades-pie"><button type="button" class="btn btn-fuego" id="btnNovedadesOk" autofocus>Entendido</button></div>
+  </div>
+</dialog>
 
 <div class="wrap">
 
@@ -1142,6 +1173,7 @@
   </div>
 
   <div class="footer-row">
+    <button class="link-btn" id="btnNovedades">Novedades</button>
     <button class="link-btn" id="btnExport">Exportar backup</button>
     <button class="link-btn" id="btnImport">Importar backup</button>
     <button class="link-btn" id="btnLogout">Cerrar sesión</button>
@@ -5036,6 +5068,7 @@
       document.getElementById('loginPass').value = '';
       document.getElementById('login').hidden = true;
       refrescarTodo(true);
+      mostrarNovedades(false);
     }catch(err){
       document.getElementById('loginError').textContent = err.message;
     }finally{
@@ -5054,13 +5087,69 @@
     renderTodo();
   });
 
+  // ---------- novedades ----------
+  // Cada cambio de la app que llega a main suma una entrada ARRIBA de todo, con el id siguiente.
+  // Escrita para el que no estuvo en el cambio (Juan): qué cambió y dónde se ve, en 1 a 3 líneas.
+  const NOVEDADES = [
+    { id: 6, fecha: '2026-11-07', titulo: 'Novedades', cambios: [
+      'Cada vez que cambie algo en Bardo vas a ver este cartel una sola vez, con lo nuevo.',
+      'Las podés volver a leer cuando quieras desde "Novedades", abajo de todo en la app.'
+    ]},
+    { id: 5, fecha: '2026-11-07', titulo: 'Cosas que necesitamos', cambios: [
+      'Arriba de todo en Inicio hay una lista de lo que hay que comprar o hacer, con prioridad: 🔥 Urgente, Pronto o Cuando se pueda (tocá la etiqueta para cambiarla).',
+      'Tocá el círculo cuando algo ya está resuelto. Con "+ Anotar algo que falta" sumás cosas nuevas; Thiago y vos ven la misma lista.',
+      'La ganancia del mes ahora está al final de Inicio.'
+    ]},
+    { id: 4, fecha: '2026-11-03', titulo: 'Canales propios en "Cómo nos conoció"', cambios: [
+      'En Catering, desde la torta de "Cómo nos conoció", se pueden agregar canales nuevos (ya están TikTok, Google y Luci Silva).'
+    ]},
+    { id: 3, fecha: '2026-10-29', titulo: 'Envíos de congeladas', cambios: [
+      'En cada pedido se elige si se lo enviamos o lo retira. El envío tiene precio fijo y es gratis desde 11 pizzas.',
+      'Al entregar se anota cómo se llevó y cuánto costó. En Ventas › Envíos del mes se compara lo cobrado contra lo que costó.'
+    ]},
+    { id: 2, fecha: '2026-10-26', titulo: 'Precio único de congeladas', cambios: [
+      'Todos los sabores valen lo mismo; el precio por pizza baja según cuántas lleve en total (se pueden mezclar sabores).'
+    ]},
+    { id: 1, fecha: '2026-10-26', titulo: 'Costos extra de cada evento', cambios: [
+      'En cada evento se pueden anotar costos puntuales (hielo, alquiler, viáticos) que restan de su ganancia, y pasarlos a Gastos con un toque.'
+    ]}
+  ];
+  const CACHE_KEY_NOVEDADES = 'lasinergia_novedades_vistas';
+
+  function mostrarNovedades(todas){
+    const vista = Number(leerCache(CACHE_KEY_NOVEDADES, 0)) || 0;
+    const ultima = NOVEDADES[0].id;
+    // en un celular que nunca las vio, mostramos las 3 últimas
+    const lista = todas ? NOVEDADES : NOVEDADES.filter(n => n.id > vista).slice(0, vista ? NOVEDADES.length : 3);
+    if(!lista.length) return;
+    const fechaLarga = f => `${Number(f.slice(8, 10))} de ${MESES[Number(f.slice(5, 7)) - 1].toLowerCase()}`;
+    document.getElementById('novedadesSub').textContent = todas
+      ? 'Todos los cambios, del más nuevo al más viejo.'
+      : lista.length === 1 ? 'Hay un cambio desde la última vez que entraste.' : `Hay ${lista.length} cambios desde la última vez que entraste.`;
+    document.getElementById('novedadesLista').innerHTML = lista.map(n => `<div class="novedad">
+        <div class="novedad-fecha">${fechaLarga(n.fecha)}</div>
+        <div class="novedad-titulo">${escapeHtml(n.titulo)}${todas && n.id > vista ? '<span class="badge badge-hoy">Nuevo</span>' : ''}</div>
+        <ul>${n.cambios.map(c => `<li>${escapeHtml(c)}</li>`).join('')}</ul>
+      </div>`).join('');
+    const dlg = document.getElementById('novedades');
+    if(!dlg.open) dlg.showModal();
+    document.getElementById('novedadesLista').scrollTop = 0;
+    guardarCache(CACHE_KEY_NOVEDADES, ultima);
+  }
+  document.getElementById('btnNovedadesOk').addEventListener('click', () => document.getElementById('novedades').close());
+  // tocar afuera del cartel también lo cierra
+  document.getElementById('novedades').addEventListener('click', e => {
+    if(e.target.id === 'novedades') e.target.close();
+  });
+  document.getElementById('btnNovedades').addEventListener('click', () => mostrarNovedades(true));
+
   // la app siempre abre en Inicio
   irATab('inicio');
   renderTodo();
   restaurarBorrador();
   renderTodo();
   mostrarCobroVenta();
-  if(sesion) refrescarTodo(true);
+  if(sesion){ refrescarTodo(true); mostrarNovedades(false); }
   else mostrarLogin();
 
   // trae cambios hechos desde el otro dispositivo mientras la pestaña está abierta
