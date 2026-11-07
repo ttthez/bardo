@@ -547,6 +547,36 @@
   .home-stock span.bajo b{color:var(--fuego-claro)}
   .volver-inicio{margin:0 0 6px}
 
+  /* tablero de compras, arriba de todo en Inicio */
+  .home-compras{border:1px solid rgba(226,58,22,.28)}
+  .compras-cuenta{font-size:.72rem;font-weight:800;color:var(--gris)}
+  .compras-cuenta.urgente{color:var(--fuego-claro)}
+  .compra{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--linea)}
+  .compra:first-child{padding-top:0}
+  .compra-check{
+    flex:none;width:24px;height:24px;border-radius:50%;border:2px solid var(--crema-tenue);
+    background:transparent;cursor:pointer;padding:0;
+  }
+  .compra-check:hover{border-color:var(--verde);background:rgba(63,174,92,.15)}
+  .compra-info{flex:1;min-width:0}
+  .compra-info b{display:block;font-size:.95rem;overflow-wrap:anywhere}
+  .compra-meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:5px}
+  .compra-meta small{color:var(--gris);font-size:.76rem}
+  .compra-prio{
+    flex:none;font-family:inherit;font-size:.68rem;font-weight:800;text-transform:uppercase;letter-spacing:.04em;
+    padding:4px 10px;border-radius:999px;cursor:pointer;
+    background:transparent;color:var(--crema-tenue);border:1px solid var(--linea);
+  }
+  .compra-prio.prio-urgente{background:rgba(226,58,22,.85);color:#fff;border-color:transparent}
+  .compra-prio.prio-pronto{color:#f2b84b;border-color:rgba(255,190,60,.4)}
+  .compra .item-del{flex:none}
+  .compra-nueva{margin-top:14px}
+  .compra-nueva summary{
+    cursor:pointer;color:var(--fuego-claro);font-weight:800;font-size:.9rem;list-style:none;padding:4px 0;
+  }
+  .compra-nueva summary::-webkit-details-marker{display:none}
+  .compra-nueva[open] summary{margin-bottom:12px}
+
   /* ---------- catering: cobro y personal ---------- */
   .cobro-acciones{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
   .cobro-acciones input{flex:1 1 130px}
@@ -700,17 +730,22 @@
       <h1 id="homeSaludo">Hola</h1>
     </div>
 
-    <div class="card home-objetivo" id="homeObjetivo">
-      <div class="home-label" id="homeObjLabel">Ganancia del mes</div>
-      <div class="home-monto" id="homeIngresos">$0</div>
-      <div class="home-meta" id="homeMeta"></div>
-      <div class="barra-ext"><div class="barra-int" id="homeBarra" style="width:0%"></div></div>
-      <div class="home-kpis">
-        <div><div class="home-label">Gastos</div><div class="val" id="homeGastos">$0</div></div>
-        <div><div class="home-label">Facturado</div><div class="val" id="homeFacturado">$0</div></div>
-        <div><div class="home-label">Pizzas</div><div class="val" id="homePizzas">0</div></div>
-      </div>
-      <div class="home-ver">Ver ingresos y meta ›</div>
+    <div class="card home-compras" id="homeCompras">
+      <div class="card-titulo">Cosas que necesitamos <span class="compras-cuenta" id="comprasCuenta"></span></div>
+      <div class="card-nota">Para comprar o hacer. Tocá el círculo cuando esté resuelto; la etiqueta cambia la prioridad.</div>
+      <div id="comprasLista"></div>
+      <details class="compra-nueva" id="compraNueva">
+        <summary>+ Anotar algo que falta</summary>
+        <form id="formCompra" novalidate>
+          <div class="form-campos">
+            <label class="campo full"><span>Qué necesitamos</span>
+              <input type="text" id="compraTexto" autocomplete="off" placeholder="Ej: trapos de cocina"></label>
+            <div class="campo full"><span>Prioridad</span><select id="compraPrioridad" class="sel-chips"></select></div>
+            <div class="campo full"><span>Tipo</span><select id="compraCat" class="sel-chips"></select></div>
+          </div>
+          <div class="botones"><button type="submit" class="btn btn-fuego">Anotar</button></div>
+        </form>
+      </details>
     </div>
 
     <div class="home-acciones">
@@ -734,6 +769,19 @@
     <div class="card">
       <div class="card-titulo">Stock <span class="item-fecha" id="homeStockTotal"></span></div>
       <div class="home-stock" id="homeStock"></div>
+    </div>
+
+    <div class="card home-objetivo" id="homeObjetivo">
+      <div class="home-label" id="homeObjLabel">Ganancia del mes</div>
+      <div class="home-monto" id="homeIngresos">$0</div>
+      <div class="home-meta" id="homeMeta"></div>
+      <div class="barra-ext"><div class="barra-int" id="homeBarra" style="width:0%"></div></div>
+      <div class="home-kpis">
+        <div><div class="home-label">Gastos</div><div class="val" id="homeGastos">$0</div></div>
+        <div><div class="home-label">Facturado</div><div class="val" id="homeFacturado">$0</div></div>
+        <div><div class="home-label">Pizzas</div><div class="val" id="homePizzas">0</div></div>
+      </div>
+      <div class="home-ver">Ver ingresos y meta ›</div>
     </div>
   </section>
 
@@ -1128,6 +1176,7 @@
   const CAJA_URL     = FIREBASE_BASE + 'caja.json';
   const COSTOS_URL   = FIREBASE_BASE + 'costos.json';
   const PLANTILLA_URL = FIREBASE_BASE + 'plantilla.json';
+  const COMPRAS_URL  = FIREBASE_BASE + 'compras.json';
 
   const CACHE_KEY_INGRESOS = 'lasinergia_cache_ingresos';
   const CACHE_KEY_PIZZAS   = 'lasinergia_cache_pizzas';
@@ -1139,6 +1188,7 @@
   const CACHE_KEY_CAJA     = 'lasinergia_cache_caja';
   const CACHE_KEY_COSTOS   = 'lasinergia_cache_costos';
   const CACHE_KEY_PLANTILLA = 'lasinergia_cache_plantilla';
+  const CACHE_KEY_COMPRAS  = 'lasinergia_cache_compras';
   const CACHE_KEY_TAB      = 'lasinergia_tab';
 
   const SABORES_DEFAULT = ['Margarita','Honey pesto','Diavola','Di patate','Caramellata','4 Formaggi'];
@@ -1242,6 +1292,20 @@
   const GRUPOS_CHECK = ['Cajas', 'Bases', 'Quesos', 'Toppings', 'Finishers', 'Equipamiento', 'Comprar', 'Otros'];
   const MISE_EN_PLACE = ['Cajas', 'Bases', 'Quesos', 'Toppings', 'Finishers'];
   let plantilla = { sabores: [], pizzaDelMes: '', checklist: [] };
+  // tablero de Inicio: lo que hay que comprar o hacer, por prioridad
+  const PRIORIDADES = [
+    { id: 'urgente', nombre: '🔥 Urgente' },
+    { id: 'pronto',  nombre: 'Pronto' },
+    { id: 'luego',   nombre: 'Cuando se pueda' }
+  ];
+  const CATS_COMPRA = [
+    { id: 'equipo',    nombre: '🍳 Equipamiento' },
+    { id: 'materia',   nombre: '🧀 Materia prima' },
+    { id: 'packaging', nombre: '📦 Packaging' },
+    { id: 'imprenta',  nombre: '🖨️ Imprenta y diseño' },
+    { id: 'otros',     nombre: '✏️ Otros' }
+  ];
+  let compras = [];   // [{ id, texto, cat, prioridad, creado: 'YYYY-MM-DD' }]
   let pizzas   = { stock: [], ventas: [] };
   let pedidos  = [];
   let metas    = {};
@@ -1334,7 +1398,7 @@
 
   // ---------- deshacer ----------
   // foto de los datos antes de un cambio; "Deshacer" vuelve a esa foto y guarda solo lo que cambió
-  function foto(){ return JSON.stringify({ items, gastos, pizzas, pedidos, catering, costos }); }
+  function foto(){ return JSON.stringify({ items, gastos, pizzas, pedidos, catering, costos, compras }); }
   function restaurar(f){
     const antes = JSON.parse(f), ahora = JSON.parse(foto());
     const nodos = {
@@ -1343,7 +1407,8 @@
       pizzas:   [x => pizzas = x,   () => persistirPizzas()],
       pedidos:  [x => pedidos = x,  () => persistirPedidos()],
       catering: [x => catering = x, () => persistirCatering()],
-      costos:   [x => costos = x,   () => persistirCostos()]
+      costos:   [x => costos = x,   () => persistirCostos()],
+      compras:  [x => compras = x,  () => persistirCompras()]
     };
     Object.entries(nodos).forEach(([k, [poner, guardar]]) => {
       if(JSON.stringify(antes[k]) !== JSON.stringify(ahora[k])){ poner(antes[k]); guardar(); }
@@ -1620,16 +1685,17 @@
 
     // lo que sigue pendiente se lee de la copia del celular, no del servidor
     const traer = (url, key) => pendientes.has(key) ? Promise.reject(new Error('pendiente')) : fetchJSON(url);
-    const [rIng, rPiz, rPed, rMet, rCat, rPre, rGas, rCaja, rCos, rPla] = await Promise.allSettled([
+    const [rIng, rPiz, rPed, rMet, rCat, rPre, rGas, rCaja, rCos, rPla, rCom] = await Promise.allSettled([
       traer(INGRESOS_URL, CACHE_KEY_INGRESOS), traer(PIZZAS_URL, CACHE_KEY_PIZZAS), traer(PEDIDOS_URL, CACHE_KEY_PEDIDOS),
       traer(METAS_URL, CACHE_KEY_METAS), traer(CATERING_URL, CACHE_KEY_CATERING), traer(PRECIOS_URL, CACHE_KEY_PRECIOS),
-      traer(GASTOS_URL, CACHE_KEY_GASTOS), traer(CAJA_URL, CACHE_KEY_CAJA), traer(COSTOS_URL, CACHE_KEY_COSTOS), traer(PLANTILLA_URL, CACHE_KEY_PLANTILLA)
+      traer(GASTOS_URL, CACHE_KEY_GASTOS), traer(CAJA_URL, CACHE_KEY_CAJA), traer(COSTOS_URL, CACHE_KEY_COSTOS), traer(PLANTILLA_URL, CACHE_KEY_PLANTILLA),
+      traer(COMPRAS_URL, CACHE_KEY_COMPRAS)
     ]);
 
     // si mientras traíamos datos tocaste algo acá, descartamos lo del servidor
     if(revLocal !== rev || escrituras > 0) return;
 
-    const ok = [rIng, rPiz, rPed, rMet, rCat, rPre, rGas, rCaja, rCos, rPla].every(r => r.status === 'fulfilled');
+    const ok = [rIng, rPiz, rPed, rMet, rCat, rPre, rGas, rCaja, rCos, rPla, rCom].every(r => r.status === 'fulfilled');
 
     items = rIng.status === 'fulfilled'
       ? (rIng.value || [])
@@ -1680,6 +1746,8 @@
     plantilla = { sabores: Object.values(pl.sabores || {}), pizzaDelMes: pl.pizzaDelMes || '',
                   checklist: Object.values(pl.checklist || {}) };
     guardarCache(CACHE_KEY_PLANTILLA, plantilla);
+    compras = Object.values((rCom.status === 'fulfilled' ? rCom.value : leerCache(CACHE_KEY_COMPRAS, null)) || {});
+    guardarCache(CACHE_KEY_COMPRAS, compras);
     guardarCache(CACHE_KEY_CAJA, caja);
 
     guardarCache(CACHE_KEY_INGRESOS, items);
@@ -1727,6 +1795,7 @@
   const persistirCaja     = hacerPersistidor(CAJA_URL,     CACHE_KEY_CAJA,     () => caja);
   const persistirCostos   = hacerPersistidor(COSTOS_URL,   CACHE_KEY_COSTOS,   () => costos);
   const persistirPlantilla = hacerPersistidor(PLANTILLA_URL, CACHE_KEY_PLANTILLA, () => plantilla);
+  const persistirCompras  = hacerPersistidor(COMPRAS_URL,  CACHE_KEY_COMPRAS,  () => compras);
 
   // Firebase no guarda listas vacías, así que al leer completamos lo que falte
   function normalizarGastos(v){
@@ -1825,6 +1894,7 @@
 
   function renderTodo(){
     renderCabecera();
+    renderCompras();
     renderInicio();
     renderIngresos();
     renderPedidos();
@@ -1988,6 +2058,37 @@
     if(dif === -1) return 'Ayer';
     if(dif > 1 && dif < 7) return DIAS[d.getDay()][0].toUpperCase() + DIAS[d.getDay()].slice(1);
     return formatoFecha(f).slice(0, 5);
+  }
+
+  // ---------- tablero de compras ----------
+  function opcionesDe(lista, sel){
+    return lista.map(o => `<option value="${o.id}"${o.id === sel ? ' selected' : ''}>${escapeHtml(o.nombre)}</option>`).join('');
+  }
+  function renderCompras(){
+    const selP = document.getElementById('compraPrioridad'), selC = document.getElementById('compraCat');
+    if(!selP.options.length) selP.innerHTML = opcionesDe(PRIORIDADES, 'pronto');
+    if(!selC.options.length) selC.innerHTML = opcionesDe(CATS_COMPRA, 'equipo');
+    const orden = id => { const i = PRIORIDADES.findIndex(p => p.id === id); return i < 0 ? 1 : i; };
+    const lista = [...compras].sort((a, b) => orden(a.prioridad) - orden(b.prioridad) || a.id - b.id);
+    const hoy = Date.parse(hoyISO());
+    document.getElementById('comprasLista').innerHTML = lista.length ? lista.map(c => {
+      const p = PRIORIDADES.find(x => x.id === c.prioridad) || PRIORIDADES[1];
+      const cat = CATS_COMPRA.find(x => x.id === c.cat);
+      const dias = c.creado ? Math.round((hoy - Date.parse(c.creado)) / 864e5) : null;
+      const cuando = dias == null ? '' : dias <= 0 ? 'anotado hoy' : dias === 1 ? 'anotado ayer' : `anotado hace ${dias} días`;
+      const txt = escapeHtml(c.texto);
+      return `<div class="compra" data-id="${c.id}">
+        <button type="button" class="compra-check" data-comprado title="Ya está" aria-label="Marcar ${txt} como resuelto"></button>
+        <div class="compra-info"><b>${txt}</b>
+          <div class="compra-meta"><button type="button" class="compra-prio prio-${p.id}" data-prio title="Cambiar prioridad">${escapeHtml(p.nombre)}</button>
+          <small>${[cat ? escapeHtml(cat.nombre) : '', cuando].filter(Boolean).join(' · ')}</small></div></div>
+        <button type="button" class="item-del" data-quitar title="Ya no hace falta" aria-label="Quitar ${txt}">✕</button>
+      </div>`;
+    }).join('') : '<div class="vacio">No falta nada por ahora ✨</div>';
+    const urg = compras.filter(c => c.prioridad === 'urgente').length;
+    const cuenta = document.getElementById('comprasCuenta');
+    cuenta.textContent = !compras.length ? '' : urg ? `${urg} ${urg === 1 ? 'urgente' : 'urgentes'} · ${compras.length} en total` : `${compras.length}`;
+    cuenta.classList.toggle('urgente', urg > 0);
   }
 
   function renderInicio(){
@@ -4415,6 +4516,37 @@
     if(!pendientes.size) return;
     if(await reintentarPendientes()) avisar('Listo, quedó todo guardado en la nube.');
     else avisar('Sigue sin conexión. Los cambios quedan en este celular y se reintenta solo.', { error: true });
+  });
+  document.getElementById('formCompra').addEventListener('submit', e => {
+    e.preventDefault();
+    const inp = document.getElementById('compraTexto');
+    const texto = inp.value.trim();
+    if(!texto) return errorEn(inp, 'Escribí qué hace falta. Ej: trapos de cocina');
+    const f = foto();
+    compras.push({ id: Date.now(), texto, cat: document.getElementById('compraCat').value,
+                   prioridad: document.getElementById('compraPrioridad').value, creado: hoyISO() });
+    persistirCompras();
+    inp.value = '';
+    inp.focus({ preventScroll: true });
+    hecho(`Anotado: ${texto}`, f);
+  });
+  document.getElementById('comprasLista').addEventListener('click', e => {
+    const fila = e.target.closest('.compra');
+    if(!fila) return;
+    const c = compras.find(x => x.id === Number(fila.dataset.id));
+    if(!c) return;
+    const f = foto();
+    if(e.target.closest('[data-prio]')){
+      const i = PRIORIDADES.findIndex(p => p.id === c.prioridad);
+      c.prioridad = PRIORIDADES[(i + 1) % PRIORIDADES.length].id;
+      persistirCompras();
+      return;
+    }
+    const comprado = e.target.closest('[data-comprado]'), quitar = e.target.closest('[data-quitar]');
+    if(!comprado && !quitar) return;
+    compras = compras.filter(x => x !== c);
+    persistirCompras();
+    hecho(comprado ? `Listo: ${c.texto} ✓` : `Quitado: ${c.texto}`, f);
   });
   document.getElementById('homeObjetivo').addEventListener('click', () => {
     mesSel = mesActual();

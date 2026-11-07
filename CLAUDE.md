@@ -91,6 +91,11 @@ servilletas = pizzas × servilletasPorPizza × servPrecio / servPaquete.
 Los eventos nuevos arrancan con esos sabores (más la pizza del mes) y esa checklist. Los ítems de la checklist de un evento
 llevan `grupo`: `Cajas`, `Bases`, `Quesos`, `Toppings`, `Finishers` (mise en place), `Equipamiento`, `Comprar` u `Otros`.
 
+**`compras`**: tablero "Cosas que necesitamos", arriba de todo en Inicio: lo que hay que comprar o hacer.
+Lista de `{ id, texto, cat, prioridad, creado: 'YYYY-MM-DD' }`. `prioridad`: `urgente`, `pronto` o `luego` (cuando se pueda);
+`cat`: `equipo`, `materia` (materia prima), `packaging`, `imprenta` (imprenta y diseño) u `otros`. Al resolverlo se borra de la lista.
+La ganancia del mes quedó al final de Inicio (la prioridad es el servicio).
+
 **`titulares`** (no lo usa la app): `{ reglas: [texto], lista: [{ titular, es, tipo, cat?, nota? }] }`.
 Cómo clasificar los movimientos de los extractos (Mercado Pago, tarjetas): `tipo` es `empresa`, `personal`,
 `no es gasto` o `dudoso`, y `cat` la categoría de gasto. Leelo antes de procesar un extracto y sumá ahí

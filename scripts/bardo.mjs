@@ -18,7 +18,7 @@ import { fileURLToPath } from 'node:url';
 
 const DB = 'https://objetivo-julio-default-rtdb.firebaseio.com/';
 const API_KEY = 'AIzaSyD2G8mlV3QGbTswwXuFQIC8Q5vq0LBtqug';
-const NODOS = ['datos', 'pizzas', 'pedidos', 'metas', 'catering', 'precios', 'gastos', 'titulares', 'caja', 'costos', 'plantilla'];
+const NODOS = ['datos', 'pizzas', 'pedidos', 'metas', 'catering', 'precios', 'gastos', 'titulares', 'caja', 'costos', 'plantilla', 'compras'];
 const RAIZ = join(dirname(fileURLToPath(import.meta.url)), '..');
 
 // el fetch de Node solo usa HTTPS_PROXY con esta variable; si hay proxy y falta, nos relanzamos con ella
