@@ -5089,29 +5089,29 @@
 
   // ---------- novedades ----------
   // Cada cambio de la app que llega a main suma una entrada ARRIBA de todo, con el id siguiente.
-  // Escrita para el que no estuvo en el cambio (Juan): qué cambió y dónde se ve, en 1 a 3 líneas.
+  // Tono neutral: qué cambió y dónde se ve, en 1 a 3 líneas.
   const NOVEDADES = [
     { id: 6, fecha: '2026-11-07', titulo: 'Novedades', cambios: [
-      'Cada vez que cambie algo en Bardo vas a ver este cartel una sola vez, con lo nuevo.',
-      'Las podés volver a leer cuando quieras desde "Novedades", abajo de todo en la app.'
+      'Cada actualización de Bardo se muestra en este aviso una sola vez.',
+      'El historial completo está en "Novedades", al pie de la app.'
     ]},
     { id: 5, fecha: '2026-11-07', titulo: 'Cosas que necesitamos', cambios: [
-      'Arriba de todo en Inicio hay una lista de lo que hay que comprar o hacer, con prioridad: 🔥 Urgente, Pronto o Cuando se pueda (tocá la etiqueta para cambiarla).',
-      'Tocá el círculo cuando algo ya está resuelto. Con "+ Anotar algo que falta" sumás cosas nuevas; Thiago y vos ven la misma lista.',
-      'La ganancia del mes ahora está al final de Inicio.'
+      'Nuevo tablero al principio de Inicio con lo pendiente de comprar o hacer, ordenado por prioridad: Urgente, Pronto o Cuando se pueda.',
+      'Cada ítem se marca como resuelto con el círculo, y la prioridad se cambia tocando su etiqueta. La lista es compartida entre dispositivos.',
+      'La ganancia del mes pasó al final de Inicio.'
     ]},
     { id: 4, fecha: '2026-11-03', titulo: 'Canales propios en "Cómo nos conoció"', cambios: [
-      'En Catering, desde la torta de "Cómo nos conoció", se pueden agregar canales nuevos (ya están TikTok, Google y Luci Silva).'
+      'En Catering, la torta de "Cómo nos conoció" permite agregar canales propios. Ya están cargados TikTok, Google y Luci Silva.'
     ]},
     { id: 3, fecha: '2026-10-29', titulo: 'Envíos de congeladas', cambios: [
-      'En cada pedido se elige si se lo enviamos o lo retira. El envío tiene precio fijo y es gratis desde 11 pizzas.',
-      'Al entregar se anota cómo se llevó y cuánto costó. En Ventas › Envíos del mes se compara lo cobrado contra lo que costó.'
+      'Cada pedido indica si es con envío o con retiro. El envío tiene precio fijo y es sin cargo desde 11 pizzas.',
+      'Al entregar se registra cómo se llevó y cuánto costó. Ventas › Envíos del mes compara lo cobrado con lo gastado.'
     ]},
     { id: 2, fecha: '2026-10-26', titulo: 'Precio único de congeladas', cambios: [
-      'Todos los sabores valen lo mismo; el precio por pizza baja según cuántas lleve en total (se pueden mezclar sabores).'
+      'Todos los sabores tienen el mismo precio. El precio por pizza baja según la cantidad total de la compra, combinando sabores.'
     ]},
     { id: 1, fecha: '2026-10-26', titulo: 'Costos extra de cada evento', cambios: [
-      'En cada evento se pueden anotar costos puntuales (hielo, alquiler, viáticos) que restan de su ganancia, y pasarlos a Gastos con un toque.'
+      'Cada evento admite costos puntuales (hielo, alquiler, viáticos) que se descuentan de su ganancia y pueden pasarse a Gastos.'
     ]}
   ];
   const CACHE_KEY_NOVEDADES = 'lasinergia_novedades_vistas';
@@ -5119,13 +5119,13 @@
   function mostrarNovedades(todas){
     const vista = Number(leerCache(CACHE_KEY_NOVEDADES, 0)) || 0;
     const ultima = NOVEDADES[0].id;
-    // en un celular que nunca las vio, mostramos las 3 últimas
+    // en un dispositivo que nunca las vio, se muestran las 3 últimas
     const lista = todas ? NOVEDADES : NOVEDADES.filter(n => n.id > vista).slice(0, vista ? NOVEDADES.length : 3);
     if(!lista.length) return;
     const fechaLarga = f => `${Number(f.slice(8, 10))} de ${MESES[Number(f.slice(5, 7)) - 1].toLowerCase()}`;
     document.getElementById('novedadesSub').textContent = todas
-      ? 'Todos los cambios, del más nuevo al más viejo.'
-      : lista.length === 1 ? 'Hay un cambio desde la última vez que entraste.' : `Hay ${lista.length} cambios desde la última vez que entraste.`;
+      ? 'Historial completo, de la más reciente a la más antigua.'
+      : lista.length === 1 ? 'Hay 1 actualización nueva.' : `Hay ${lista.length} actualizaciones nuevas.`;
     document.getElementById('novedadesLista').innerHTML = lista.map(n => `<div class="novedad">
         <div class="novedad-fecha">${fechaLarga(n.fecha)}</div>
         <div class="novedad-titulo">${escapeHtml(n.titulo)}${todas && n.id > vista ? '<span class="badge badge-hoy">Nuevo</span>' : ''}</div>

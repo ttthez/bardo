@@ -116,8 +116,8 @@ los titulares nuevos que el usuario aclare.
 ## Novedades (notas de cambios)
 
 Cada cambio de la app que se mergea a `main` suma una entrada **al principio** de `NOVEDADES` en `index.html`:
-`{ id: <el siguiente>, fecha: 'YYYY-MM-DD', titulo, cambios: ['…'] }`, de 1 a 3 líneas en lenguaje simple, escritas para
-Juan (qué cambió y dónde se ve). Al abrir la app, cada celular ve una vez las entradas nuevas; todas quedan en "Novedades",
+`{ id: <el siguiente>, fecha: 'YYYY-MM-DD', titulo, cambios: ['…'] }`, de 1 a 3 líneas en tono neutral y profesional,
+sin tutear ni nombrar a nadie (qué cambió y dónde se ve). Al abrir la app, cada celular ve una vez las entradas nuevas; todas quedan en "Novedades",
 abajo de todo. Los cambios internos o solo de documentación no llevan entrada.
 
 ## Calendario de eventos
