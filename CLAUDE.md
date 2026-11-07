@@ -37,6 +37,7 @@ de su ganancia; con "Anotar en gastos" se crea un `gastos.movs` con `costoExtraI
 `origen` (opcional): cómo nos conoció el cliente, `meta` (anuncio de Meta), `instagram`, `recomendacion`, `cliente`
 (ya era cliente), `evento` (probó en otro evento) u `otro`, o el `id` de un canal propio de `costos.origenes`; sin el campo = sin dato. Catering muestra una torta por canal
 (clientes, personas o facturación) y compara lo facturado por Meta con los gastos de `publicidad`.
+`telefono` (opcional): teléfono del cliente tal como se escribió; la app arma con él "Enviar mensaje" (WhatsApp) y "Llamar".
 Campos viejos que la app ya no muestra (`ingredientes`, `cerrado`, `cerradoEl`): dejarlos como están.
 
 **`gastos`**: `{ fijos: [...], movs: [...], pagos: { 'YYYY-MM': [idFijo, ...] } }`
@@ -53,7 +54,9 @@ Los ingresos que no son en efectivo llevan además `cuenta`: `thiago` o `juan`, 
 **Dólares**: un ingreso o gasto en dólares lleva `moneda: 'USD'`, `usd` (lo que fue en dólares) y `tc` (pesos por US$);
 `monto` sigue en pesos (`usd × tc`, redondeado) para que todos los totales sigan en pesos.
 
-**`pedidos`**: `{ id, cliente, fecha, hora, entrega, direccion, notas, items: [{nombre, cantidad}] }` (pendientes de entrega).
+**`pedidos`**: `{ id, cliente, telefono?, fecha, hora, entrega, direccion, notas, items: [{nombre, cantidad}] }` (pendientes de entrega).
+`telefono` se guarda como se escribió (ej. `11 2345 6789`); la venta del pedido entregado lo conserva, y un pedido nuevo
+de un cliente conocido lo completa solo.
 `entrega`: `envio` (se lo llevamos) o `retira`; sin el campo, con dirección = envío y sin dirección = retira.
 
 **`pizzas`**: `{ stock: [{nombre, cantidad}], ventas: [{id, fecha, cliente?, items: [{nombre, cantidad}], entrega?, envio?}] }`.

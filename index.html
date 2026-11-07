@@ -209,6 +209,21 @@
     color:var(--fuego-claro);text-decoration:underline;
   }
   .pedido-notas{font-size:.82rem;color:var(--gris);margin-top:6px;font-style:italic}
+  /* contacto del cliente: WhatsApp y llamada */
+  .contacto{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:10px}
+  .contacto a{
+    display:inline-flex;align-items:center;gap:6px;font-size:.85rem;font-weight:800;text-decoration:none;
+    padding:8px 14px;border-radius:999px;white-space:nowrap;
+  }
+  .contacto .btn-wa{background:#1fa855;color:#fff}
+  .contacto .btn-wa:hover{background:#25c063}
+  .contacto .btn-tel{background:transparent;color:var(--crema);border:1px solid var(--linea)}
+  .contacto-num{color:var(--gris);font-size:.8rem}
+  .home-wa{
+    display:inline-grid;place-items:center;width:34px;height:34px;border-radius:50%;margin-left:8px;
+    background:#1fa855;color:#fff;text-decoration:none;font-size:.95rem;vertical-align:middle;
+  }
+  .tel-previo.mal{color:var(--fuego-claro)}
   .pedido-acciones{display:flex;gap:14px;align-items:center;margin-top:12px;flex-wrap:wrap}
 
   .badge{
@@ -825,6 +840,9 @@
       <div class="form-campos">
         <label class="campo full"><span>Cliente</span>
           <input type="text" id="pedidoCliente" list="clientesConocidos" autocomplete="off" placeholder="Ej: Paula"></label>
+        <label class="campo full"><span>Teléfono <small>· opcional</small></span>
+          <input type="tel" id="pedidoTelefono" class="inp-tel" inputmode="tel" autocomplete="off" placeholder="Ej: 11 2345 6789">
+          <span class="ayuda tel-previo"></span></label>
         <label class="campo"><span>Día de entrega</span><input type="date" id="pedidoFecha"></label>
         <label class="campo"><span>Hora <small>· opcional</small></span><input type="time" id="pedidoHora"></label>
         <div class="campo full"><span>Entrega</span>
@@ -903,6 +921,9 @@
           <label class="campo"><span>Hora <small>· opcional</small></span><input type="time" id="evHora"></label>
           <label class="campo full"><span>Lugar <small>· opcional</small></span>
             <input type="text" id="evLugar" placeholder="Ej: Ladislao Martínez 1165, Martínez"></label>
+          <label class="campo full"><span>Teléfono del cliente <small>· opcional</small></span>
+            <input type="tel" id="evTelefono" class="inp-tel" inputmode="tel" autocomplete="off" placeholder="Ej: 11 2345 6789">
+            <span class="ayuda tel-previo"></span></label>
           <label class="campo"><span>Personas</span><input type="number" id="evPersonas" min="1" inputmode="numeric" placeholder="Ej: 40"></label>
           <label class="campo"><span>Menú</span><select id="evMenu"></select></label>
           <label class="campo full"><span>Pizzas a llevar <small>· opcional (vacío = se calcula)</small></span>
@@ -1487,8 +1508,8 @@
   // (si se cierra la app o cambiás de pestaña, sigue ahí; vale solo por el día)
   const CACHE_KEY_BORRADOR = 'lasinergia_borrador';
   const CAMPOS_BORRADOR = ['gastoMonto', 'gastoDesc', 'gastoFecha', 'monto', 'desc', 'fecha',
-    'pedidoCliente', 'pedidoFecha', 'pedidoHora', 'pedidoEntrega', 'pedidoDireccion', 'pedidoNotas', 'ventaCliente', 'ventaCobrado',
-    'evNombre', 'evFecha', 'evHora', 'evLugar', 'evPersonas', 'evPizzas', 'evMenu', 'evOrigen'];
+    'pedidoCliente', 'pedidoTelefono', 'pedidoFecha', 'pedidoHora', 'pedidoEntrega', 'pedidoDireccion', 'pedidoNotas', 'ventaCliente', 'ventaCobrado',
+    'evNombre', 'evFecha', 'evHora', 'evLugar', 'evTelefono', 'evPersonas', 'evPizzas', 'evMenu', 'evOrigen'];
   function guardarBorrador(){
     const b = { dia: hoyISO(), catGasto, ventaDraft };
     CAMPOS_BORRADOR.forEach(id => {
@@ -1511,6 +1532,7 @@
     if(Array.isArray(b.pedidoDraft) && b.pedidoDraft.length) pedidoDraft = b.pedidoDraft;
     if(Array.isArray(b.ventaDraft) && b.ventaDraft.length) ventaDraft = b.ventaDraft;
     document.querySelectorAll('.inp-plata').forEach(mostrarPlataPrevia);
+    document.querySelectorAll('.inp-tel').forEach(mostrarTelPrevio);
   }
   ['input', 'change'].forEach(tipo => document.addEventListener(tipo, e => {
     if(CAMPOS_BORRADOR.includes(e.target.id) || e.target.closest('#pedidoFilas, #ventaFilas')) guardarBorrador();
@@ -1534,6 +1556,71 @@
     const d = new Date(y, m - 1 + delta, 1);
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
   }
+  // ---------- teléfono del cliente ----------
+  // pasa lo que se escribió ("11 2345-6789", "011 15 2345 6789", "+54 9 11…") al formato de WhatsApp: 549 + área + número
+  function numeroWhatsApp(tel){
+    const raw = String(tel || '').trim();
+    let d = raw.replace(/\D/g, '');
+    if(!d) return '';
+    if(d.startsWith('00')) d = d.slice(2);
+    if(raw.startsWith('+') || d.startsWith('54')){
+      if(!d.startsWith('54')) return d.length >= 8 ? d : '';   // número de otro país, tal cual
+      d = d.slice(2);
+      if(d.startsWith('9')) d = d.slice(1);
+    }
+    if(d.startsWith('0')) d = d.slice(1);
+    // el 15 de los celulares va afuera: 11 15 2345 6789 → 11 2345 6789
+    if(d.length === 12){
+      for(const pos of [2, 3, 4]) if(d.substr(pos, 2) === '15'){ d = d.slice(0, pos) + d.slice(pos + 2); break; }
+    }
+    if(d.length === 10 && d.startsWith('15')) d = '11' + d.slice(2);
+    if(d.length === 8) d = '11' + d;   // sin código de área: CABA
+    return d.length === 10 ? '549' + d : '';
+  }
+  function telLegible(n){
+    if(n.startsWith('54911')) return `+54 9 11 ${n.slice(5, 9)}-${n.slice(9)}`;
+    return n.startsWith('549') ? `+54 9 ${n.slice(3)}` : '+' + n;
+  }
+  function mostrarTelPrevio(inp){
+    const el = inp.parentElement.querySelector('.tel-previo');
+    if(!el) return;
+    const v = inp.value.trim(), n = numeroWhatsApp(v);
+    el.textContent = !v ? '' : n ? `WhatsApp: ${telLegible(n)}` : 'No parece un número completo. Ej: 11 2345 6789';
+    el.classList.toggle('mal', !!v && !n);
+  }
+  document.addEventListener('input', e => {
+    if(e.target.matches && e.target.matches('.inp-tel')) mostrarTelPrevio(e.target);
+  });
+  function diaDe(f){
+    if(!f) return '';
+    if(f === hoyISO()) return 'hoy';
+    const d = new Date(f + 'T12:00:00');
+    return `el ${DIAS[d.getDay()]} ${d.getDate()}/${d.getMonth() + 1}`;
+  }
+  function msjPedido(p){
+    const nombre = String(p.cliente || '').trim().split(/\s+/)[0];
+    return `Hola${nombre ? ' ' + nombre : ''}! Te escribimos de La Sinergia por tu pedido de pizzas${p.fecha ? ' para ' + diaDe(p.fecha) : ''}.`;
+  }
+  function msjEvento(ev){
+    const dia = diaDe(ev.fecha);
+    return `Hola! Te escribimos de La Sinergia por el evento ${dia === 'hoy' ? 'de hoy' : dia ? 'del ' + dia.slice(3) : ''}.`.replace(' .', '.');
+  }
+  // botones "Enviar mensaje" (WhatsApp con el texto escrito) y "Llamar"
+  function botonesContacto(tel, mensaje){
+    if(!tel) return '';
+    const n = numeroWhatsApp(tel);
+    const marcar = n ? '+' + n : String(tel).replace(/[^\d+]/g, '');
+    return `<div class="contacto">
+      ${n ? `<a class="btn-wa" href="https://wa.me/${n}?text=${encodeURIComponent(mensaje)}" target="_blank" rel="noopener">💬 Enviar mensaje</a>` : ''}
+      <a class="btn-tel" href="tel:${marcar}">📞 Llamar</a>
+      <span class="contacto-num">${escapeHtml(tel)}</span>
+    </div>`;
+  }
+  function linkWaChico(tel, mensaje){
+    const n = numeroWhatsApp(tel);
+    return n ? `<a class="home-wa" href="https://wa.me/${n}?text=${encodeURIComponent(mensaje)}" target="_blank" rel="noopener" title="Enviar mensaje por WhatsApp" aria-label="Enviar mensaje por WhatsApp">💬</a>` : '';
+  }
+
   function formatoFecha(f){
     const [y,m,d] = f.split('-');
     return `${d}/${m}/${y}`;
@@ -2163,7 +2250,7 @@
         filas.push(`<div class="home-fila" data-ir="pedidos">
           <div class="home-ico">📦</div>
           <div class="home-info"><b>${escapeHtml(p.cliente)}</b><small>${n} ${n === 1 ? 'pizza' : 'pizzas'}${p.direccion ? ' · ' + escapeHtml(p.direccion) : ''}</small></div>
-          <div class="home-der">${p.fecha < hoy ? '<span class="badge badge-atrasado">Atrasado</span>' : (p.hora || 'Hoy')}</div>
+          <div class="home-der">${p.fecha < hoy ? '<span class="badge badge-atrasado">Atrasado</span>' : (p.hora || 'Hoy')}${linkWaChico(p.telefono, msjPedido(p))}</div>
         </div>`);
       });
     catering.filter(e => e.fecha === hoy).forEach(e => {
@@ -2171,7 +2258,7 @@
       filas.push(`<div class="home-fila" data-evento="${e.id}">
         <div class="home-ico">🍽️</div>
         <div class="home-info"><b>${escapeHtml(e.nombre)}</b><small>${e.personas || 0} pax${e.lugar ? ' · ' + escapeHtml(e.lugar) : ''}</small></div>
-        <div class="home-der">${e.hora || 'Hoy'}${r.falta ? `<small>cobrar ${fmt(r.falta)}</small>` : ''}</div>
+        <div class="home-der">${e.hora || 'Hoy'}${linkWaChico(e.telefono, msjEvento(e))}${r.falta ? `<small>cobrar ${fmt(r.falta)}</small>` : ''}</div>
       </div>`);
     });
     const pagados = gastos.pagos[ym] || [];
@@ -2480,6 +2567,8 @@
 
   function limpiarFormPedido(){
     document.getElementById('pedidoCliente').value = '';
+    document.getElementById('pedidoTelefono').value = '';
+    mostrarTelPrevio(document.getElementById('pedidoTelefono'));
     document.getElementById('pedidoFecha').value = hoyISO();
     document.getElementById('pedidoHora').value = '';
     document.getElementById('pedidoEntrega').value = 'envio';
@@ -2500,6 +2589,8 @@
 
     editandoPedidoId = id;
     document.getElementById('pedidoCliente').value = p.cliente || '';
+    document.getElementById('pedidoTelefono').value = p.telefono || '';
+    mostrarTelPrevio(document.getElementById('pedidoTelefono'));
     document.getElementById('pedidoFecha').value = p.fecha || hoyISO();
     document.getElementById('pedidoHora').value = p.hora || '';
     document.getElementById('pedidoEntrega').value = entregaDe(p);
@@ -2624,6 +2715,7 @@
           <div class="pedido-items"><b>${totalPizzas} pizza${totalPizzas === 1 ? '' : 's'}</b> — ${detalle}</div>
           ${precioLista ? `<div class="pedido-items">💲 Precio de lista: <b>${precioLista}</b></div>` : ''}
           ${mapa}
+          ${botonesContacto(p.telefono, msjPedido(p))}
           ${notas}
           ${panel}
         </div>`;
@@ -2693,6 +2785,7 @@
       id: ventaId,
       fecha: hoyISO(),
       cliente: p.cliente,
+      ...(p.telefono ? { telefono: p.telefono } : {}),
       items: p.items.map(i => ({ nombre: i.nombre, cantidad: i.cantidad })),
       entrega
     });
@@ -3898,6 +3991,9 @@
           <label class="campo"><span>Hora</span><input type="time" data-campo="hora" value="${ev.hora || ''}"></label>
           <label class="campo full"><span>Lugar</span>
             <input type="text" data-campo="lugar" value="${escapeHtml(ev.lugar || '')}" placeholder="Ej: Ladislao Martínez 1165, Martínez"></label>
+          <label class="campo full"><span>Teléfono del cliente <small>· opcional</small></span>
+            <input type="tel" data-campo="telefono" class="inp-tel" inputmode="tel" autocomplete="off" value="${escapeHtml(ev.telefono || '')}" placeholder="Ej: 11 2345 6789">
+            <span class="ayuda tel-previo"></span></label>
           <label class="campo"><span>Personas</span>
             <input type="number" data-campo="personas" min="0" inputmode="numeric" value="${ev.personas || ''}" placeholder="Ej: 40"></label>
           <label class="campo"><span>Pizzas a llevar</span>
@@ -3908,6 +4004,7 @@
             <select data-campo="origen" class="sel-chips">${opcionesOrigen(ev.origen)}</select></div>
         </div>
         ${ev.lugar ? `<a class="pedido-mapa" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(ev.lugar)}" target="_blank" rel="noopener">📍 Cómo llegar</a>` : ''}
+        ${botonesContacto(ev.telefono, msjEvento(ev))}
         <div class="footer-row" style="justify-content:flex-start;margin-top:16px">
           <button type="button" class="link-btn" id="btnBorrarEvento">Borrar evento</button>
         </div>
@@ -4135,6 +4232,7 @@
         const campo = inp.getAttribute('data-campo');
         ev[campo] = inp.type === 'number' ? (parseFloat(inp.value) || 0) : inp.value;
         if(campo === 'origen' && !ev.origen) delete ev.origen;
+        if(campo === 'telefono'){ ev.telefono = inp.value.trim(); if(!ev.telefono) delete ev.telefono; }
         persistirCatering();
       });
     });
@@ -4596,6 +4694,7 @@
     if(a === 'evento'){ eventoAbierto = null; renderCatering(); irYMostrar('catering', 'evNombre'); }
   });
   document.addEventListener('click', e => {
+    if(e.target.closest('#panel-inicio a[href]')) return;   // el botón de WhatsApp abre WhatsApp, no el evento
     const ir = e.target.closest('#panel-inicio [data-ir], #panel-objetivo [data-ir]');
     if(ir){ irATab(ir.dataset.ir); return; }
     const ev = e.target.closest('#panel-inicio [data-evento]');
@@ -4833,6 +4932,16 @@
     renderPedidoForm();
   });
 
+  // si el cliente ya pidió antes con teléfono, lo completamos
+  document.getElementById('pedidoCliente').addEventListener('change', () => {
+    const tel = document.getElementById('pedidoTelefono');
+    const nombre = document.getElementById('pedidoCliente').value.trim().toLowerCase();
+    if(tel.value.trim() || !nombre) return;
+    const previo = [...pizzas.ventas, ...pedidos].filter(x => x.telefono && String(x.cliente || '').trim().toLowerCase() === nombre)
+      .sort((a, b) => (b.id || 0) - (a.id || 0))[0];
+    if(previo){ tel.value = previo.telefono; mostrarTelPrevio(tel); guardarBorrador(); }
+  });
+
   document.getElementById('btnAgendarPedido').addEventListener('click', () => {
     const cliente = document.getElementById('pedidoCliente').value.trim();
     const fecha = document.getElementById('pedidoFecha').value;
@@ -4840,6 +4949,7 @@
     const entrega = document.getElementById('pedidoEntrega').value === 'retira' ? 'retira' : 'envio';
     const direccion = entrega === 'retira' ? '' : document.getElementById('pedidoDireccion').value.trim();
     const notas = document.getElementById('pedidoNotas').value.trim();
+    const telefono = document.getElementById('pedidoTelefono').value.trim();
 
     if(!cliente) return errorEn(document.getElementById('pedidoCliente'), 'Falta el nombre del cliente, ej: Paula');
     if(!fecha) return errorEn(document.getElementById('pedidoFecha'), 'Elegí el día de entrega');
@@ -4850,7 +4960,7 @@
     const editando = editandoPedidoId !== null;
 
     const datos = {
-      cliente, fecha, hora, entrega, direccion, notas,
+      cliente, telefono, fecha, hora, entrega, direccion, notas,
       items: validas.map(f => ({ nombre: f.sabor, cantidad: f.cantidad }))
     };
 
@@ -4956,6 +5066,7 @@
       fecha,
       hora: document.getElementById('evHora').value,
       lugar: document.getElementById('evLugar').value.trim(),
+      telefono: document.getElementById('evTelefono').value.trim() || undefined,
       personas: personasEv,
       pizzas: pizzasEv,
       menu: document.getElementById('evMenu').value || undefined,
@@ -4979,6 +5090,8 @@
     document.getElementById('evNombre').value = '';
     document.getElementById('evHora').value = '';
     document.getElementById('evLugar').value = '';
+    document.getElementById('evTelefono').value = '';
+    mostrarTelPrevio(document.getElementById('evTelefono'));
     document.getElementById('evPersonas').value = '';
     document.getElementById('evPizzas').value = '';
     document.getElementById('evMenu').value = '';
@@ -5091,6 +5204,11 @@
   // Cada cambio de la app que llega a main suma una entrada ARRIBA de todo, con el id siguiente.
   // Tono neutral: qué cambió y dónde se ve, en 1 a 3 líneas.
   const NOVEDADES = [
+    { id: 7, fecha: '2026-11-07', titulo: 'Teléfono del cliente', cambios: [
+      'Los pedidos y los eventos tienen un campo para el teléfono del cliente.',
+      'Con teléfono cargado aparecen "Enviar mensaje", que abre WhatsApp con un saludo ya escrito, y "Llamar". También en "Para hoy" de Inicio.',
+      'En un pedido nuevo, si el cliente ya compró antes con teléfono, se completa solo.'
+    ]},
     { id: 6, fecha: '2026-11-07', titulo: 'Novedades', cambios: [
       'Cada actualización de Bardo se muestra en este aviso una sola vez.',
       'El historial completo está en "Novedades", al pie de la app.'
