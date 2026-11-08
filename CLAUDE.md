@@ -41,7 +41,8 @@ de su ganancia; con "Anotar en gastos" se crea un `gastos.movs` con `costoExtraI
 Campos viejos que la app ya no muestra (`ingredientes`, `cerrado`, `cerradoEl`): dejarlos como están.
 
 **`gastos`**: `{ fijos: [...], movs: [...], pagos: { 'YYYY-MM': [idFijo, ...] } }`
-- `fijos`: `{ id, nombre, monto, dia, cat, desde: 'YYYY-MM', hasta?: 'YYYY-MM' }`. Se repiten cada mes de `desde` a `hasta`.
+- `fijos`: `{ id, nombre, monto, dia, cat, desde: 'YYYY-MM', hasta?: 'YYYY-MM', medio? }`. Se repiten cada mes de `desde` a `hasta`.
+  `medio` (opcional) es cómo se paga ese fijo (mismos valores que en los movimientos); por ahora no mueve la caja.
 - `movs`: `{ id, fecha, cat, monto, desc }`. El pago de personal de un evento lleva además `personalId` y `eventoId`, con `desc` tipo `"Mozo Juan · Casamiento Pérez"` y la fecha del evento.
 - Categorías (`cat`): `insumos`, `packaging`, `impuestos`, `auto`, `servicios`, `equipo`, `publicidad`, `personal`, `envios`, `otros`.
   `envios` es lo que costó llevar congeladas (Uber, cadete); la nafta del auto sigue en `auto`.

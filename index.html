@@ -645,6 +645,8 @@
   .fijo-item{cursor:pointer}
   .fijo-item.pagado .item-desc{color:var(--gris);text-decoration:line-through}
   .fijo-item .badge{margin-left:6px;font-size:.6rem;padding:2px 7px}
+  .fijo-editar{padding:4px 0 16px;border-bottom:1px solid var(--linea)}
+  .fijo-editar .botones{margin-top:10px}
   .sel-medio, .sel-cuenta, .sel-moneda, .inp-tc{flex:1 1 150px}
   .costos-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px}
   .costo-campo{display:flex;flex-direction:column;gap:4px;font-size:.75rem;color:var(--gris)}
@@ -1108,7 +1110,7 @@
     <div class="card">
       <div class="card-titulo">Fijos mensuales <span class="item-fecha" id="fijosPagados"></span></div>
       <div class="card-nota">
-        Se suman solos todos los meses. Tildá cuando lo pagás; tocá uno para cambiarle el monto.
+        Se suman solos todos los meses. Tildá cuando lo pagás; tocá uno para cambiarle el monto o cómo se paga.
       </div>
       <div class="lista" id="listaFijos"></div>
       <details class="ajustes" style="margin-top:14px" id="fijoNuevoWrap">
@@ -1119,6 +1121,8 @@
             <label class="campo"><span>Monto por mes</span><input type="text" id="fijoMonto" class="inp-plata" inputmode="decimal" autocomplete="off" placeholder="Ej: 45000"></label>
             <label class="campo"><span>Vence el día <small>· opcional</small></span><input type="number" id="fijoDia" min="1" max="31" inputmode="numeric" placeholder="Ej: 10"></label>
             <label class="campo full"><span>Categoría</span><select id="fijoCat"></select></label>
+            <div class="campo full"><span>Cómo se paga <small>· opcional</small></span>
+              <select id="fijoMedio" class="sel-chips"><option value=""></option></select></div>
           </div>
           <button type="submit" class="btn btn-fuego" style="width:100%">Agregar fijo</button>
         </form>
@@ -1373,6 +1377,8 @@
 
   let ventaDraft  = [{ sabor: null, cantidad: 1 }];
   let pedidoDraft = [{ sabor: null, cantidad: 1 }];
+  let editandoFijoId = null;     // fijo con el panel de edición abierto
+  let fijoDraft = {};            // lo elegido en ese panel, para que la sincronización no lo pierda
   let editandoPedidoId = null;   // si no es null, el formulario está editando ese pedido
   let rangoResumen = 'mes';
   let planCalculado = false;
@@ -2265,7 +2271,7 @@
     fijosDe(ym).filter(f => f.dia && !pagados.includes(f.id) && f.dia - dia <= 3).forEach(f => {
       filas.push(`<div class="home-fila" data-ir="gastos">
         <div class="home-ico">🧾</div>
-        <div class="home-info"><b>${escapeHtml(f.nombre)}</b><small>${f.dia < dia ? 'Vencido el ' + f.dia : f.dia === dia ? 'Vence hoy' : 'Vence el ' + f.dia}</small></div>
+        <div class="home-info"><b>${escapeHtml(f.nombre)}</b><small>${f.dia < dia ? 'Vencido el ' + f.dia : f.dia === dia ? 'Vence hoy' : 'Vence el ' + f.dia}${medioTexto(f.medio)}</small></div>
         <div class="home-der">${fmt(f.monto)}</div>
       </div>`);
     });
@@ -2497,6 +2503,8 @@
     document.getElementById('gastoCats').innerHTML = CATS_GASTO.map(c =>
       `<button type="button" data-cat="${c.id}" class="${c.id === catGasto ? 'activo' : ''}">${c.emoji} ${c.nombre}</button>`
     ).join('');
+    const selMedioFijo = document.getElementById('fijoMedio');
+    if(selMedioFijo.options.length < 2) selMedioFijo.innerHTML = '<option value=""></option>' + opcionesMedio('');
     const selCat = document.getElementById('fijoCat');
     if(!selCat.options.length){
       selCat.innerHTML = CATS_GASTO.map(c => `<option value="${c.id}">${c.emoji} ${c.nombre}</option>`).join('');
@@ -2506,19 +2514,35 @@
     // fijos
     document.getElementById('fijosPagados').textContent =
       fijos.length ? `· ${fijos.filter(f => pagados.includes(f.id)).length}/${fijos.length} pagados` : '';
-    document.getElementById('listaFijos').innerHTML = fijos.length ? fijos.map(f => {
+    const listaFijos = document.getElementById('listaFijos');
+    // con el panel de edición abierto y escribiendo, la sincronización no lo pisa
+    if(!escribiendoEn(listaFijos)) listaFijos.innerHTML = fijos.length ? fijos.map(f => {
       const c = catGastoDe(f.cat);
       const pagado = pagados.includes(f.id);
+      const panel = editandoFijoId === f.id ? `
+      <div class="fijo-editar" data-fijo-panel="${f.id}">
+        <div class="form-campos" style="margin:0">
+          <label class="campo full"><span>Monto por mes</span>
+            <input type="text" id="fijoEditMonto" class="inp-plata" inputmode="decimal" autocomplete="off" value="${escapeHtml(String(fijoDraft.monto ?? f.monto))}" placeholder="Ej: 45000"></label>
+          <div class="campo full"><span>Cómo se paga</span>
+            <select id="fijoEditMedio" class="sel-chips"><option value=""></option>${opcionesMedio(fijoDraft.medio ?? (f.medio || ''))}</select></div>
+        </div>
+        <div class="botones">
+          <button type="button" class="btn btn-fuego" data-fijo-guardar="${f.id}">Guardar</button>
+          <button type="button" class="btn btn-sec" data-fijo-cancelar>Cancelar</button>
+        </div>
+      </div>` : '';
       return `<div class="item fijo-item ${pagado ? 'pagado' : ''}" data-fijo="${f.id}">
         <input type="checkbox" data-pago="${f.id}" ${pagado ? 'checked' : ''} title="Pagado">
         <div class="item-info">
           <div class="item-desc">${escapeHtml(f.nombre)}</div>
-          <div class="item-fecha">${c.emoji} ${c.nombre}${f.dia ? ` · día ${f.dia}` : ''}${badgeVence(f, pagado)}</div>
+          <div class="item-fecha">${c.emoji} ${c.nombre}${f.dia ? ` · día ${f.dia}` : ''}${medioTexto(f.medio)}${badgeVence(f, pagado)}</div>
         </div>
         <div class="item-monto gasto">${fmt(f.monto)}</div>
         <button class="item-del" data-baja="${f.id}" title="Dar de baja">✕</button>
-      </div>`;
+      </div>${panel}`;
     }).join('') : `<div class="vacio">Agregá tus fijos: monotributo, seguro del auto, alquiler…</div>`;
+    if(editandoFijoId !== null) listaFijos.querySelectorAll('.inp-plata').forEach(mostrarPlataPrevia);
 
     // variables
     document.getElementById('listaGastos').innerHTML = movs.length ? movs.map(g => {
@@ -4831,15 +4855,41 @@
     if(!(monto > 0)) return errorEn(elMonto, elMonto.value.trim() ? 'No se entiende el número: usá solo cifras, ej: 45000' : 'Falta el monto por mes');
     const f = foto();
     gastos.fijos.push({ id: Date.now(), nombre, monto, dia: dia && Math.min(dia, 31),
-      cat: document.getElementById('fijoCat').value, desde: mesSel });
-    ['fijoNombre','fijoMonto','fijoDia'].forEach(id => document.getElementById(id).value = '');
+      cat: document.getElementById('fijoCat').value, desde: mesSel,
+      medio: document.getElementById('fijoMedio').value || undefined });
+    ['fijoNombre','fijoMonto','fijoDia','fijoMedio'].forEach(id => document.getElementById(id).value = '');
     mostrarPlataPrevia(elMonto);
     document.activeElement.blur();
     persistirGastos();
     hecho(`"${nombre}" agregado: ${fmt(monto)} todos los meses desde ${nombreMes(mesSel)}.`, f);
   });
 
+  ['input', 'change'].forEach(tipo => document.getElementById('listaFijos').addEventListener(tipo, e => {
+    if(e.target.id === 'fijoEditMonto') fijoDraft.monto = e.target.value;
+    if(e.target.id === 'fijoEditMedio') fijoDraft.medio = e.target.value;
+  }));
   document.getElementById('listaFijos').addEventListener('click', e => {
+    if(e.target.closest('[data-fijo-cancelar]')){ editandoFijoId = null; fijoDraft = {}; renderGastos(); return; }
+    const guardar = e.target.closest('[data-fijo-guardar]');
+    if(guardar){
+      const f = gastos.fijos.find(x => x.id === Number(guardar.dataset.fijoGuardar));
+      if(!f) return;
+      const elMonto = document.getElementById('fijoEditMonto');
+      const monto = parsearMonto(elMonto.value);
+      if(!(monto > 0)) return errorEn(elMonto, elMonto.value.trim() ? 'No se entiende el número: usá solo cifras, ej: 45000' : 'Falta el monto por mes, ej: 45000');
+      const antes = foto();
+      const medio = document.getElementById('fijoEditMedio').value;
+      f.monto = monto;
+      if(medio) f.medio = medio; else delete f.medio;
+      editandoFijoId = null;
+      fijoDraft = {};
+      document.activeElement.blur();
+      persistirGastos();
+      const m = MEDIOS.find(x => x.id === medio);
+      hecho(`"${f.nombre}": ${fmt(monto)} por mes${m ? ', se paga con ' + m.nombre.toLowerCase() : ''}.`, antes);
+      return;
+    }
+    if(e.target.closest('[data-fijo-panel]')) return;
     const pago = e.target.closest('[data-pago]');
     if(pago){
       const id = Number(pago.dataset.pago);
@@ -4862,14 +4912,11 @@
     }
     const fila = e.target.closest('[data-fijo]');
     if(fila){
-      const f = gastos.fijos.find(x => x.id === Number(fila.dataset.fijo));
-      if(!f) return;
-      const val = prompt(`Nuevo monto de "${f.nombre}":`, f.monto);
-      if(val === null) return;
-      const num = parseFloat(String(val).replace(/[^\d.,]/g, '').replace(',', '.'));
-      if(!num || num <= 0) return;
-      f.monto = num;
-      persistirGastos();
+      const id = Number(fila.dataset.fijo);
+      editandoFijoId = editandoFijoId === id ? null : id;
+      fijoDraft = {};
+      renderGastos();
+      refrescarChips();
     }
   });
 
@@ -5204,6 +5251,11 @@
   // Cada cambio de la app que llega a main suma una entrada ARRIBA de todo, con el id siguiente.
   // Tono neutral: qué cambió y dónde se ve, en 1 a 3 líneas.
   const NOVEDADES = [
+    { id: 8, fecha: '2026-11-08', titulo: 'Medio de pago de los fijos', cambios: [
+      'Cada gasto fijo indica cómo se paga: efectivo, Mercado Pago, transferencia o tarjeta.',
+      'Se elige al agregar un fijo, o tocando uno existente en Gastos › Fijos mensuales, donde también se cambia el monto.',
+      'El medio aparece en la lista de fijos y en los vencimientos de "Para hoy".'
+    ]},
     { id: 7, fecha: '2026-11-07', titulo: 'Teléfono del cliente', cambios: [
       'Los pedidos y los eventos tienen un campo para el teléfono del cliente.',
       'Con teléfono cargado aparecen "Enviar mensaje", que abre WhatsApp con un saludo ya escrito, y "Llamar". También en "Para hoy" de Inicio.',
