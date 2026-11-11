@@ -186,6 +186,13 @@
   .stock-acciones{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
   .stock-comprometido{font-size:.78rem;color:var(--gris);font-weight:600}
   .stock-comprometido.falta{color:var(--fuego-claro)}
+  /* armar sabores desde las bases Flex */
+  .flex-armar{padding:4px 0 16px;border-bottom:1px solid var(--linea)}
+  .flex-armar .botones{margin-top:10px}
+  .flex-sugerencia{
+    background:none;border:none;padding:0;margin-top:3px;cursor:pointer;font-family:inherit;
+    font-size:.78rem;font-weight:800;color:var(--fuego-claro);text-decoration:underline;
+  }
 
   .venta-fila{display:flex;gap:10px;margin-bottom:10px;flex-wrap:wrap}
   .venta-fila select{flex:2;min-width:150px}
@@ -2846,6 +2853,35 @@
       `${costoEnvio > 0 ? `, envío ${fmt(costoEnvio)} a Gastos` : ''}. Stock descontado.`, f);
   }
 
+  // ---------- armar desde Flex ----------
+  // las Flex son bases congeladas sin terminar: la roja se arma como sabores de tomate y la blanca como los de base blanca
+  const FLEX_SABORES = {
+    'flex roja':   ['Diavola', 'Margarita', 'Honey pesto'],
+    'flex blanca': ['Di patate', 'Caramellata', '4 Formaggi']
+  };
+  let armandoFlex = null;   // { flex, sabor, cant } con el panel abierto
+  const stockDe = nombre => pizzas.stock.find(s => s.nombre.toLowerCase() === String(nombre).toLowerCase());
+  function flexPara(sabor){
+    const k = Object.keys(FLEX_SABORES).find(f => FLEX_SABORES[f].some(x => x.toLowerCase() === sabor.toLowerCase()));
+    return k ? stockDe(k) : null;
+  }
+  function panelFlex(f){
+    const opciones = FLEX_SABORES[f.nombre.toLowerCase()] || [];
+    return `<div class="flex-armar" data-flex-panel>
+      <div class="form-campos" style="margin:0">
+        <div class="campo full"><span>Qué sabor armás con la ${escapeHtml(f.nombre)}</span>
+          <select id="flexSabor" class="sel-chips">${opciones.map(o => `<option value="${escapeHtml(o)}"${o === armandoFlex.sabor ? ' selected' : ''}>${escapeHtml(o)}</option>`).join('')}</select></div>
+        <label class="campo full"><span>Cuántas</span>
+          <input type="number" id="flexCant" min="1" max="${f.cantidad}" inputmode="numeric" value="${armandoFlex.cant}" placeholder="Ej: 2">
+          <span class="ayuda">Hay ${f.cantidad} ${escapeHtml(f.nombre)} en stock.</span></label>
+      </div>
+      <div class="botones">
+        <button type="button" class="btn btn-fuego" data-flex-ok>Armar</button>
+        <button type="button" class="btn btn-sec" data-flex-cancelar>Cancelar</button>
+      </div>
+    </div>`;
+  }
+
   function renderStockLista(){
     const total = pizzas.stock.reduce((s,i) => s + i.cantidad, 0);
     document.getElementById('stockTotal').textContent = total;
@@ -2855,23 +2891,32 @@
       cont.innerHTML = '<div class="vacio">No hay sabores cargados todavía.</div>';
       return;
     }
+    if(escribiendoEn(cont)) return;
+    if(armandoFlex && !(stockDe(armandoFlex.flex) || {}).cantidad) armandoFlex = null;
     cont.innerHTML = pizzas.stock.map(s => {
       const comp = comprometido(s.nombre);
       const falta = comp > s.cantidad;
-      const nota = comp > 0
-        ? `<div class="stock-comprometido ${falta ? 'falta' : ''}">${comp} comprometidas${falta ? ` · faltan ${comp - s.cantidad}` : ''}</div>`
+      const flex = falta ? flexPara(s.nombre) : null;
+      const sugerencia = flex && flex.cantidad > 0
+        ? `<button type="button" class="flex-sugerencia" data-flex-sugerir="${escapeHtml(s.nombre)}">Armar ${Math.min(comp - s.cantidad, flex.cantidad)} desde ${escapeHtml(flex.nombre)}</button>`
         : '';
+      const nota = comp > 0
+        ? `<div class="stock-comprometido ${falta ? 'falta' : ''}">${comp} comprometidas${falta ? ` · faltan ${comp - s.cantidad}` : ''}</div>${sugerencia}`
+        : '';
+      const esFlex = !!FLEX_SABORES[s.nombre.toLowerCase()];
       return `
       <div class="stock-item">
         <div class="stock-nombre">${escapeHtml(s.nombre)}${nota}</div>
         <div class="stock-cantidad">${s.cantidad} u.</div>
         <div class="stock-acciones">
+          ${esFlex && s.cantidad > 0 ? `<button class="link-btn" data-flex-abrir="${escapeHtml(s.nombre)}">Armar sabor</button>` : ''}
           <button class="link-btn" data-reponer="${escapeHtml(s.nombre)}">+ Reponer</button>
           <button class="link-btn" data-editar="${escapeHtml(s.nombre)}">Editar</button>
           <button class="item-del" data-quitar="${escapeHtml(s.nombre)}" title="Quitar sabor">✕</button>
         </div>
-      </div>`;
+      </div>${armandoFlex && armandoFlex.flex === s.nombre ? panelFlex(s) : ''}`;
     }).join('');
+    refrescarChips();
 
     cont.querySelectorAll('[data-reponer]').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -4956,6 +5001,48 @@
 
   document.getElementById('btnRefrescar').addEventListener('click', () => refrescarTodo(true));
 
+  document.getElementById('stockLista').addEventListener('click', e => {
+    const abrir = e.target.closest('[data-flex-abrir]');
+    if(abrir){
+      const nombre = abrir.dataset.flexAbrir;
+      armandoFlex = armandoFlex && armandoFlex.flex === nombre ? null
+        : { flex: nombre, sabor: FLEX_SABORES[nombre.toLowerCase()][0], cant: 1 };
+      renderStockLista();
+      return;
+    }
+    const sug = e.target.closest('[data-flex-sugerir]');
+    if(sug){
+      const sabor = sug.dataset.flexSugerir, flex = flexPara(sabor), s = stockDe(sabor);
+      armandoFlex = { flex: flex.nombre, sabor: FLEX_SABORES[flex.nombre.toLowerCase()].find(x => x.toLowerCase() === sabor.toLowerCase()),
+                      cant: Math.max(1, Math.min(comprometido(s.nombre) - s.cantidad, flex.cantidad)) };
+      renderStockLista();
+      document.querySelector('[data-flex-panel]').scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+    if(e.target.closest('[data-flex-cancelar]')){ armandoFlex = null; renderStockLista(); return; }
+    if(!e.target.closest('[data-flex-ok]')) return;
+    const flex = stockDe(armandoFlex.flex);
+    const sabor = document.getElementById('flexSabor').value;
+    const elCant = document.getElementById('flexCant');
+    const cant = parseInt(elCant.value);
+    if(!(cant > 0)) return errorEn(elCant, 'Poné cuántas armás, ej: 2');
+    if(!flex || cant > flex.cantidad) return errorEn(elCant, `Hay ${flex ? flex.cantidad : 0} ${armandoFlex.flex} en stock: no alcanza para ${cant}`);
+    const f = foto();
+    flex.cantidad -= cant;
+    let destino = stockDe(sabor);
+    if(!destino){ destino = { nombre: sabor, cantidad: 0 }; pizzas.stock.push(destino); }
+    destino.cantidad += cant;
+    armandoFlex = null;
+    document.activeElement.blur();
+    persistirPizzas();
+    hecho(`Armaste ${cant} ${destino.nombre} con ${flex.nombre}: quedan ${flex.cantidad} ${flex.nombre}.`, f);
+  });
+  ['input', 'change'].forEach(tipo => document.getElementById('stockLista').addEventListener(tipo, e => {
+    if(!armandoFlex) return;
+    if(e.target.id === 'flexSabor') armandoFlex.sabor = e.target.value;
+    if(e.target.id === 'flexCant') armandoFlex.cant = e.target.value;
+  }));
+
   document.getElementById('btnAgregarSabor').addEventListener('click', () => {
     const nombre = prompt('Nombre del sabor nuevo:');
     if(!nombre || !nombre.trim()) return;
@@ -5251,6 +5338,10 @@
   // Cada cambio de la app que llega a main suma una entrada ARRIBA de todo, con el id siguiente.
   // Tono neutral: qué cambió y dónde se ve, en 1 a 3 líneas.
   const NOVEDADES = [
+    { id: 9, fecha: '2026-11-11', titulo: 'Armar sabores desde Flex', cambios: [
+      'En Producción › Stock, las Flex tienen el botón "Armar sabor": la Flex roja pasa a Diavola, Margarita o Honey pesto, y la Flex blanca a Di patate, Caramellata o 4 Formaggi.',
+      'Si un pedido necesita un sabor sin stock y hay Flex del color que corresponde, el sabor muestra un atajo para armarlo.'
+    ]},
     { id: 8, fecha: '2026-11-08', titulo: 'Medio de pago de los fijos', cambios: [
       'Cada gasto fijo indica cómo se paga: efectivo, Mercado Pago, transferencia o tarjeta.',
       'Se elige al agregar un fijo, o tocando uno existente en Gastos › Fijos mensuales, donde también se cambia el monto.',

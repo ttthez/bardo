@@ -68,6 +68,7 @@ ingreso, no cuenta como venta de pizzas) y cómo se llevó (`uber`, `bici`, `aut
 Las **Flex** del stock son bases congeladas sin terminar: la `Flex roja` (base de tomate) se arma como Diavola, Margarita
 o Honey pesto, y la `Flex blanca` como Di patate, Caramellata o 4 Formaggi. Si un pedido lleva un sabor sin stock y hay Flex
 del color que corresponde, se pasa una unidad de la Flex a ese sabor en `pizzas.stock`.
+En la app: Producción › Stock › "Armar sabor" en cada Flex (y un atajo en el sabor que falta para un pedido).
 
 **`metas`**: `{ 'YYYY-MM': monto }`, meta de ganancia (ingresos − gastos) de cada mes.
 
