@@ -65,6 +65,10 @@ Las ventas de pedidos llevan `entrega`; las enviadas, `envio: { cobrado, via }`:
 ingreso, no cuenta como venta de pizzas) y cómo se llevó (`uber`, `bici`, `auto`, `otro`). Lo que costó el envío es un
 `gastos.movs` con `cat: 'envios'` y `ventaId`. Pizzas › Envíos del mes compara lo cobrado contra lo que costó.
 
+Las **Flex** del stock son bases congeladas sin terminar: la `Flex roja` (base de tomate) se arma como Diavola, Margarita
+o Honey pesto, y la `Flex blanca` como Di patate, Caramellata o 4 Formaggi. Si un pedido lleva un sabor sin stock y hay Flex
+del color que corresponde, se pasa una unidad de la Flex a ese sabor en `pizzas.stock`.
+
 **`metas`**: `{ 'YYYY-MM': monto }`, meta de ganancia (ingresos − gastos) de cada mes.
 
 **`precios`**: precios por kilo de ingredientes (ya no se usan en la app).
