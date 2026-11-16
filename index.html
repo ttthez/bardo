@@ -198,6 +198,13 @@
   .receta-fila .rf-unidad{color:var(--gris);font-size:.85rem;min-width:22px}
   .receta-fila .rf-costo{margin-left:auto;font-weight:800;font-size:.95rem}
   .receta-fila .rf-costo.mal{color:var(--fuego-claro);font-weight:700;font-size:.8rem}
+  .precio-fila{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--linea)}
+  .precio-fila .pf-info{flex:1;min-width:0}
+  .precio-fila .pf-info b{display:block;font-size:.92rem;overflow-wrap:anywhere}
+  .precio-fila .pf-info small{display:block;color:var(--gris);font-size:.76rem;margin-top:2px}
+  .precio-fila input{flex:0 0 118px;min-width:0;text-align:right}
+  .precio-fila.cambio .pf-info small{color:var(--verde);font-weight:700}
+  .precio-fila.cambio input{border-color:var(--verde)}
   .receta-totales{background:rgba(244,236,225,.04);border:1px solid var(--linea);border-radius:14px;padding:12px 14px;margin:14px 0}
   .receta-totales .fila{display:flex;justify-content:space-between;gap:10px;padding:3px 0;font-size:.9rem}
   .receta-totales .fila b{font-size:1rem}
@@ -2984,7 +2991,7 @@
     document.getElementById('recetasBuscarCampo').hidden = !!recetaEdit;
     const dl = document.getElementById('dlIngredientes');
     dl.innerHTML = [...recetas.preparaciones, ...recetas.insumos].map(x => `<option value="${escapeHtml(x.nombre)}">`).join('');
-    if(recetaEdit){ cont.innerHTML = recetaEdit.lista === 'insumos' ? editorInsumo() : editorReceta(); refrescarChips();
+    if(recetaEdit){ cont.innerHTML = recetaEdit.masivo ? editorPrecios() : recetaEdit.lista === 'insumos' ? editorInsumo() : editorReceta(); refrescarChips();
                     cont.querySelectorAll('.inp-plata').forEach(mostrarPlataPrevia); calcularEditor(); return; }
     const q = document.getElementById('recetasBuscar').value.trim().toLowerCase();
     const filtra = x => !q || x.nombre.toLowerCase().includes(q);
@@ -3029,7 +3036,10 @@
       }).join('');
     }
     const nuevo = { productos: '+ Nuevo producto', preparaciones: '+ Nueva preparación', insumos: '+ Nuevo insumo' }[recetasTab];
-    cont.innerHTML = `<div class="lista">${html || `<div class="vacio">${q ? 'No hay nada con ese nombre.' : 'Todavía no hay nada cargado.'}</div>`}</div>
+    const masivo = recetasTab === 'insumos' && recetas.insumos.length
+      ? `<button type="button" class="btn btn-fuego" data-rprecios style="width:100%;margin-bottom:6px">Actualizar precios</button>
+         <div class="card-nota" style="margin:0 0 6px">Para cambiar varios precios de una vez. Tocando un insumo se edita todo lo demás (envase, unidad, proveedor).</div>` : '';
+    cont.innerHTML = `${masivo}<div class="lista">${html || `<div class="vacio">${q ? 'No hay nada con ese nombre.' : 'Todavía no hay nada cargado.'}</div>`}</div>
       <button type="button" class="btn btn-sec" data-rnuevo style="width:100%;margin-top:14px">${nuevo}</button>`;
   }
   function textoEnvase(i){
@@ -3061,6 +3071,66 @@
     renderRecetas(true);
     document.getElementById('cardRecetas').scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
+  // varios precios de una vez: una fila por insumo con su precio del envase
+  function editorPrecios(){
+    const q = document.getElementById('recetasBuscar').value.trim().toLowerCase();
+    const lista = recetas.insumos.filter(i => !q || i.nombre.toLowerCase().includes(q))
+      .sort((a, b) => (precioUnidad(a) === null) - (precioUnidad(b) === null) || a.nombre.localeCompare(b.nombre));
+    return `<button type="button" class="volver" data-rvolver>‹ Volver a insumos</button>
+      <div class="card-nota" style="margin:0 0 8px">Escribí el precio nuevo de cada envase; los que no cambies quedan igual.</div>
+      <label class="campo full" style="margin-bottom:6px"><span>Buscar</span>
+        <input type="search" id="rpBuscar" autocomplete="off" value="${escapeHtml(q)}" placeholder="Ej: queso"></label>
+      <div id="rpLista">${lista.map(i => `<div class="precio-fila" data-pf="${i.id}">
+          <div class="pf-info"><b>${escapeHtml(i.nombre)}</b><small>${i.envase ? 'por ' + textoEnvase(i) : 'sin envase cargado: tocá el insumo para completarlo'}</small></div>
+          <input type="text" class="inp-precio" inputmode="decimal" autocomplete="off" aria-label="Precio de ${escapeHtml(i.nombre)}"
+            value="${escapeHtml(recetaEdit.d.precios[i.id] ?? (i.precio != null ? Number(i.precio).toLocaleString('es-AR') : ''))}" placeholder="${i.precio != null ? '' : 'Sin precio'}" ${i.envase ? '' : 'disabled'}>
+        </div>`).join('') || '<div class="vacio">No hay insumos con ese nombre.</div>'}</div>
+      <div class="botones" style="margin-top:14px">
+        <button type="button" class="btn btn-fuego" data-rpguardar>Guardar cambios</button>
+        <button type="button" class="btn btn-sec" data-rvolver>Cancelar</button>
+      </div>`;
+  }
+  function calcularPrecios(){
+    let n = 0;
+    document.querySelectorAll('#rpLista .precio-fila').forEach(fila => {
+      const i = insumoPorId(Number(fila.dataset.pf)), txt = recetaEdit.d.precios[i.id];
+      const small = fila.querySelector('small');
+      const nuevo = txt == null ? null : txt.trim() === '' ? null : parsearMonto(txt);
+      const cambio = txt != null && txt.trim() !== '' && nuevo !== Number(i.precio);
+      fila.classList.toggle('cambio', cambio && nuevo >= 0);
+      if(cambio && nuevo >= 0){
+        n++;
+        const pu = nuevo / i.envase;
+        small.textContent = `= ${i.unidad === 'u' ? fmtC(pu) + ' c/u' : fmt(pu * 1000) + ' el ' + (i.unidad === 'ml' ? 'litro' : 'kg')}` +
+          (i.precio != null ? ` (antes ${textoPrecioUnidad(i)})` : '');
+      }else if(i.envase){
+        small.textContent = txt != null && txt.trim() !== '' && !(nuevo >= 0) ? 'No se entiende: usá solo cifras, ej: 11205' : 'por ' + textoEnvase(i);
+      }
+    });
+    const b = document.querySelector('[data-rpguardar]');
+    if(b) b.textContent = n ? `Guardar ${n} ${n === 1 ? 'cambio' : 'cambios'}` : 'Guardar cambios';
+  }
+  function guardarPrecios(){
+    const f = foto(), cambiados = [];
+    for(const [id, txt] of Object.entries(recetaEdit.d.precios)){
+      const i = insumoPorId(Number(id));
+      if(!i || txt == null || !txt.trim()) continue;
+      const v = parsearMonto(txt);
+      if(!(v >= 0)){
+        const inp = document.querySelector(`.precio-fila[data-pf="${id}"] input`);
+        return errorEn(inp, 'No se entiende el precio: usá solo cifras, ej: 11205');
+      }
+      if(v === Number(i.precio)) continue;
+      i.precio = v; i.actualizado = hoyISO(); cambiados.push(i);
+    }
+    if(!cambiados.length){ recetaEdit = null; renderRecetas(true); avisar('No cambió ningún precio.'); return; }
+    const recetasAfectadas = new Set(cambiados.flatMap(i => usosDe('i', i.id)));
+    recetaEdit = null;
+    persistirRecetas();
+    hecho(`${cambiados.length} ${cambiados.length === 1 ? 'precio actualizado' : 'precios actualizados'}` +
+      (recetasAfectadas.size ? `; se recalcularon ${recetasAfectadas.size} recetas.` : '.'), f);
+  }
+
   function editorInsumo(){
     const d = recetaEdit.d, usos = recetaEdit.id != null ? usosDe('i', recetaEdit.id) : [];
     const op = (v, t) => `<option value="${v}"${d.unidad === v ? ' selected' : ''}>${t}</option>`;
@@ -3129,6 +3199,7 @@
   // recalcula costos y totales del editor sin redibujarlo (para no perder el foco al tipear)
   function calcularEditor(){
     if(!recetaEdit) return;
+    if(recetaEdit.masivo) return calcularPrecios();
     const d = recetaEdit.d;
     if(recetaEdit.lista === 'insumos'){
       const pre = parsearMonto(d.precio), env = numero(d.envase);
@@ -3249,6 +3320,8 @@
     if(e.target.closest('[data-rnuevo]')){ abrirReceta(recetasTab, null); setTimeout(() => { const n = document.querySelector('#riNombre, #rNombre'); if(n) n.focus(); }, 300); return; }
     if(e.target.closest('[data-rvolver]')){ recetaEdit = null; renderRecetas(true); return; }
     if(e.target.closest('[data-rguardar]')){ guardarReceta(); return; }
+    if(e.target.closest('[data-rprecios]')){ recetaEdit = { lista: 'insumos', masivo: true, d: { precios: {} } }; renderRecetas(true); return; }
+    if(e.target.closest('[data-rpguardar]')){ guardarPrecios(); return; }
     if(e.target.closest('[data-rfagregar]')){
       recetaEdit.d.filas.push({ nombre: '', cant: '' });
       renderRecetas(true);
@@ -3296,6 +3369,18 @@
   ['input', 'change'].forEach(tipo => document.getElementById('recetasCont').addEventListener(tipo, e => {
     if(!recetaEdit) return;
     const d = recetaEdit.d, t = e.target;
+    if(recetaEdit.masivo){
+      if(t.id === 'rpBuscar'){
+        document.getElementById('recetasBuscar').value = t.value;
+        renderRecetas(true);
+        const b = document.getElementById('rpBuscar'); b.focus(); b.setSelectionRange(b.value.length, b.value.length);
+        return;
+      }
+      const fila = t.closest('.precio-fila');
+      if(fila) d.precios[fila.dataset.pf] = t.value;
+      calcularPrecios();
+      return;
+    }
     const campos = { riNombre: 'nombre', riPrecio: 'precio', riEnvase: 'envase', riUnidad: 'unidad', riProveedor: 'proveedor',
                      rNombre: 'nombre', rTipo: 'tipo', rPorciones: 'porciones', rRinde: 'rinde', rPrecio: 'precio' };
     if(campos[t.id]) d[campos[t.id]] = t.value;
@@ -5793,6 +5878,10 @@
   // Cada cambio de la app que llega a main suma una entrada ARRIBA de todo, con el id siguiente.
   // Tono neutral: qué cambió y dónde se ve, en 1 a 3 líneas.
   const NOVEDADES = [
+    { id: 12, fecha: '2026-11-16', titulo: 'Actualizar precios de insumos', cambios: [
+      'En Costos › Insumos, "Actualizar precios" permite cambiar varios precios de una vez, con el precio por kg nuevo y el anterior a la vista.',
+      'Al guardar se recalculan todas las recetas que usan esos insumos.'
+    ]},
     { id: 11, fecha: '2026-11-16', titulo: 'Pestaña de Costos', cambios: [
       'Los costos de productos tienen su propia pestaña, "Costos", en la barra de abajo, entre Producción y Ventas.'
     ]},
