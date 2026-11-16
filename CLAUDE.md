@@ -105,7 +105,7 @@ Lista de `{ id, texto, cat, prioridad, creado: 'YYYY-MM-DD' }`. `prioridad`: `ur
 `cat`: `equipo`, `materia` (materia prima), `packaging`, `imprenta` (imprenta y diseño) u `otros`. Al resolverlo se borra de la lista.
 La ganancia del mes quedó al final de Inicio (la prioridad es el servicio).
 
-**`recetas`**: costos de productos (Producción › Costos de productos), armado con los datos de la planilla de costos:
+**`recetas`**: costos de productos (pestaña Costos), armado con los datos de la planilla de costos:
 `{ insumos: [{ id, nombre, unidad: 'g'|'ml'|'u', envase?, precio?, actualizado?, proveedor? }],
 preparaciones: [{ id, nombre, rinde?, items }], productos: [{ id, nombre, tipo, porciones, precio?, items }] }`.
 `items`: `[{ tipo: 'i'|'p', id, cant }]` (insumo o preparación, en la unidad del insumo; las preparaciones en gramos).
