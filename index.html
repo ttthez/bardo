@@ -186,6 +186,25 @@
   .stock-acciones{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
   .stock-comprometido{font-size:.78rem;color:var(--gris);font-weight:600}
   .stock-comprometido.falta{color:var(--fuego-claro)}
+  /* costos de productos */
+  .receta-item{cursor:pointer}
+  .receta-item .item-fecha .alerta{color:var(--fuego-claro);font-weight:700}
+  .receta-item .alto{color:var(--fuego-claro)}
+  .receta-tabla{margin:6px 0 4px}
+  .receta-cab{display:flex;justify-content:space-between;color:var(--gris);font-size:.72rem;font-weight:800;text-transform:uppercase;letter-spacing:.06em;padding-bottom:6px;border-bottom:1px solid var(--linea)}
+  .receta-fila{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;padding:10px 0;border-bottom:1px solid var(--linea)}
+  .receta-fila .rf-nombre{flex:1 1 100%;min-width:0}
+  .receta-fila .rf-cant{flex:0 0 96px;min-width:0}
+  .receta-fila .rf-unidad{color:var(--gris);font-size:.85rem;min-width:22px}
+  .receta-fila .rf-costo{margin-left:auto;font-weight:800;font-size:.95rem}
+  .receta-fila .rf-costo.mal{color:var(--fuego-claro);font-weight:700;font-size:.8rem}
+  .receta-totales{background:rgba(244,236,225,.04);border:1px solid var(--linea);border-radius:14px;padding:12px 14px;margin:14px 0}
+  .receta-totales .fila{display:flex;justify-content:space-between;gap:10px;padding:3px 0;font-size:.9rem}
+  .receta-totales .fila b{font-size:1rem}
+  .receta-totales .grande b{font-size:1.25rem}
+  .receta-totales .aviso{color:var(--fuego-claro);font-size:.82rem;font-weight:700;margin-top:6px}
+  .receta-totales .sub{color:var(--gris);font-size:.8rem;margin-top:4px}
+
   /* armar sabores desde las bases Flex */
   .flex-armar{padding:4px 0 16px;border-bottom:1px solid var(--linea)}
   .flex-armar .botones{margin-top:10px}
@@ -1168,6 +1187,20 @@
         <button class="link-btn" id="btnAgregarSabor">+ Agregar sabor</button>
       </div>
     </div>
+
+    <div class="card" id="cardRecetas">
+      <div class="card-titulo">Costos de productos</div>
+      <div class="card-nota">Cada insumo lleva su precio; las recetas se arman con gramos y el costo se calcula solo. Al cambiar un precio se actualizan todas las recetas que lo usan.</div>
+      <div class="toggle" id="recetasTabs">
+        <button type="button" data-rtab="productos">Productos</button>
+        <button type="button" data-rtab="preparaciones">Preparaciones</button>
+        <button type="button" data-rtab="insumos">Insumos</button>
+      </div>
+      <label class="campo full" id="recetasBuscarCampo" style="margin-bottom:12px"><span>Buscar</span>
+        <input type="search" id="recetasBuscar" autocomplete="off" placeholder="Ej: mozzarella"></label>
+      <div id="recetasCont"></div>
+      <datalist id="dlIngredientes"></datalist>
+    </div>
   </section>
 
   <!-- ============ ESTADÍSTICAS Y VENTAS ============ -->
@@ -1241,6 +1274,7 @@
   const COSTOS_URL   = FIREBASE_BASE + 'costos.json';
   const PLANTILLA_URL = FIREBASE_BASE + 'plantilla.json';
   const COMPRAS_URL  = FIREBASE_BASE + 'compras.json';
+  const RECETAS_URL  = FIREBASE_BASE + 'recetas.json';
 
   const CACHE_KEY_INGRESOS = 'lasinergia_cache_ingresos';
   const CACHE_KEY_PIZZAS   = 'lasinergia_cache_pizzas';
@@ -1253,6 +1287,7 @@
   const CACHE_KEY_COSTOS   = 'lasinergia_cache_costos';
   const CACHE_KEY_PLANTILLA = 'lasinergia_cache_plantilla';
   const CACHE_KEY_COMPRAS  = 'lasinergia_cache_compras';
+  const CACHE_KEY_RECETAS  = 'lasinergia_cache_recetas';
   const CACHE_KEY_TAB      = 'lasinergia_tab';
 
   const SABORES_DEFAULT = ['Margarita','Honey pesto','Diavola','Di patate','Caramellata','4 Formaggi'];
@@ -1370,6 +1405,7 @@
     { id: 'otros',     nombre: '✏️ Otros' }
   ];
   let compras = [];   // [{ id, texto, cat, prioridad, creado: 'YYYY-MM-DD' }]
+  let recetas = { insumos: [], preparaciones: [], productos: [] };   // costos de productos
   let pizzas   = { stock: [], ventas: [] };
   let pedidos  = [];
   let metas    = {};
@@ -1464,7 +1500,7 @@
 
   // ---------- deshacer ----------
   // foto de los datos antes de un cambio; "Deshacer" vuelve a esa foto y guarda solo lo que cambió
-  function foto(){ return JSON.stringify({ items, gastos, pizzas, pedidos, catering, costos, compras }); }
+  function foto(){ return JSON.stringify({ items, gastos, pizzas, pedidos, catering, costos, compras, recetas }); }
   function restaurar(f){
     const antes = JSON.parse(f), ahora = JSON.parse(foto());
     const nodos = {
@@ -1474,7 +1510,8 @@
       pedidos:  [x => pedidos = x,  () => persistirPedidos()],
       catering: [x => catering = x, () => persistirCatering()],
       costos:   [x => costos = x,   () => persistirCostos()],
-      compras:  [x => compras = x,  () => persistirCompras()]
+      compras:  [x => compras = x,  () => persistirCompras()],
+      recetas:  [x => recetas = x,  () => persistirRecetas()]
     };
     Object.entries(nodos).forEach(([k, [poner, guardar]]) => {
       if(JSON.stringify(antes[k]) !== JSON.stringify(ahora[k])){ poner(antes[k]); guardar(); }
@@ -1817,17 +1854,17 @@
 
     // lo que sigue pendiente se lee de la copia del celular, no del servidor
     const traer = (url, key) => pendientes.has(key) ? Promise.reject(new Error('pendiente')) : fetchJSON(url);
-    const [rIng, rPiz, rPed, rMet, rCat, rPre, rGas, rCaja, rCos, rPla, rCom] = await Promise.allSettled([
+    const [rIng, rPiz, rPed, rMet, rCat, rPre, rGas, rCaja, rCos, rPla, rCom, rRec] = await Promise.allSettled([
       traer(INGRESOS_URL, CACHE_KEY_INGRESOS), traer(PIZZAS_URL, CACHE_KEY_PIZZAS), traer(PEDIDOS_URL, CACHE_KEY_PEDIDOS),
       traer(METAS_URL, CACHE_KEY_METAS), traer(CATERING_URL, CACHE_KEY_CATERING), traer(PRECIOS_URL, CACHE_KEY_PRECIOS),
       traer(GASTOS_URL, CACHE_KEY_GASTOS), traer(CAJA_URL, CACHE_KEY_CAJA), traer(COSTOS_URL, CACHE_KEY_COSTOS), traer(PLANTILLA_URL, CACHE_KEY_PLANTILLA),
-      traer(COMPRAS_URL, CACHE_KEY_COMPRAS)
+      traer(COMPRAS_URL, CACHE_KEY_COMPRAS), traer(RECETAS_URL, CACHE_KEY_RECETAS)
     ]);
 
     // si mientras traíamos datos tocaste algo acá, descartamos lo del servidor
     if(revLocal !== rev || escrituras > 0) return;
 
-    const ok = [rIng, rPiz, rPed, rMet, rCat, rPre, rGas, rCaja, rCos, rPla, rCom].every(r => r.status === 'fulfilled');
+    const ok = [rIng, rPiz, rPed, rMet, rCat, rPre, rGas, rCaja, rCos, rPla, rCom, rRec].every(r => r.status === 'fulfilled');
 
     items = rIng.status === 'fulfilled'
       ? (rIng.value || [])
@@ -1880,6 +1917,8 @@
     guardarCache(CACHE_KEY_PLANTILLA, plantilla);
     compras = Object.values((rCom.status === 'fulfilled' ? rCom.value : leerCache(CACHE_KEY_COMPRAS, null)) || {});
     guardarCache(CACHE_KEY_COMPRAS, compras);
+    recetas = normalizarRecetas(rRec.status === 'fulfilled' ? rRec.value : leerCache(CACHE_KEY_RECETAS, null));
+    guardarCache(CACHE_KEY_RECETAS, recetas);
     guardarCache(CACHE_KEY_CAJA, caja);
 
     guardarCache(CACHE_KEY_INGRESOS, items);
@@ -1928,8 +1967,15 @@
   const persistirCostos   = hacerPersistidor(COSTOS_URL,   CACHE_KEY_COSTOS,   () => costos);
   const persistirPlantilla = hacerPersistidor(PLANTILLA_URL, CACHE_KEY_PLANTILLA, () => plantilla);
   const persistirCompras  = hacerPersistidor(COMPRAS_URL,  CACHE_KEY_COMPRAS,  () => compras);
+  const persistirRecetas  = hacerPersistidor(RECETAS_URL,  CACHE_KEY_RECETAS,  () => recetas);
 
   // Firebase no guarda listas vacías, así que al leer completamos lo que falte
+  function normalizarRecetas(v){
+    v = v && typeof v === 'object' ? v : {};
+    const lista = x => Object.values(x || {});
+    const conItems = x => lista(x).map(r => ({ ...r, items: lista(r.items) }));
+    return { insumos: lista(v.insumos), preparaciones: conItems(v.preparaciones), productos: conItems(v.productos) };
+  }
   function normalizarGastos(v){
     v = v && typeof v === 'object' ? v : {};
     const pagos = {};
@@ -2031,6 +2077,7 @@
     renderIngresos();
     renderPedidos();
     renderStockLista();
+    renderRecetas();
     renderVentaForm();
     renderResumenVentas();
     renderHistorial();
@@ -2852,6 +2899,408 @@
     hecho(`Entregado a ${p.cliente}: ${totalPizzas} pizzas${monto > 0 ? `, cobrado ${fmt(monto)}` : ', sin cobrar'}` +
       `${costoEnvio > 0 ? `, envío ${fmt(costoEnvio)} a Gastos` : ''}. Stock descontado.`, f);
   }
+
+
+  // ---------- costos de productos (recetas) ----------
+  // insumos: lo que se compra, con precio por envase. Preparaciones: lo que se hace en la cocina y se usa en otras
+  // recetas (masa, salsas, toppings). Productos: lo que se vende. Las recetas guardan { tipo: 'i'|'p', id, cant }.
+  const TIPOS_PRODUCTO = [
+    { id: 'pizza',  nombre: 'Pizza',  emoji: '🍕' },
+    { id: 'plato',  nombre: 'Plato',  emoji: '🍽️' },
+    { id: 'postre', nombre: 'Postre', emoji: '🍮' },
+    { id: 'trago',  nombre: 'Trago',  emoji: '🍸' },
+    { id: 'otro',   nombre: 'Otro',   emoji: '✏️' }
+  ];
+  let recetasTab = 'productos';
+  let recetaEdit = null;   // { lista, id (null = nuevo), d: borrador }
+  const insumoPorId = id => recetas.insumos.find(i => i.id === id);
+  const prepPorId = id => recetas.preparaciones.find(p => p.id === id);
+  const fmtC = n => n > 0 && n < 100 ? '$' + n.toLocaleString('es-AR', { maximumFractionDigits: 2 }) : fmt(n);
+  const numero = t => { const n = parseFloat(String(t == null ? '' : t).replace(',', '.')); return isNaN(n) ? NaN : n; };
+  function precioUnidad(i){
+    return i && i.precio != null && i.precio !== '' && Number(i.envase) > 0 ? Number(i.precio) / Number(i.envase) : null;
+  }
+  function textoPrecioUnidad(i){
+    const pu = precioUnidad(i);
+    if(pu === null) return 'Sin precio';
+    return i.unidad === 'u' ? `${fmtC(pu)} c/u` : `${fmt(pu * 1000)} el ${i.unidad === 'ml' ? 'litro' : 'kg'}`;
+  }
+  function costoPrep(p, visto = new Set()){
+    if(visto.has(p.id)) return { porGramo: 0, total: 0, rinde: 0, faltan: [`${p.nombre} se usa a sí misma`] };
+    const r = costoItems(p.items || [], new Set([...visto, p.id]));
+    const rinde = Number(p.rinde) > 0 ? Number(p.rinde) : r.gramos;
+    return { porGramo: rinde > 0 ? r.total / rinde : 0, total: r.total, rinde, faltan: r.faltan };
+  }
+  // costo de un ingrediente de una receta: { costo, unidad, faltan }
+  function costoDeItem(it, visto = new Set()){
+    const c = Number(it.cant) || 0;
+    if(it.tipo === 'p'){
+      const p = prepPorId(it.id);
+      if(!p) return { costo: 0, unidad: 'g', faltan: ['(preparación borrada)'] };
+      const u = costoPrep(p, visto);
+      return { costo: c * u.porGramo, unidad: 'g', faltan: u.faltan, gramos: c };
+    }
+    const i = insumoPorId(it.id);
+    if(!i) return { costo: 0, unidad: 'g', faltan: ['(insumo borrado)'] };
+    const pu = precioUnidad(i);
+    return { costo: pu === null ? 0 : c * pu, unidad: i.unidad || 'g', faltan: pu === null ? [i.nombre] : [], gramos: i.unidad === 'u' ? 0 : c };
+  }
+  function costoItems(items, visto = new Set()){
+    let total = 0, gramos = 0; const faltan = [];
+    items.forEach(it => { const r = costoDeItem(it, visto); total += r.costo; gramos += r.gramos || 0; faltan.push(...r.faltan); });
+    return { total, gramos, faltan: [...new Set(faltan)] };
+  }
+  function costoProducto(pr){
+    const r = costoItems(pr.items || []);
+    const porciones = Number(pr.porciones) > 0 ? Number(pr.porciones) : 1;
+    return { total: r.total, porcion: r.total / porciones, faltan: r.faltan };
+  }
+  // dónde se usa un insumo o una preparación
+  function usosDe(tipo, id){
+    return [...recetas.preparaciones, ...recetas.productos]
+      .filter(r => (r.items || []).some(it => it.tipo === tipo && it.id === id)).map(r => r.nombre);
+  }
+  function refPorNombre(nombre, sinPrepId){
+    const k = String(nombre || '').trim().toLowerCase();
+    if(!k) return null;
+    const p = recetas.preparaciones.find(x => x.id !== sinPrepId && x.nombre.trim().toLowerCase() === k);
+    if(p) return { tipo: 'p', id: p.id };
+    const i = recetas.insumos.find(x => x.nombre.trim().toLowerCase() === k);
+    return i ? { tipo: 'i', id: i.id } : null;
+  }
+  const nombreDeRef = it => (it.tipo === 'p' ? prepPorId(it.id) : insumoPorId(it.id) || {}).nombre || '';
+
+  // ----- listas -----
+  function renderRecetas(forzar){
+    const cont = document.getElementById('recetasCont');
+    if(!cont || (!forzar && escribiendoEn(cont))) return;
+    document.querySelectorAll('#recetasTabs button').forEach(b => b.classList.toggle('activo', b.dataset.rtab === recetasTab));
+    document.getElementById('recetasBuscarCampo').hidden = !!recetaEdit;
+    const dl = document.getElementById('dlIngredientes');
+    dl.innerHTML = [...recetas.preparaciones, ...recetas.insumos].map(x => `<option value="${escapeHtml(x.nombre)}">`).join('');
+    if(recetaEdit){ cont.innerHTML = recetaEdit.lista === 'insumos' ? editorInsumo() : editorReceta(); refrescarChips();
+                    cont.querySelectorAll('.inp-plata').forEach(mostrarPlataPrevia); calcularEditor(); return; }
+    const q = document.getElementById('recetasBuscar').value.trim().toLowerCase();
+    const filtra = x => !q || x.nombre.toLowerCase().includes(q);
+    let html = '';
+    if(recetasTab === 'productos'){
+      const lista = recetas.productos.filter(filtra).sort((a, b) =>
+        TIPOS_PRODUCTO.findIndex(t => t.id === a.tipo) - TIPOS_PRODUCTO.findIndex(t => t.id === b.tipo) || a.nombre.localeCompare(b.nombre));
+      html = lista.map(pr => {
+        const c = costoProducto(pr), t = TIPOS_PRODUCTO.find(x => x.id === pr.tipo) || TIPOS_PRODUCTO[4];
+        const precio = Number(pr.precio) || 0, pct = precio ? c.porcion / precio * 100 : 0;
+        const partes = [Number(pr.porciones) > 1 ? `por porción (rinde ${pr.porciones})` : '',
+          precio ? `venta ${fmt(precio)} · margen ${fmt(precio - c.porcion)} · <span class="${pct > 35 ? 'alto' : ''}">costo ${pct.toFixed(0)}% del precio</span>` : 'sin precio de venta',
+          c.faltan.length ? '<span class="alerta">⚠ faltan precios</span>' : ''].filter(Boolean).join(' · ');
+        return `<div class="item receta-item" data-redit="productos:${pr.id}">
+          <div class="item-info"><div class="item-desc">${t.emoji} ${escapeHtml(pr.nombre)}</div>
+            <div class="item-fecha">${partes}</div></div>
+          <div class="item-monto gasto">${fmt(c.porcion)}</div>
+        </div>`;
+      }).join('');
+    }else if(recetasTab === 'preparaciones'){
+      html = recetas.preparaciones.filter(filtra).sort((a, b) => a.nombre.localeCompare(b.nombre)).map(p => {
+        const c = costoPrep(p), usos = usosDe('p', p.id).length;
+        return `<div class="item receta-item" data-redit="preparaciones:${p.id}">
+          <div class="item-info"><div class="item-desc">${escapeHtml(p.nombre)}</div>
+            <div class="item-fecha">rinde ${Math.round(c.rinde).toLocaleString('es-AR')} g · tanda ${fmt(c.total)}${usos ? ` · en ${usos} ${usos === 1 ? 'receta' : 'recetas'}` : ''}${c.faltan.length ? ' · <span class="alerta">⚠ faltan precios</span>' : ''}</div></div>
+          <div class="item-monto gasto">${fmt(c.porGramo * 1000)}<div class="item-fecha" style="text-align:right">el kg</div></div>
+        </div>`;
+      }).join('');
+    }else{
+      const hoy = Date.parse(hoyISO());
+      html = recetas.insumos.filter(filtra)
+        .sort((a, b) => (precioUnidad(a) === null) - (precioUnidad(b) === null) || a.nombre.localeCompare(b.nombre)).map(i => {
+        const sin = precioUnidad(i) === null;
+        const dias = i.actualizado ? Math.round((hoy - Date.parse(i.actualizado)) / 864e5) : null;
+        const env = sin ? '' : `${fmt(i.precio)} por ${textoEnvase(i)}`;
+        const cuando = dias == null ? '' : dias <= 0 ? 'precio de hoy' : dias === 1 ? 'precio de ayer' : `precio de hace ${dias} días`;
+        return `<div class="item receta-item" data-redit="insumos:${i.id}">
+          <div class="item-info"><div class="item-desc">${escapeHtml(i.nombre)}</div>
+            <div class="item-fecha">${[env, i.proveedor ? escapeHtml(i.proveedor) : '', cuando].filter(Boolean).join(' · ') || '<span class="alerta">Falta cargar el precio</span>'}</div></div>
+          <div class="item-monto ${sin ? '' : 'gasto'}">${sin ? '<span class="badge badge-hoy">Sin precio</span>' : textoPrecioUnidad(i)}</div>
+        </div>`;
+      }).join('');
+    }
+    const nuevo = { productos: '+ Nuevo producto', preparaciones: '+ Nueva preparación', insumos: '+ Nuevo insumo' }[recetasTab];
+    cont.innerHTML = `<div class="lista">${html || `<div class="vacio">${q ? 'No hay nada con ese nombre.' : 'Todavía no hay nada cargado.'}</div>`}</div>
+      <button type="button" class="btn btn-sec" data-rnuevo style="width:100%;margin-top:14px">${nuevo}</button>`;
+  }
+  function textoEnvase(i){
+    const e = Number(i.envase);
+    if(i.unidad === 'u') return `${e} ${e === 1 ? 'unidad' : 'unidades'}`;
+    if(e >= 1000 && e % 100 === 0) return `${(e / 1000).toLocaleString('es-AR')} ${i.unidad === 'ml' ? 'l' : 'kg'}`;
+    return `${e.toLocaleString('es-AR')} ${i.unidad}`;
+  }
+
+  // ----- editores -----
+  function abrirReceta(lista, id){
+    recetasTab = lista;
+    if(lista === 'insumos'){
+      const i = id != null ? insumoPorId(id) : null;
+      const e = i ? Number(i.envase) || 0 : 0;
+      const enKg = i && i.unidad !== 'u' && e >= 1000 && e % 100 === 0;
+      recetaEdit = { lista, id, d: {
+        nombre: i ? i.nombre : '', precio: i && i.precio != null ? String(i.precio) : '', proveedor: i && i.proveedor || '',
+        envase: i && e ? String(enKg ? e / 1000 : e) : '',
+        unidad: i ? (enKg ? (i.unidad === 'ml' ? 'l' : 'kg') : i.unidad || 'g') : 'kg' } };
+    }else{
+      const src = id != null ? (lista === 'productos' ? recetas.productos : recetas.preparaciones).find(x => x.id === id) : null;
+      recetaEdit = { lista, id, d: {
+        nombre: src ? src.nombre : '', tipo: src && src.tipo || 'pizza', porciones: src && src.porciones || 1,
+        rinde: src && src.rinde || '', precio: src && src.precio ? String(src.precio) : '',
+        filas: src ? src.items.map(it => ({ nombre: nombreDeRef(it), cant: String(it.cant) })) : [] } };
+      if(!recetaEdit.d.filas.length) recetaEdit.d.filas.push({ nombre: '', cant: '' });
+    }
+    renderRecetas(true);
+    document.getElementById('cardRecetas').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+  function editorInsumo(){
+    const d = recetaEdit.d, usos = recetaEdit.id != null ? usosDe('i', recetaEdit.id) : [];
+    const op = (v, t) => `<option value="${v}"${d.unidad === v ? ' selected' : ''}>${t}</option>`;
+    return `<button type="button" class="volver" data-rvolver>‹ Volver a insumos</button>
+      <div class="form-campos">
+        <label class="campo full"><span>Nombre</span><input type="text" id="riNombre" autocomplete="off" value="${escapeHtml(d.nombre)}" placeholder="Ej: Mozzarella"></label>
+        <label class="campo"><span>Precio del envase <small>· vacío si no lo sabés</small></span>
+          <input type="text" id="riPrecio" class="inp-plata" inputmode="decimal" autocomplete="off" value="${escapeHtml(d.precio)}" placeholder="Ej: 11.205"></label>
+        <label class="campo"><span>Cuánto trae</span>
+          <input type="text" id="riEnvase" inputmode="decimal" autocomplete="off" value="${escapeHtml(d.envase)}" placeholder="Ej: 1"></label>
+        <div class="campo full"><span>En</span><select id="riUnidad" class="sel-chips">${op('kg', 'kg')}${op('g', 'gramos')}${op('l', 'litros')}${op('ml', 'ml')}${op('u', 'unidades')}</select></div>
+        <label class="campo full"><span>Proveedor <small>· opcional</small></span><input type="text" id="riProveedor" autocomplete="off" value="${escapeHtml(d.proveedor)}" placeholder="Ej: Liguria"></label>
+      </div>
+      <div class="receta-totales"><div class="fila grande"><span>Precio</span><b id="riPrevio">—</b></div>
+        ${usos.length ? `<div class="sub">Se usa en: ${usos.map(escapeHtml).join(', ')}. Al cambiar el precio se actualizan solas.</div>` : ''}</div>
+      <div class="botones">
+        <button type="button" class="btn btn-fuego" data-rguardar>Guardar</button>
+        <button type="button" class="btn btn-sec" data-rvolver>Cancelar</button>
+      </div>
+      ${recetaEdit.id != null ? `<div class="footer-row" style="justify-content:flex-start;margin-top:14px"><button type="button" class="link-btn" data-rborrar>Borrar insumo</button></div>` : ''}`;
+  }
+  function editorReceta(){
+    const d = recetaEdit.d, prod = recetaEdit.lista === 'productos';
+    const t = TIPOS_PRODUCTO.map(x => `<option value="${x.id}"${x.id === d.tipo ? ' selected' : ''}>${x.emoji} ${x.nombre}</option>`).join('');
+    const filas = d.filas.map((f, i) => `<div class="receta-fila" data-fila="${i}">
+        <input type="text" class="rf-nombre" list="dlIngredientes" autocomplete="off" value="${escapeHtml(f.nombre)}" placeholder="Ej: Mozzarella" aria-label="Ingrediente">
+        <input type="text" class="rf-cant" inputmode="decimal" autocomplete="off" value="${escapeHtml(f.cant)}" placeholder="Ej: 120" aria-label="Cantidad">
+        <span class="rf-unidad">g</span><span class="rf-costo"></span>
+        <button type="button" class="item-del" data-rfquitar="${i}" title="Sacar" aria-label="Sacar ingrediente">✕</button>
+      </div>`).join('');
+    const enVentas = prod && ventasCostoSabor(d.nombre);
+    return `<button type="button" class="volver" data-rvolver>‹ Volver a ${prod ? 'productos' : 'preparaciones'}</button>
+      <div class="form-campos">
+        <label class="campo full"><span>Nombre</span><input type="text" id="rNombre" autocomplete="off" value="${escapeHtml(d.nombre)}" placeholder="${prod ? 'Ej: Margarita' : 'Ej: Salsa de tomate'}"></label>
+        ${prod ? `<div class="campo full"><span>Tipo</span><select id="rTipo" class="sel-chips">${t}</select></div>
+        <label class="campo full"><span>Porciones que rinde la receta</span>
+          <input type="number" id="rPorciones" min="1" inputmode="numeric" value="${escapeHtml(String(d.porciones))}" placeholder="Ej: 12 (vasos)">
+          <span class="ayuda">1 para una pizza; si la receta es para 12 vasos, 12.</span></label>` : `
+        <label class="campo full"><span>Cuánto rinde, en gramos <small>· opcional</small></span>
+          <input type="text" id="rRinde" inputmode="decimal" autocomplete="off" value="${escapeHtml(String(d.rinde))}" placeholder="Ej: 837">
+          <span class="ayuda">Lo que pesa terminada. Vacío = la suma de los ingredientes.</span></label>`}
+      </div>
+      <div class="receta-tabla">
+        <div class="receta-cab"><span>Ingrediente y cantidad</span><span>Costo</span></div>
+        ${filas}
+        <div class="footer-row" style="justify-content:flex-start;margin-top:8px"><button type="button" class="link-btn" data-rfagregar>+ Agregar ingrediente</button></div>
+      </div>
+      <div class="receta-totales" id="rTotales"></div>
+      ${prod ? `<label class="campo full"><span>Precio de venta <small>· opcional</small></span>
+        <input type="text" id="rPrecio" class="inp-plata" inputmode="decimal" autocomplete="off" value="${escapeHtml(d.precio)}" placeholder="Ej: 15.000"></label>
+        <div class="receta-totales" id="rMargen" hidden></div>` : ''}
+      <div class="botones" style="margin-top:12px">
+        <button type="button" class="btn btn-fuego" data-rguardar>Guardar</button>
+        <button type="button" class="btn btn-sec" data-rvolver>Cancelar</button>
+      </div>
+      ${recetaEdit.id != null ? `<div class="footer-row" style="justify-content:flex-start;margin-top:14px;gap:18px">
+        <button type="button" class="link-btn" data-rduplicar>Duplicar</button>
+        ${enVentas ? `<button type="button" class="link-btn" data-rventas>Usar este costo en Ventas</button>` : ''}
+        <button type="button" class="link-btn" data-rborrar>Borrar</button></div>` : ''}`;
+  }
+  // un producto con el nombre de un sabor de congeladas puede pasar su costo a Ventas (costos.sabores)
+  function ventasCostoSabor(nombre){
+    const k = String(nombre || '').trim().toLowerCase();
+    return !!k && (pizzas.stock.some(s => s.nombre.toLowerCase() === k) || costos.sabores[k] != null);
+  }
+  // recalcula costos y totales del editor sin redibujarlo (para no perder el foco al tipear)
+  function calcularEditor(){
+    if(!recetaEdit) return;
+    const d = recetaEdit.d;
+    if(recetaEdit.lista === 'insumos'){
+      const pre = parsearMonto(d.precio), env = numero(d.envase);
+      const el = document.getElementById('riPrevio');
+      if(!el) return;
+      if(!(pre >= 0) || !(env > 0)){ el.textContent = d.precio.trim() ? 'Falta cuánto trae' : 'Sin precio'; return; }
+      const porBase = pre / env;   // por kg, g, l, ml o unidad, según lo elegido
+      el.textContent = d.unidad === 'u' ? `${fmtC(porBase)} c/u`
+        : d.unidad === 'kg' || d.unidad === 'l' ? `${fmt(porBase)} el ${d.unidad === 'kg' ? 'kg' : 'litro'}`
+        : `${fmt(porBase * 1000)} el ${d.unidad === 'g' ? 'kg' : 'litro'}`;
+      return;
+    }
+    const prod = recetaEdit.lista === 'productos', propia = prod ? null : recetaEdit.id;
+    let total = 0, gramos = 0; const faltan = [];
+    d.filas.forEach((f, i) => {
+      const fila = document.querySelector(`.receta-fila[data-fila="${i}"]`);
+      if(!fila) return;
+      const ref = refPorNombre(f.nombre, propia), cEl = fila.querySelector('.rf-costo'), uEl = fila.querySelector('.rf-unidad');
+      if(!f.nombre.trim()){ cEl.textContent = ''; cEl.classList.remove('mal'); return; }
+      if(!ref){ cEl.textContent = 'No está cargado'; cEl.classList.add('mal'); uEl.textContent = ''; return; }
+      const r = costoDeItem({ ...ref, cant: numero(f.cant) || 0 }, new Set(propia != null ? [propia] : []));
+      uEl.textContent = r.unidad;
+      cEl.classList.toggle('mal', !!r.faltan.length);
+      cEl.textContent = r.faltan.length ? 'Sin precio' : fmtC(r.costo);
+      total += r.costo; gramos += r.gramos || 0; faltan.push(...r.faltan);
+    });
+    const falt = [...new Set(faltan)];
+    const tot = document.getElementById('rTotales');
+    if(prod){
+      const porc = Number(d.porciones) > 0 ? Number(d.porciones) : 1, porcion = total / porc;
+      tot.innerHTML = `<div class="fila"><span>Costo de la receta</span><b>${fmt(total)}</b></div>
+        ${porc > 1 ? `<div class="fila grande"><span>Costo por porción</span><b>${fmt(porcion)}</b></div>` : ''}
+        ${falt.length ? `<div class="aviso">⚠ Faltan precios de: ${falt.map(escapeHtml).join(', ')}. El costo queda corto hasta cargarlos en Insumos.</div>` : ''}`;
+      const m = document.getElementById('rMargen'), precio = parsearMonto(d.precio);
+      m.hidden = !(precio > 0);
+      if(precio > 0){
+        const pct = porcion / precio * 100;
+        m.innerHTML = `<div class="fila"><span>Margen por ${porc > 1 ? 'porción' : 'unidad'}</span><b>${fmt(precio - porcion)}</b></div>
+          <div class="fila"><span>El costo es</span><b class="${pct > 35 ? 'alto' : ''}" style="${pct > 35 ? 'color:var(--fuego-claro)' : ''}">${pct.toFixed(1)}% del precio</b></div>
+          ${pct > 30 ? `<div class="sub">Para bajar el costo al 30% del precio, habría que venderlo a ${fmt(porcion / 0.3)}.</div>` : ''}`;
+      }
+    }else{
+      const rinde = numero(d.rinde) > 0 ? numero(d.rinde) : gramos;
+      tot.innerHTML = `<div class="fila"><span>Costo de la tanda</span><b>${fmt(total)}</b></div>
+        <div class="fila"><span>Rinde</span><b>${Math.round(rinde).toLocaleString('es-AR')} g</b></div>
+        <div class="fila grande"><span>Costo</span><b>${rinde > 0 ? fmt(total / rinde * 1000) + ' el kg' : '—'}</b></div>
+        ${rinde > 0 ? `<div class="sub">${fmtC(total / rinde)} por gramo: 100 g cuestan ${fmt(total / rinde * 100)}.</div>` : ''}
+        ${falt.length ? `<div class="aviso">⚠ Faltan precios de: ${falt.map(escapeHtml).join(', ')}.</div>` : ''}`;
+    }
+  }
+  function guardarReceta(){
+    const d = recetaEdit.d, lista = recetaEdit.lista, cont = document.getElementById('recetasCont');
+    const nombre = d.nombre.trim();
+    const elNombre = cont.querySelector('#riNombre, #rNombre');
+    if(!nombre) return errorEn(elNombre, 'Falta el nombre, ej: ' + (lista === 'insumos' ? 'Mozzarella' : lista === 'productos' ? 'Margarita' : 'Salsa de tomate'));
+    const coleccion = recetas[lista];
+    if(coleccion.some(x => x.id !== recetaEdit.id && x.nombre.trim().toLowerCase() === nombre.toLowerCase()))
+      return errorEn(elNombre, `Ya hay ${lista === 'productos' ? 'un producto' : lista === 'insumos' ? 'un insumo' : 'una preparación'} con ese nombre`);
+    const f = foto();
+    let obj = recetaEdit.id != null ? coleccion.find(x => x.id === recetaEdit.id) : null;
+    if(lista === 'insumos'){
+      const elPre = document.getElementById('riPrecio'), elEnv = document.getElementById('riEnvase');
+      const pre = d.precio.trim() ? parsearMonto(d.precio) : null, env = numero(d.envase);
+      if(pre !== null && !(pre >= 0)) return errorEn(elPre, 'No se entiende el precio: usá solo cifras, ej: 11205');
+      if(pre !== null && !(env > 0)) return errorEn(elEnv, 'Poné cuánto trae el envase, ej: 1 (kg) o 500 (g)');
+      const factor = d.unidad === 'kg' || d.unidad === 'l' ? 1000 : 1;
+      const unidad = d.unidad === 'kg' ? 'g' : d.unidad === 'l' ? 'ml' : d.unidad;
+      if(!obj){ obj = { id: Date.now() }; coleccion.push(obj); }
+      const antes = obj.precio != null ? obj.precio / obj.envase : null;
+      obj.nombre = nombre; obj.unidad = unidad;
+      if(pre === null){ delete obj.precio; delete obj.envase; }
+      else{ obj.precio = pre; obj.envase = env * factor; if(antes === null || Math.abs(antes - pre / obj.envase) > 1e-9) obj.actualizado = hoyISO(); }
+      if(d.proveedor.trim()) obj.proveedor = d.proveedor.trim(); else delete obj.proveedor;
+      const usos = usosDe('i', obj.id).length;
+      recetaEdit = null;
+      persistirRecetas();
+      hecho(`${nombre} guardado${usos ? `: se actualizaron ${usos} ${usos === 1 ? 'receta' : 'recetas'}` : ''}.`, f);
+      return;
+    }
+    const propia = lista === 'preparaciones' ? recetaEdit.id : null, items = [];
+    for(let i = 0; i < d.filas.length; i++){
+      const fila = d.filas[i];
+      if(!fila.nombre.trim() && !String(fila.cant).trim()) continue;
+      const el = cont.querySelector(`.receta-fila[data-fila="${i}"]`);
+      const ref = refPorNombre(fila.nombre, propia);
+      if(!ref) return errorEn(el.querySelector('.rf-nombre'), `"${fila.nombre.trim() || '?'}" no está cargado: elegilo de la lista o agregalo en Insumos`);
+      const cant = numero(fila.cant);
+      if(!(cant > 0)) return errorEn(el.querySelector('.rf-cant'), 'Poné la cantidad, ej: 120');
+      items.push({ ...ref, cant });
+    }
+    if(!items.length) return errorEn(cont.querySelector('.rf-nombre'), 'Agregá al menos un ingrediente, ej: Mozzarella');
+    if(!obj){ obj = { id: Date.now() }; coleccion.push(obj); }
+    obj.nombre = nombre; obj.items = items;
+    if(lista === 'productos'){
+      obj.tipo = d.tipo; obj.porciones = Number(d.porciones) > 0 ? Math.round(Number(d.porciones)) : 1;
+      const pre = parsearMonto(d.precio);
+      if(pre > 0) obj.precio = pre; else delete obj.precio;
+    }else{
+      const r = numero(d.rinde);
+      if(r > 0) obj.rinde = r; else delete obj.rinde;
+    }
+    const c = lista === 'productos' ? costoProducto(obj).porcion : costoPrep(obj).porGramo * 1000;
+    recetaEdit = null;
+    persistirRecetas();
+    hecho(`${nombre} guardado: ${fmt(c)}${lista === 'productos' ? (obj.porciones > 1 ? ' por porción' : '') : ' el kg'}.`, f);
+  }
+
+  document.getElementById('recetasTabs').addEventListener('click', e => {
+    const b = e.target.closest('[data-rtab]');
+    if(!b) return;
+    recetasTab = b.dataset.rtab; recetaEdit = null;
+    renderRecetas(true);
+  });
+  document.getElementById('recetasBuscar').addEventListener('input', () => renderRecetas(true));
+  document.getElementById('recetasCont').addEventListener('click', e => {
+    const ed = e.target.closest('[data-redit]');
+    if(ed){ const [l, id] = ed.dataset.redit.split(':'); abrirReceta(l, Number(id)); return; }
+    if(e.target.closest('[data-rnuevo]')){ abrirReceta(recetasTab, null); setTimeout(() => { const n = document.querySelector('#riNombre, #rNombre'); if(n) n.focus(); }, 300); return; }
+    if(e.target.closest('[data-rvolver]')){ recetaEdit = null; renderRecetas(true); return; }
+    if(e.target.closest('[data-rguardar]')){ guardarReceta(); return; }
+    if(e.target.closest('[data-rfagregar]')){
+      recetaEdit.d.filas.push({ nombre: '', cant: '' });
+      renderRecetas(true);
+      const filas = document.querySelectorAll('.receta-fila .rf-nombre');
+      filas[filas.length - 1].focus();
+      return;
+    }
+    const q = e.target.closest('[data-rfquitar]');
+    if(q){
+      recetaEdit.d.filas.splice(Number(q.dataset.rfquitar), 1);
+      if(!recetaEdit.d.filas.length) recetaEdit.d.filas.push({ nombre: '', cant: '' });
+      renderRecetas(true);
+      return;
+    }
+    if(e.target.closest('[data-rduplicar]')){
+      const d = JSON.parse(JSON.stringify(recetaEdit.d));
+      d.nombre = d.nombre + ' (copia)';
+      recetaEdit = { lista: recetaEdit.lista, id: null, d };
+      renderRecetas(true);
+      avisar('Copia lista: cambiale el nombre y lo que haga falta, y guardala.');
+      return;
+    }
+    if(e.target.closest('[data-rventas]')){
+      const pr = recetas.productos.find(x => x.id === recetaEdit.id);
+      if(!pr) return;
+      const f = foto(), c = Math.round(costoProducto(pr).porcion);
+      costos.sabores[pr.nombre.trim().toLowerCase()] = c;
+      persistirCostos();
+      hecho(`Ventas usa ahora ${fmt(c)} como costo de cada ${pr.nombre}.`, f);
+      return;
+    }
+    if(e.target.closest('[data-rborrar]')){
+      const lista = recetaEdit.lista, id = recetaEdit.id;
+      const obj = recetas[lista].find(x => x.id === id);
+      if(!obj) return;
+      const usos = lista === 'productos' ? [] : usosDe(lista === 'insumos' ? 'i' : 'p', id);
+      if(usos.length){ avisar(`No se puede borrar: se usa en ${usos.join(', ')}. Sacalo de esas recetas primero.`, { error: true, duracion: 7000 }); return; }
+      const f = foto();
+      recetas[lista] = recetas[lista].filter(x => x !== obj);
+      recetaEdit = null;
+      persistirRecetas();
+      hecho(`Borraste ${obj.nombre}.`, f);
+    }
+  });
+  ['input', 'change'].forEach(tipo => document.getElementById('recetasCont').addEventListener(tipo, e => {
+    if(!recetaEdit) return;
+    const d = recetaEdit.d, t = e.target;
+    const campos = { riNombre: 'nombre', riPrecio: 'precio', riEnvase: 'envase', riUnidad: 'unidad', riProveedor: 'proveedor',
+                     rNombre: 'nombre', rTipo: 'tipo', rPorciones: 'porciones', rRinde: 'rinde', rPrecio: 'precio' };
+    if(campos[t.id]) d[campos[t.id]] = t.value;
+    const fila = t.closest('.receta-fila');
+    if(fila){
+      const f = d.filas[Number(fila.dataset.fila)];
+      if(t.classList.contains('rf-nombre')) f.nombre = t.value;
+      if(t.classList.contains('rf-cant')) f.cant = t.value;
+    }
+    calcularEditor();
+  }));
 
   // ---------- armar desde Flex ----------
   // las Flex son bases congeladas sin terminar: la roja se arma como sabores de tomate y la blanca como los de base blanca
@@ -5338,6 +5787,11 @@
   // Cada cambio de la app que llega a main suma una entrada ARRIBA de todo, con el id siguiente.
   // Tono neutral: qué cambió y dónde se ve, en 1 a 3 líneas.
   const NOVEDADES = [
+    { id: 10, fecha: '2026-11-16', titulo: 'Costos de productos', cambios: [
+      'En Producción hay una sección nueva, "Costos de productos", con insumos (precio de cada envase), preparaciones (masa, salsas, toppings) y productos (pizzas, platos, postres, tragos).',
+      'Las recetas se arman con gramos y el costo se calcula solo; al cambiar el precio de un insumo se actualizan todas las recetas que lo usan.',
+      'Cada producto muestra margen y qué porcentaje del precio es costo. Arranca con los datos de la planilla de costos.'
+    ]},
     { id: 9, fecha: '2026-11-11', titulo: 'Armar sabores desde Flex', cambios: [
       'En Producción › Stock, las Flex tienen el botón "Armar sabor": la Flex roja pasa a Diavola, Margarita o Honey pesto, y la Flex blanca a Di patate, Caramellata o 4 Formaggi.',
       'Si un pedido necesita un sabor sin stock y hay Flex del color que corresponde, el sabor muestra un atajo para armarlo.'
