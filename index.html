@@ -197,6 +197,7 @@
   .receta-fila .rf-cant{flex:0 0 96px;min-width:0}
   .receta-fila .rf-unidad{color:var(--gris);font-size:.85rem;min-width:22px}
   .receta-fila .rf-costo{margin-left:auto;font-weight:800;font-size:.95rem}
+  .receta-fila .rf-costo-inp{flex:0 0 104px;min-width:0;margin-left:auto;text-align:right;font-weight:800}
   .receta-fila .rf-costo.mal{color:var(--fuego-claro);font-weight:700;font-size:.8rem}
   .precio-fila{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--linea)}
   .precio-fila .pf-info{flex:1;min-width:0}
@@ -3159,6 +3160,7 @@
         <input type="text" class="rf-nombre" list="dlIngredientes" autocomplete="off" value="${escapeHtml(f.nombre)}" placeholder="Ej: Mozzarella" aria-label="Ingrediente">
         <input type="text" class="rf-cant" inputmode="decimal" autocomplete="off" value="${escapeHtml(f.cant)}" placeholder="Ej: 120" aria-label="Cantidad">
         <span class="rf-unidad">g</span><span class="rf-costo"></span>
+        <input type="text" class="rf-costo-inp" inputmode="decimal" autocomplete="off" aria-label="Costo" hidden>
         <button type="button" class="item-del" data-rfquitar="${i}" title="Sacar" aria-label="Sacar ingrediente">✕</button>
       </div>`).join('');
     const enVentas = prod && ventasCostoSabor(d.nombre);
@@ -3218,12 +3220,20 @@
       const fila = document.querySelector(`.receta-fila[data-fila="${i}"]`);
       if(!fila) return;
       const ref = refPorNombre(f.nombre, propia), cEl = fila.querySelector('.rf-costo'), uEl = fila.querySelector('.rf-unidad');
+      const iEl = fila.querySelector('.rf-costo-inp');
+      const editable = !!ref && ref.tipo === 'i';
+      iEl.hidden = !editable; cEl.hidden = editable;
       if(!f.nombre.trim()){ cEl.textContent = ''; cEl.classList.remove('mal'); return; }
       if(!ref){ cEl.textContent = 'No está cargado'; cEl.classList.add('mal'); uEl.textContent = ''; return; }
       const r = costoDeItem({ ...ref, cant: numero(f.cant) || 0 }, new Set(propia != null ? [propia] : []));
       uEl.textContent = r.unidad;
       cEl.classList.toggle('mal', !!r.faltan.length);
       cEl.textContent = r.faltan.length ? 'Sin precio' : fmtC(r.costo);
+      // el costo de un insumo se puede escribir: cambia el precio del insumo (no se pisa mientras se tipea)
+      if(editable && document.activeElement !== iEl){
+        iEl.value = r.faltan.length ? '' : fmtC(r.costo);
+        iEl.placeholder = r.faltan.length ? 'Sin precio' : '';
+      }
       total += r.costo; gramos += r.gramos || 0; faltan.push(...r.faltan);
     });
     const falt = [...new Set(faltan)];
@@ -3250,6 +3260,29 @@
         ${falt.length ? `<div class="aviso">⚠ Faltan precios de: ${falt.map(escapeHtml).join(', ')}.</div>` : ''}`;
     }
   }
+  // escribir el costo de una fila cambia el precio del insumo: precio por unidad = costo / cantidad
+  function aplicarCostoFila(idx, inp){
+    const d = recetaEdit.d, f = d.filas[idx];
+    const ref = refPorNombre(f.nombre, recetaEdit.lista === 'preparaciones' ? recetaEdit.id : null);
+    if(!ref || ref.tipo !== 'i') return;
+    const ins = insumoPorId(ref.id), fila = inp.closest('.receta-fila');
+    if(!inp.value.trim()){ calcularEditor(); return; }
+    const cant = numero(f.cant), v = parsearMonto(inp.value);
+    if(!(cant > 0)) return errorEn(fila.querySelector('.rf-cant'), 'Poné primero la cantidad, ej: 20');
+    if(!(v >= 0)) return errorEn(inp, 'No se entiende el costo: usá solo cifras, ej: 25');
+    const pu = v / cant, antes = precioUnidad(ins);
+    if(antes !== null && Math.abs(antes * cant - v) < 0.005) return;
+    const foto0 = foto(), textoAntes = textoPrecioUnidad(ins);
+    if(!(Number(ins.envase) > 0)) ins.envase = cant;
+    ins.precio = Math.round(pu * ins.envase * 100) / 100;
+    ins.actualizado = hoyISO();
+    const usos = usosDe('i', ins.id).length;
+    persistirRecetas();
+    calcularEditor();
+    hecho(`${ins.nombre}: ${textoPrecioUnidad(ins)}${antes !== null ? ` (antes ${textoAntes})` : ''}` +
+      (usos ? `. ${usos === 1 ? 'Se actualiza 1 receta' : `Se actualizan ${usos} recetas`}.` : '.'), foto0);
+  }
+
   function guardarReceta(){
     const d = recetaEdit.d, lista = recetaEdit.lista, cont = document.getElementById('recetasCont');
     const nombre = d.nombre.trim();
@@ -3385,6 +3418,10 @@
                      rNombre: 'nombre', rTipo: 'tipo', rPorciones: 'porciones', rRinde: 'rinde', rPrecio: 'precio' };
     if(campos[t.id]) d[campos[t.id]] = t.value;
     const fila = t.closest('.receta-fila');
+    if(fila && t.classList.contains('rf-costo-inp')){
+      if(e.type === 'change') aplicarCostoFila(Number(fila.dataset.fila), t);
+      return;
+    }
     if(fila){
       const f = d.filas[Number(fila.dataset.fila)];
       if(t.classList.contains('rf-nombre')) f.nombre = t.value;
@@ -5878,6 +5915,10 @@
   // Cada cambio de la app que llega a main suma una entrada ARRIBA de todo, con el id siguiente.
   // Tono neutral: qué cambió y dónde se ve, en 1 a 3 líneas.
   const NOVEDADES = [
+    { id: 13, fecha: '2026-11-16', titulo: 'Costo editable en las recetas', cambios: [
+      'En una receta, el costo de cada insumo se puede escribir: el precio del insumo se recalcula a partir de ese costo y la cantidad, y se actualizan todas las recetas que lo usan.',
+      'Sirve también para cargar el precio de un insumo que no lo tenía. El cambio se puede deshacer.'
+    ]},
     { id: 12, fecha: '2026-11-16', titulo: 'Actualizar precios de insumos', cambios: [
       'En Costos › Insumos, "Actualizar precios" permite cambiar varios precios de una vez, con el precio por kg nuevo y el anterior a la vista.',
       'Al guardar se recalculan todas las recetas que usan esos insumos.'
