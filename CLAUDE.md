@@ -105,6 +105,16 @@ Lista de `{ id, texto, cat, prioridad, creado: 'YYYY-MM-DD' }`. `prioridad`: `ur
 `cat`: `equipo`, `materia` (materia prima), `packaging`, `imprenta` (imprenta y diseño) u `otros`. Al resolverlo se borra de la lista.
 La ganancia del mes quedó al final de Inicio (la prioridad es el servicio).
 
+**`recetas`**: costos de productos (Producción › Costos de productos), armado con los datos de la planilla de costos:
+`{ insumos: [{ id, nombre, unidad: 'g'|'ml'|'u', envase?, precio?, actualizado?, proveedor? }],
+preparaciones: [{ id, nombre, rinde?, items }], productos: [{ id, nombre, tipo, porciones, precio?, items }] }`.
+`items`: `[{ tipo: 'i'|'p', id, cant }]` (insumo o preparación, en la unidad del insumo; las preparaciones en gramos).
+Precio por unidad de un insumo = `precio / envase` (envase en g, ml o unidades); sin `precio` = falta cargarlo.
+Una preparación cuesta lo que suman sus ítems dividido `rinde` (si falta, la suma de los gramos). Un producto cuesta la suma
+de sus ítems dividido `porciones`. `tipo`: `pizza`, `plato`, `postre`, `trago` u `otro`; `precio` es el de venta.
+Las pizzas llevan "Masa napoletana" (preparación de 1 kg) con el peso del bollo. Desde un producto, "Usar este costo en
+Ventas" copia su costo a `costos.sabores`.
+
 **`titulares`** (no lo usa la app): `{ reglas: [texto], lista: [{ titular, es, tipo, cat?, nota? }] }`.
 Cómo clasificar los movimientos de los extractos (Mercado Pago, tarjetas): `tipo` es `empresa`, `personal`,
 `no es gasto` o `dudoso`, y `cat` la categoría de gasto. Leelo antes de procesar un extracto y sumá ahí
