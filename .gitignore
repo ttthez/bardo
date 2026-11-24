@@ -1,1 +1,8 @@
 .bardo-backups/
+functions/node_modules/
+.arca/
+.facturas/
+*.key
+*.csr
+*.crt
+*.pem
