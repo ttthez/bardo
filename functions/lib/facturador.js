@@ -23,12 +23,13 @@ export function emisorDe(config, cuenta, entorno) {
   return { ...e, ptoVta: entorno === 'prod' ? e.ptoVta : e.ptoVtaHomo || 1 };
 }
 
-// Ingresos sin factura de la cuenta (los en efectivo sin cuenta no aparecen: hay que asignarles cuenta antes).
+// Ingresos sin factura de la cuenta. Los cobros en efectivo no entran: esos los factura Thiago a mano en ARCA.
 export function pendientes(datos, facturas, { desde, hasta, cuenta } = {}) {
   const hechas = facturas || {};
   return lista(datos).filter(
     (i) =>
       i.cuenta &&
+      i.medio !== 'efectivo' &&
       !hechas[i.id] &&
       !i.noFacturar &&
       Number(i.monto) > 0 &&

@@ -12,6 +12,7 @@ Todo se prueba primero en **homologación** (testing de ARCA, sin validez fiscal
 
 Reglas que aplica: catering = servicios (período = día del evento), congeladas y lo demás = productos;
 consumidor final salvo que el evento o el ingreso tenga `facturaA: { nombre, cuit, condIva: 'ri'|'monotributo'|'exento'|'cf', domicilio? }`;
+los cobros en **efectivo** no entran (se facturan a mano en ARCA);
 fecha = la del cobro si ARCA la acepta (hasta 5 días atrás productos, 10 servicios, nunca antes de la última factura), si no la más cercana.
 
 ---
