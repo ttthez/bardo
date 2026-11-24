@@ -53,6 +53,8 @@ servicio **wsfe - Facturación Electrónica** › Crear autorización de acceso.
 base64 -i ~/arca/homo.crt | tr -d '\n' | pbcopy   # copia el certificado en una línea
 ```
 
+Antes, revisá que el archivo sea el certificado: `head -1 ~/arca/homo.crt` tiene que mostrar `-----BEGIN CERTIFICATE-----`
+(si muestra otra cosa, volvé a copiar el certificado desde WSASS y repetí `pbpaste > ~/arca/homo.crt`).
 En claude.ai/code › environment **La Sinergia** › editar › variables de entorno: agregá `ARCA_HOMO_CRT` y pegá.
 Repetí con la clave: `base64 -i ~/arca/homo.key | tr -d '\n' | pbcopy` → variable `ARCA_HOMO_KEY`.
 (Son solo de prueba: con ellas no se puede facturar de verdad.)

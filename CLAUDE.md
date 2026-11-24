@@ -115,6 +115,13 @@ de sus ítems dividido `porciones`. `tipo`: `pizza`, `plato`, `postre`, `trago` 
 Las pizzas llevan "Masa napoletana" (preparación de 1 kg) con el peso del bollo. Desde un producto, "Usar este costo en
 Ventas" copia su costo a `costos.sabores`.
 
+**`facturacion`**: datos de cada emisor de Factura C (ver `docs/facturacion-arca.md`):
+`{ entorno: 'homo'|'prod', emisores: { thiago: { nombre, nombreCorto, fantasia, cuit, domicilio, iibb, inicio: 'YYYY-MM-DD', ptoVtaHomo, ptoVta? } } }`.
+`entorno` está en `'homo'` (homologación, sin validez fiscal); pasarlo a `'prod'` solo con confirmación explícita de Thiago.
+`ptoVta` es el punto de venta de web services de producción (el 00001 es el de Comprobantes en línea y no sirve).
+Juan todavía no tiene monotributo: no tiene emisor hasta que avise. Las facturas emitidas van en `facturas` (prod) o
+`facturas_homo` (pruebas), por id de ingreso.
+
 **`titulares`** (no lo usa la app): `{ reglas: [texto], lista: [{ titular, es, tipo, cat?, nota? }] }`.
 Cómo clasificar los movimientos de los extractos (Mercado Pago, tarjetas): `tipo` es `empresa`, `personal`,
 `no es gasto` o `dudoso`, y `cat` la categoría de gasto. Leelo antes de procesar un extracto y sumá ahí
