@@ -1366,7 +1366,7 @@
     sueldoDueno: 60000,        // lo que valdría el trabajo de cada dueño en un evento
     duenos: 2,                 // dueños que van a cada evento
     // lista de precios por persona de cada menú y logística en CABA (0 = sin precio de lista)
-    precios: { op1: 23500, op2: 29000, papas: 0, logistica: 50000 },
+    precios: { op1: 23500, op2: 29000, papas: 0, logistica: 50000, tapeoExtra: 4000 },
     minPersonas: 25,           // los términos cobran como mínimo 25 cubiertos
     sabores: {},               // costo por sabor con packaging (planilla de costos); el que falta usa costoPizza
     // lista de precios de congeladas: precio por pizza según cuántas lleva en total (packs), igual para todos los sabores
@@ -4192,6 +4192,7 @@
         ${campo('precios.op2', 'Precio opción 2 $/pers.', costos.precios.op2)}
         ${campo('precios.papas', 'Precio papas y pizza $/pers.', costos.precios.papas)}
         ${campo('precios.logistica', 'Logística CABA $', costos.precios.logistica)}
+        ${campo('precios.tapeoExtra', 'Tapeo extra $/pers.', costos.precios.tapeoExtra)}
         ${campo('minPersonas', 'Mínimo de personas', costos.minPersonas, '1')}
         ${campo('gananciaMinima', 'Ganancia mínima por evento $', costos.gananciaMinima)}
         ${campo('sueldoDueno', 'Sueldo de cada dueño por evento $', costos.sueldoDueno)}
@@ -5915,6 +5916,9 @@
   // Cada cambio de la app que llega a main suma una entrada ARRIBA de todo, con el id siguiente.
   // Tono neutral: qué cambió y dónde se ve, en 1 a 3 líneas.
   const NOVEDADES = [
+    { id: 14, fecha: '2026-11-25', titulo: 'Tapeo extra en Ajustes de catering', cambios: [
+      'Catering › Ajustes de catering suma el precio por persona del tapeo extra, junto a la lista de precios.',
+    ] },
     { id: 13, fecha: '2026-11-16', titulo: 'Costo editable en las recetas', cambios: [
       'En una receta, el costo de cada insumo se puede escribir: el precio del insumo se recalcula a partir de ese costo y la cantidad, y se actualizan todas las recetas que lo usan.',
       'Sirve también para cargar el precio de un insumo que no lo tenía. El cambio se puede deshacer.'
