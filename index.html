@@ -874,6 +874,12 @@
       <h1 id="homeSaludo">Hola</h1>
     </div>
 
+    <div class="card" id="quienSos" hidden>
+      <div class="card-titulo">¿Quién sos?</div>
+      <div class="card-nota">Para saludarte y anotar quién carga cada gasto, cobro y venta. Se elige una sola vez por cuenta.</div>
+      <div class="toggle" id="quienSosOpciones" style="margin:0"></div>
+    </div>
+
     <div class="card home-compras" id="homeCompras">
       <div class="card-titulo">Cosas que necesitamos <span class="compras-cuenta" id="comprasCuenta"></span></div>
       <div class="card-nota">Para comprar o hacer. Tocá el círculo cuando esté resuelto; la etiqueta cambia la prioridad.</div>
@@ -1423,6 +1429,18 @@
     { id: 'juan',   nombre: 'Juan' }
   ];
   const CACHE_KEY_CUENTA = 'lasinergia_cuenta';
+  // quién está usando la app: cada socio entra con su email, y costos.usuarios dice de quién es cada uno
+  function usuarioActual(){
+    const email = String((sesion && sesion.email) || '').toLowerCase();
+    const u = email && (costos.usuarios || []).find(x => String(x.email || '').toLowerCase() === email);
+    return u ? u.nombre : '';
+  }
+  // lo que se carga lleva `por` (el nombre de quien lo cargó), si ya se sabe quién es
+  function conPor(obj){
+    const n = usuarioActual();
+    return n ? { ...obj, por: n } : obj;
+  }
+  function porTexto(x){ return x && x.por ? ` · cargó ${escapeHtml(x.por)}` : ''; }
   // pagos en dólares: se guarda lo que fue en USD (`usd`) y la cotización (`tc`); `monto` sigue en pesos para los totales
   const CACHE_KEY_MONEDA = 'lasinergia_moneda';
   const CACHE_KEY_TC     = 'lasinergia_tc';
@@ -2318,7 +2336,7 @@
       <div class="item">
         <div class="item-info">
           <div class="item-desc">${escapeHtml(i.desc)}</div>
-          <div class="item-fecha">${formatoFecha(i.fecha)}${medioTexto(i.medio, i.cuenta)}${numeroFactura(i) ? ` · 🧾 ${numeroFactura(i)}` : ''}</div>
+          <div class="item-fecha">${formatoFecha(i.fecha)}${medioTexto(i.medio, i.cuenta)}${numeroFactura(i) ? ` · 🧾 ${numeroFactura(i)}` : ''}${porTexto(i)}</div>
         </div>
         <div class="item-monto">${montoTexto(i)}</div>
         <button class="item-del" data-id="${i.id}" title="Borrar" aria-label="Borrar ingreso">✕</button>
@@ -2717,8 +2735,13 @@
   function renderInicio(){
     const ahora = new Date();
     const hora = ahora.getHours();
+    const nombre = usuarioActual();
     document.getElementById('homeSaludo').textContent =
-      hora < 6 ? 'Buenas noches' : hora < 13 ? 'Buen día' : hora < 20 ? 'Buenas tardes' : 'Buenas noches';
+      (hora < 6 ? 'Buenas noches' : hora < 13 ? 'Buen día' : hora < 20 ? 'Buenas tardes' : 'Buenas noches') + (nombre ? `, ${nombre}` : '');
+    const quien = document.getElementById('quienSos');
+    quien.hidden = !!nombre || !(sesion && sesion.email);
+    if(!quien.hidden) document.getElementById('quienSosOpciones').innerHTML =
+      CUENTAS.map(c => `<button type="button" data-soy="${escapeHtml(c.nombre)}">${escapeHtml(c.nombre)}</button>`).join('');
     document.getElementById('homeFecha').textContent =
       `${DIAS[ahora.getDay()]} ${ahora.getDate()} de ${MESES[ahora.getMonth()].toLowerCase()}`;
 
@@ -3092,7 +3115,7 @@
           return `<div class="item">
             <div class="item-info">
               <div class="item-desc">${c.emoji} ${g.desc ? escapeHtml(g.desc) : c.nombre}</div>
-              <div class="item-fecha">${detalle}${medioTexto(g.medio)}</div>
+              <div class="item-fecha">${detalle}${medioTexto(g.medio)}${porTexto(g)}</div>
             </div>
             <div class="item-monto gasto">${montoTexto(g)}</div>
             <button class="item-del" data-borrar="${g.id}" title="Borrar" aria-label="Borrar gasto">✕</button>
@@ -3356,14 +3379,14 @@
     });
 
     const ventaId = Date.now();
-    pizzas.ventas.push({
+    pizzas.ventas.push(conPor({
       id: ventaId,
       fecha: hoyISO(),
       cliente: p.cliente,
       ...(p.telefono ? { telefono: p.telefono } : {}),
       items: p.items.map(i => ({ nombre: i.nombre, cantidad: i.cantidad })),
       entrega
-    });
+    }));
     // el envío: lo que se cobró (de lo cobrado, hasta el precio del envío) y cómo se llevó
     let via = null;
     if(entrega === 'envio'){
@@ -3371,18 +3394,18 @@
       guardarCache(CACHE_KEY_VIA, via);
       pizzas.ventas[pizzas.ventas.length - 1].envio = { cobrado: monto > 0 ? Math.min(cargoEnvio(p.items), monto) : 0, via };
       if(costoEnvio > 0){
-        gastos.movs.push({ id: ventaId + 2, ventaId, fecha: hoyISO(), cat: 'envios', monto: costoEnvio,
-          desc: `Envío ${nombreVia(via)} · ${p.cliente}` });
+        gastos.movs.push(conPor({ id: ventaId + 2, ventaId, fecha: hoyISO(), cat: 'envios', monto: costoEnvio,
+          desc: `Envío ${nombreVia(via)} · ${p.cliente}` }));
       }
     }
     if(monto > 0){
-      items.push({
+      items.push(conPor({
         id: ventaId + 1,
         ventaId: ventaId,          // enlaza el ingreso con su venta en el historial
         fecha: hoyISO(),
         desc: `${p.cliente} x${totalPizzas}`,
         monto, medio, cuenta
-      });
+      }));
     }
 
     pedidos = pedidos.filter(x => x.id !== id);
@@ -5519,8 +5542,8 @@
       const f = foto();
       const medio = elegirMedio(document.getElementById('cobroMedio').value);
       const cuenta = cuentaPara(medio, elegirCuenta(document.getElementById('cobroCuenta').value));
-      items.push({ id: Date.now(), fecha: hoyISO(), ...m, tipo, eventoId: ev.id, medio, cuenta,
-                   desc: `${tipo === 'seña' ? 'Seña' : 'Saldo'} · ${ev.nombre}` });
+      items.push(conPor({ id: Date.now(), fecha: hoyISO(), ...m, tipo, eventoId: ev.id, medio, cuenta,
+                   desc: `${tipo === 'seña' ? 'Seña' : 'Saldo'} · ${ev.nombre}` }));
       persistirIngresos();
       const mm = MEDIOS.find(x => x.id === medio);
       hecho(`${tipo === 'seña' ? 'Seña' : 'Saldo'} de ${montoCorto(m)} anotado${mm ? ` (${mm.nombre})` : ''}. Ya suma en los ingresos.`, f);
@@ -5586,11 +5609,11 @@
     if(btnAGastos) btnAGastos.addEventListener('click', () => {
       const pendientes = personalDe(ev).filter(pp => !gastoDePersonal(pp) && Number(pp.monto) > 0);
       // el gasto va con la fecha del evento, así cae en el mes en que se trabajó
-      pendientes.forEach((pp, i) => gastos.movs.push({
+      pendientes.forEach((pp, i) => gastos.movs.push(conPor({
         id: Date.now() + i, fecha: ev.fecha || hoyISO(), cat: 'personal', monto: Number(pp.monto),
         desc: `${pp.nombre || 'Personal'} · ${ev.nombre}`, personalId: pp.id, eventoId: ev.id,
         medio: medioUltimo()
-      }));
+      })));
       persistirGastos();
     });
 
@@ -5631,10 +5654,10 @@
       const pend = costosExtraDe(ev).filter(x => !gastoDeCostoExtra(x) && Number(x.monto) > 0);
       const f = foto();
       // con la fecha del evento, así cae en el mes en que se hizo
-      pend.forEach((x, i) => gastos.movs.push({
+      pend.forEach((x, i) => gastos.movs.push(conPor({
         id: Date.now() + i, fecha: ev.fecha || hoyISO(), cat: x.cat || 'otros', monto: Number(x.monto),
         desc: `${x.desc} · ${ev.nombre}`, costoExtraId: x.id, eventoId: ev.id, medio: medioUltimo()
-      }));
+      })));
       persistirGastos();
       hecho(`${pend.length === 1 ? 'Anotado' : `Anotados ${pend.length} costos`} en Gastos de ${nombreMes(mesDe(ev.fecha || hoyISO()))}.`, f);
     });
@@ -6009,7 +6032,7 @@
     const f = foto();
     const medio = elegirMedio(document.getElementById('medio').value);
     const cuenta = cuentaPara(medio, elegirCuenta(document.getElementById('cuenta').value));
-    items.push({ id: Date.now(), fecha, desc, ...m, medio, cuenta });
+    items.push(conPor({ id: Date.now(), fecha, desc, ...m, medio, cuenta }));
 
     // si anotás un ingreso de otro mes, saltamos a ese mes para que lo veas
     const otroMes = mesDe(fecha) !== mesSel;
@@ -6062,8 +6085,8 @@
     const fecha = elFecha.value;
     const desc = document.getElementById('gastoDesc').value.trim();
     const f = foto();
-    gastos.movs.push({ id: Date.now(), fecha, cat: catGasto, ...m, desc,
-      medio: elegirMedio(document.getElementById('gastoMedio').value) });
+    gastos.movs.push(conPor({ id: Date.now(), fecha, cat: catGasto, ...m, desc,
+      medio: elegirMedio(document.getElementById('gastoMedio').value) }));
     const otroMes = mesDe(fecha) !== mesSel;
     if(otroMes) mesSel = mesDe(fecha);
     document.getElementById('gastoMonto').value = '';
@@ -6216,6 +6239,17 @@
   });
 
   document.getElementById('btnRefrescar').addEventListener('click', () => refrescarTodo(true));
+  document.getElementById('quienSosOpciones').addEventListener('click', e => {
+    const b = e.target.closest('[data-soy]');
+    if(!b || !sesion || !sesion.email) return;
+    const f = foto();
+    const email = sesion.email.toLowerCase();
+    costos.usuarios = (costos.usuarios || []).filter(x => String(x.email || '').toLowerCase() !== email)
+      .concat({ email, nombre: b.dataset.soy });
+    persistirCostos();
+    renderTodo();
+    hecho(`Listo, ${b.dataset.soy}: lo que cargues desde esta cuenta va a decir "cargó ${b.dataset.soy}".`, f);
+  });
 
   document.getElementById('stockLista').addEventListener('click', e => {
     const mm = e.target.closest('[data-stock-mas], [data-stock-menos]');
@@ -6389,12 +6423,12 @@
 
     const ventaId = Date.now();
     const cliente = document.getElementById('ventaCliente').value.trim();
-    pizzas.ventas.push({ id: ventaId, fecha: hoyISO(), items: detalle, ...(cliente ? { cliente } : {}) });
+    pizzas.ventas.push(conPor({ id: ventaId, fecha: hoyISO(), items: detalle, ...(cliente ? { cliente } : {}) }));
     // si anotaste lo cobrado, entra como ingreso enlazado a la venta
     if(cobrado > 0){
       const medio = elegirMedio(document.getElementById('ventaMedio').value);
       const cuenta = cuentaPara(medio, elegirCuenta(document.getElementById('ventaCuenta').value));
-      items.push({ id: ventaId + 1, ventaId, fecha: hoyISO(), desc: `${cliente || 'Venta'} x${n}`, monto: cobrado, medio, cuenta });
+      items.push(conPor({ id: ventaId + 1, ventaId, fecha: hoyISO(), desc: `${cliente || 'Venta'} x${n}`, monto: cobrado, medio, cuenta }));
       persistirIngresos();
     }
     document.getElementById('ventaCliente').value = '';
@@ -6575,6 +6609,10 @@
   // Cada cambio de la app que llega a main suma una entrada ARRIBA de todo, con el id siguiente.
   // Tono neutral: qué cambió y dónde se ve, en 1 a 3 líneas.
   const NOVEDADES = [
+    { id: 21, fecha: '2026-11-26', titulo: 'Quién cargó cada movimiento', cambios: [
+      'Cada cuenta elige una vez quién es (Thiago o Juan) en Inicio, y el saludo pasa a incluir el nombre.',
+      'Los gastos, cobros y ventas que se cargan desde ahora guardan quién los anotó, y en las listas de Gastos e Ingresos se ve "cargó Thiago" o "cargó Juan".'
+    ]},
     { id: 20, fecha: '2026-11-26', titulo: 'Checklist de eventos más confiable', cambios: [
       'Se corrigió que a veces no quedara guardado un ítem nuevo de la checklist (o un cambio en el evento) cuando la app se sincronizaba mientras se escribía.'
     ]},
