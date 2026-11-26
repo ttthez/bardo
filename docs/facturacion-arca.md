@@ -116,7 +116,7 @@ Con `DRIVE_URL` en `pendiente` las facturas se emiten igual, sin subir el PDF a 
 ```bash
 npx -y firebase-tools deploy --only functions --project objetivo-julio
 ```
-La primera vez tarda unos minutos porque activa servicios de Google Cloud. Si pregunta cuántos días guardar las imágenes
+Antes de publicar instala las dependencias de la función (`npm ci`, lo hace solo). La primera vez tarda unos minutos porque activa servicios de Google Cloud. Si pregunta cuántos días guardar las imágenes
 de los contenedores, respondé `1`. Al final tiene que decir **Deploy complete!**. Si sale un error, copiáselo a Claude.
 
 **C5. Probar.** En la app (con esta versión publicada): Objetivo › Falta facturar › **Facturar** en un cobro › revisar
