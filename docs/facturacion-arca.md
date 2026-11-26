@@ -63,19 +63,34 @@ Repetí con la clave: `base64 -i ~/arca/homo.key | tr -d '\n' | pbcopy` → vari
 razón social como figura en ARCA, CUIT, domicilio comercial, fecha de inicio de actividades e Ingresos Brutos
 (número, o si es el mismo CUIT / exento). Nombre de fantasía: La Sinergia.
 
-### Parte B — Carpeta de Drive (~5 min)
+### Parte B — Carpeta de Drive (~10 min)
 
-Con la cuenta de Google donde quieran las facturas:
+Con la cuenta de Google donde quieran las facturas. Primero se arma la clave que comparten Firebase y el script,
+en **Cloud Shell** (ver C2), dentro de `~/bardo`:
 
-1. script.google.com › **Nuevo proyecto** › borrar lo que haya y pegar el contenido de `apps-script/drive.gs`. Guardar con el nombre "Bardo · Facturas a Drive".
-2. ⚙ **Configuración del proyecto** › **Propiedades de la secuencia de comandos** › Agregar: propiedad `SECRETO`,
-   valor: una clave larga inventada (40 letras y números al azar). Guardar.
-3. **Implementar** › **Nueva implementación** › ⚙ tipo **Aplicación web** › Ejecutar como: **Yo** · Quién tiene acceso: **Cualquier usuario** › Implementar.
-   Autorizar con la cuenta (aparece "Google no verificó esta app": Configuración avanzada › Ir a … › Permitir; es tu propio script).
-4. Copiar la **URL de la aplicación web** (termina en `/exec`) y pasársela a Claude (no es secreta).
-   El `SECRETO` va como variable del environment `ARCA_DRIVE_SECRETO` (y después como secreto de Firebase).
+```bash
+openssl rand -hex 24 | tr -d '\n' > drive_secreto.txt && cat drive_secreto.txt; echo
+```
 
-La carpeta `Facturas La Sinergia` se crea sola con la primera factura.
+1. script.google.com › **Nuevo proyecto** › borrar lo que haya y pegar el contenido de `apps-script/drive.gs`
+   (github.com/ttthez/bardo/blob/main/apps-script/drive.gs › botón de copiar). Ponerle de nombre "Bardo · Facturas a Drive" y guardar.
+2. ⚙ **Configuración del proyecto** › abajo, **Propiedades de la secuencia de comandos** › **Agregar propiedad**:
+   propiedad `SECRETO`, valor: la clave que mostró Cloud Shell. **Guardar propiedades de la secuencia de comandos**.
+3. **Implementar** › **Nueva implementación** › ⚙ junto a "Seleccionar tipo" › **Aplicación web**.
+   Ejecutar como: **Yo** · Quién tiene acceso: **Cualquier usuario** › **Implementar**.
+   Autorizar con la cuenta (aparece "Google no verificó esta app": **Configuración avanzada** › **Ir a Bardo · Facturas a Drive** › **Permitir**; es tu propio script).
+4. Copiar la **URL de la aplicación web** (termina en `/exec`) y cargar los dos secretos en Cloud Shell, reemplazando `URL` por la copiada:
+
+```bash
+echo -n "URL" | npx -y firebase-tools functions:secrets:set DRIVE_URL --data-file=- --project objetivo-julio
+npx -y firebase-tools functions:secrets:set DRIVE_SECRETO --data-file=drive_secreto.txt --project objetivo-julio && rm drive_secreto.txt
+npx -y firebase-tools deploy --only functions --project objetivo-julio
+```
+
+La función toma los secretos al publicarse: por eso el `deploy` del final. La carpeta `Facturas La Sinergia` se crea sola
+con la primera factura (las de prueba, en `Facturas La Sinergia/PRUEBAS/AAAA-MM`).
+Si alguna vez se cambia el código del script, hay que hacer **Implementar › Administrar implementaciones › editar › Versión nueva**
+para que la URL use el código nuevo.
 
 ### Parte C — Activar el botón "Facturar" de la app (~25 min, una sola vez)
 
