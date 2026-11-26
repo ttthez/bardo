@@ -123,7 +123,8 @@ Juan todavía no tiene monotributo: no tiene emisor hasta que avise (en "Falta f
 Un evento o un ingreso puede llevar `facturaA: { nombre, cuit (solo números, CUIT 11 o DNI 7-8), condIva: 'cf'|'monotributo'|'ri'|'exento', domicilio? }`
 (el del ingreso manda sobre el del evento; sin campo = consumidor final). `facturaManual: '00001-00000015'` en un ingreso
 marca que ya se facturó a mano en ARCA: no se vuelve a facturar. Objetivo › "Falta facturar" lista por cuenta los cobros del mes
-que no son en efectivo y no tienen factura (`facturas` o `facturaManual`). Las facturas emitidas van en `facturas` (prod) o
+que no son en efectivo y no tienen factura (`facturas` o `facturaManual`). Al anotar un cobro (evento, ingreso, venta o pedido entregado)
+que va a una cuenta con emisor, la app ofrece hacer la factura en el momento; la emisión va de a una factura por llamada, con barra de progreso. Las facturas emitidas van en `facturas` (prod) o
 `facturas_homo` (pruebas), por id de ingreso.
 
 **`titulares`** (no lo usa la app): `{ reglas: [texto], lista: [{ titular, es, tipo, cat?, nota? }] }`.
