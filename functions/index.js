@@ -58,7 +58,15 @@ export const facturarIngresos = onCall(
     const entorno = config.entorno === 'prod' ? 'prod' : 'homo';
     const certPem = pem(entorno === 'prod' ? ARCA_CRT.value() : ARCA_HOMO_CRT.value());
     const keyPem = pem(entorno === 'prod' ? ARCA_KEY.value() : ARCA_HOMO_KEY.value());
-    if (!certPem.includes('BEGIN') || !keyPem.includes('BEGIN')) throw new HttpsError('failed-precondition', `Falta el certificado de ${entorno}`);
+    // si un secreto quedó mal cargado, decir cuál y con qué empieza (la primera línea no es secreta)
+    const sufijo = entorno === 'prod' ? '' : '_HOMO';
+    const cabecera = (v) => (v.match(/-----BEGIN [A-Z ]+-----/) || ['(no es un PEM)'])[0];
+    if (!/-----BEGIN CERTIFICATE-----/.test(certPem)) {
+      throw new HttpsError('failed-precondition', `El secreto ARCA${sufijo}_CRT no es el certificado: empieza con ${cabecera(certPem)}`);
+    }
+    if (!/-----BEGIN (RSA )?PRIVATE KEY-----/.test(keyPem)) {
+      throw new HttpsError('failed-precondition', `El secreto ARCA${sufijo}_KEY no es la clave privada: empieza con ${cabecera(keyPem)}`);
+    }
 
     try {
       const res = await facturar(ids, {
