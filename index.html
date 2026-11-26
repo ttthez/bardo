@@ -267,6 +267,9 @@
   .badge-hoy{background:rgba(226,58,22,.18);color:var(--fuego-claro);border:1px solid rgba(226,58,22,.35)}
   .badge-entrega{background:transparent;color:var(--crema-tenue);border:1px solid var(--linea);font-weight:600}
   .badge-atrasado{background:rgba(226,58,22,.85);color:#fff}
+  .faltan{display:flex;gap:6px;flex-wrap:wrap;margin-top:5px}
+  .badge-falta{background:rgba(255,190,60,.14);color:#f2b84b;border:1px dashed rgba(255,190,60,.55);font:inherit;
+    font-size:.62rem;font-weight:800;text-transform:uppercase;letter-spacing:.05em;padding:3px 9px;border-radius:999px;cursor:pointer}
 
   .edit-aviso{
     display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;
@@ -985,7 +988,7 @@
         <div class="card-nota">Con menú y personas, el precio sale solo de la lista. Lo demás se completa después, adentro del evento.</div>
         <div class="form-campos">
           <label class="campo full"><span>Nombre del evento</span>
-            <input type="text" id="evNombre" autocomplete="off" placeholder="Ej: Casamiento Pérez 80 pax"></label>
+            <input type="text" id="evNombre" autocomplete="off" placeholder="Ej: Casamiento Pérez"></label>
           <label class="campo"><span>Fecha</span><input type="date" id="evFecha"></label>
           <label class="campo"><span>Hora <small>· opcional</small></span><input type="time" id="evHora"></label>
           <label class="campo full"><span>Lugar <small>· opcional</small></span>
@@ -1658,6 +1661,12 @@
   function hoyISO(){
     const d = new Date();
     return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+  }
+  // fecha 'YYYY-MM-DD' corrida n días
+  function sumarDias(fecha, n){
+    const d = new Date(fecha + 'T12:00:00Z');
+    d.setUTCDate(d.getUTCDate() + n);
+    return d.toISOString().slice(0, 10);
   }
   function mesDe(fecha){ return (fecha || '').slice(0, 7); }
   function mesActual(){ return hoyISO().slice(0, 7); }
@@ -2722,7 +2731,7 @@
       const r = resumenEvento(e);
       filas.push(`<div class="home-fila" data-evento="${e.id}">
         <div class="home-ico">🍽️</div>
-        <div class="home-info"><b>${escapeHtml(e.nombre)}</b><small>${e.personas || 0} pax${e.lugar ? ' · ' + escapeHtml(e.lugar) : ''}</small></div>
+        <div class="home-info"><b>${escapeHtml(nombreEvento(e))}</b><small>${e.personas || 0} pax${e.lugar ? ' · ' + escapeHtml(e.lugar) : ''}</small>${chipsFaltantes(e)}</div>
         <div class="home-der">${e.hora || 'Hoy'}${linkWaChico(e.telefono, msjEvento(e))}${r.falta ? `<small>cobrar ${fmt(r.falta)}</small>` : ''}</div>
       </div>`);
     });
@@ -2745,7 +2754,7 @@
       const r = resumenEvento(e);
       return `<div class="home-fila" data-evento="${e.id}">
         <div class="home-ico">🍕</div>
-        <div class="home-info"><b>${escapeHtml(e.nombre)}</b><small>${fechaCorta(e.fecha)}${e.hora ? ' · ' + e.hora : ''} · ${e.personas || 0} pax</small></div>
+        <div class="home-info"><b>${escapeHtml(nombreEvento(e))}</b><small>${fechaCorta(e.fecha)}${e.hora ? ' · ' + e.hora : ''} · ${e.personas || 0} pax</small>${chipsFaltantes(e)}</div>
         <div class="home-der">${r.precio ? fmt(r.precio) : ''}${r.falta && r.cobrado ? `<small>falta ${fmt(r.falta)}</small>` : badgeEvento(e) ? `<small>${badgeEvento(e)}</small>` : ''}</div>
       </div>`;
     }).join('') : '<div class="vacio">No hay eventos agendados.</div>';
@@ -4423,6 +4432,26 @@
     return '';
   }
 
+  // el nombre sin el "25 pax" del final, para las listas que ya muestran las personas aparte
+  function nombreEvento(e){
+    const n = String(e.nombre || '').replace(/\s*[·,\-–]?\s*\d+\s*(pax|personas)\s*$/i, '').trim();
+    return n || String(e.nombre || '');
+  }
+  // lo que le falta a un evento de los próximos 7 días: horario y teléfono del cliente
+  function faltantesEvento(e){
+    const hoy = hoyISO();
+    if(!e.fecha || e.fecha < hoy || e.fecha > sumarDias(hoy, 7)) return [];
+    const f = [];
+    if(!e.hora) f.push({ campo: 'hora', texto: 'sin horario' });
+    if(!String(e.telefono || '').trim()) f.push({ campo: 'telefono', texto: 'sin teléfono' });
+    return f;
+  }
+  function chipsFaltantes(e){
+    const f = faltantesEvento(e);
+    return f.length ? `<span class="faltan">${f.map(x =>
+      `<button type="button" class="badge-falta" data-falta="${x.campo}" data-evento="${e.id}">${x.texto}</button>`).join('')}</span>` : '';
+  }
+
   // ítems de la checklist: soporta el formato viejo {texto} y el nuevo {nombre, cantidad}
   function itemsDe(ev){
     return (ev.checklist || []).map(t => ({
@@ -4752,7 +4781,7 @@
         const r = resumenEvento(e);
         return `<div class="evento" data-cal-ev="${e.id}">
           <div class="evento-top">
-            <div class="evento-nombre">${escapeHtml(e.nombre)} ${badgeEvento(e)}${r.bajoMinimo ? ' <span class="badge badge-atrasado">bajo mínimo</span>' : ''}</div>
+            <div class="evento-nombre">${escapeHtml(nombreEvento(e))} ${badgeEvento(e)}${r.bajoMinimo ? ' <span class="badge badge-atrasado">bajo mínimo</span>' : ''}</div>
             <div class="pedido-cuando">${ICONO_TURNO[turnoEvento(e)]} ${e.hora || 'sin hora'}</div>
           </div>
           <div class="evento-meta"><b>${e.personas || 0}</b> personas${e.lugar ? ' · ' + escapeHtml(e.lugar) : ''}
@@ -4967,7 +4996,7 @@
       return `
         <div class="evento" data-ev="${e.id}">
           <div class="evento-top">
-            <div class="evento-nombre">${escapeHtml(e.nombre)} ${badge}${r.bajoMinimo ? ' <span class="badge badge-atrasado">bajo mínimo</span>' : ''}</div>
+            <div class="evento-nombre">${escapeHtml(nombreEvento(e))} ${badge}${r.bajoMinimo ? ' <span class="badge badge-atrasado">bajo mínimo</span>' : ''}</div>
             <div class="pedido-cuando">${formatoFecha(e.fecha)}${e.hora ? ' · ' + e.hora : ''}</div>
           </div>
           <div class="evento-meta">
@@ -5759,6 +5788,10 @@
       eventoAbierto = Number(ev.dataset.evento);
       irATab('catering');
       renderCatering();
+      // tocar "sin horario" o "sin teléfono" lleva directo a ese campo del evento
+      const falta = e.target.closest('[data-falta]');
+      const campo = falta && document.querySelector(`#panel-catering [data-campo="${falta.dataset.falta}"]`);
+      if(campo){ campo.scrollIntoView({ block: 'center' }); campo.focus(); }
     }
   });
 
@@ -6169,7 +6202,7 @@
   document.getElementById('btnCrearEvento').addEventListener('click', () => {
     const nombre = document.getElementById('evNombre').value.trim();
     const fecha = document.getElementById('evFecha').value;
-    if(!nombre) return errorEn(document.getElementById('evNombre'), 'Falta el nombre, ej: Casamiento Pérez 80 pax');
+    if(!nombre) return errorEn(document.getElementById('evNombre'), 'Falta el nombre, ej: Casamiento Pérez');
     if(!fecha) return errorEn(document.getElementById('evFecha'), 'Elegí la fecha del evento');
     const f = foto();
 
@@ -6328,6 +6361,10 @@
   // Cada cambio de la app que llega a main suma una entrada ARRIBA de todo, con el id siguiente.
   // Tono neutral: qué cambió y dónde se ve, en 1 a 3 líneas.
   const NOVEDADES = [
+    { id: 17, fecha: '2026-11-26', titulo: 'Avisos en los próximos eventos', cambios: [
+      'En Inicio, los eventos de los próximos 7 días muestran "sin horario" o "sin teléfono" cuando falta ese dato; al tocarlo se abre el evento en ese campo.',
+      'En las listas de eventos el nombre ya no repite las personas ("25 pax"), que se muestran aparte.'
+    ]},
     { id: 16, fecha: '2026-11-26', titulo: 'Facturar al anotar un cobro', cambios: [
       'Al anotar un cobro que no es en efectivo, en una cuenta que factura, aparece un cartel para ver la factura y emitirla en el momento, o dejarla para después en "Falta facturar".'
     ]},
