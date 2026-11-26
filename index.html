@@ -183,7 +183,16 @@
   .stock-item:last-child{border-bottom:none}
   .stock-nombre{font-weight:700;font-size:.95rem}
   .stock-cantidad{font-weight:800;color:var(--crema);white-space:nowrap;font-size:1rem;min-width:46px;text-align:right}
-  .stock-acciones{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+  .stock-acciones{display:flex;gap:14px;align-items:center;flex-wrap:wrap;width:100%;padding:2px 0 0}
+  .stock-item.cero .stock-nombre, .stock-item.cero .stock-cantidad{color:var(--gris)}
+  .stock-nombre{flex:1;min-width:0}
+  .stock-armar{display:block;margin-top:4px;font-size:.82rem}
+  .stock-mas-menos{display:flex;align-items:center;gap:6px}
+  .stock-mas-menos button{width:34px;height:34px;border-radius:10px;border:1px solid var(--linea);background:transparent;
+    color:var(--crema);font:inherit;font-size:1.1rem;font-weight:700;cursor:pointer;line-height:1}
+  .stock-mas-menos button:disabled{opacity:.35;cursor:default}
+  .stock-mas-menos .stock-mas-opciones{border-color:transparent;color:var(--gris)}
+  .stock-mas-menos .stock-cantidad{min-width:30px;text-align:center}
   .stock-comprometido{font-size:.78rem;color:var(--gris);font-weight:600}
   .stock-comprometido.falta{color:var(--fuego-claro)}
   /* costos de productos */
@@ -391,6 +400,12 @@
 
   .ev-cabecera{margin-bottom:4px}
   .ev-titulo{font-size:1.5rem;font-weight:900;letter-spacing:-.3px}
+  .ev-datos{display:flex;flex-direction:column;gap:10px;margin:14px 0 12px}
+  .ev-dato{display:flex;flex-direction:column;gap:2px}
+  .ev-dato > span{font-size:.7rem;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--gris)}
+  .ev-dato > b{font-weight:600;font-size:.95rem;color:var(--crema)}
+  .ev-dato > b:first-letter{text-transform:uppercase}
+  .ev-dato > b.ev-notas{font-weight:400;font-size:.9rem;color:var(--crema-tenue);line-height:1.5}
   .ev-sub{color:var(--crema-tenue);font-size:.88rem;margin-top:4px}
 
   .ing-fila{padding:12px 0;border-bottom:1px solid var(--linea)}
@@ -598,6 +613,7 @@
   .home-stock span b{color:var(--crema);margin-left:4px}
   .home-stock span.bajo{border-color:rgba(226,58,22,.45);color:var(--fuego-claro)}
   .home-stock span.bajo b{color:var(--fuego-claro)}
+  .home-sin-stock{width:100%;font-size:.8rem;color:var(--gris);margin-top:2px}
   .volver-inicio{margin:0 0 6px}
 
   /* tablero de compras, arriba de todo en Inicio */
@@ -2777,8 +2793,14 @@
     const stock = pizzas.stock || [];
     const total = stock.reduce((s,x) => s + (Number(x.cantidad) || 0), 0);
     document.getElementById('homeStockTotal').textContent = `· ${total} pizzas`;
+    // primero lo que hay; los sabores en 0 van en una línea aparte, sin alarmar si se pueden armar con Flex
+    const hay = stock.filter(x => (Number(x.cantidad) || 0) > 0);
+    const sinStock = stock.filter(x => !((Number(x.cantidad) || 0) > 0));
+    const armables = sinStock.filter(x => { const f = flexPara(x.nombre); return f && f.cantidad > 0; });
     document.getElementById('homeStock').innerHTML = stock.length
-      ? stock.map(x => `<span class="${x.cantidad <= 3 ? 'bajo' : ''}">${escapeHtml(x.nombre)}<b>${x.cantidad}</b></span>`).join('')
+      ? hay.map(x => `<span class="${x.cantidad <= 3 && !FLEX_SABORES[x.nombre.toLowerCase()] ? 'bajo' : ''}">${escapeHtml(x.nombre)}<b>${x.cantidad}</b></span>`).join('') +
+        (sinStock.length ? `<div class="home-sin-stock">Sin stock: ${sinStock.map(x => escapeHtml(x.nombre)).join(', ')}${
+          armables.length === sinStock.length ? ' · se arman con Flex' : armables.length ? ` · ${armables.length} se arman con Flex` : ''}</div>` : '')
       : '<div class="vacio">Sin sabores cargados.</div>';
   }
 
@@ -3921,6 +3943,7 @@
     </div>`;
   }
 
+  let stockMenuAbierto = null;   // sabor con el menú ⋯ abierto en Producción
   function renderStockLista(){
     const total = pizzas.stock.reduce((s,i) => s + i.cantidad, 0);
     document.getElementById('stockTotal').textContent = total;
@@ -3932,7 +3955,9 @@
     }
     if(escribiendoEn(cont)) return;
     if(armandoFlex && !(stockDe(armandoFlex.flex) || {}).cantidad) armandoFlex = null;
-    cont.innerHTML = pizzas.stock.map(s => {
+    // las Flex arriba (de ahí se arman los sabores que faltan), después el resto en su orden
+    const orden = [...pizzas.stock.filter(s => FLEX_SABORES[s.nombre.toLowerCase()]), ...pizzas.stock.filter(s => !FLEX_SABORES[s.nombre.toLowerCase()])];
+    cont.innerHTML = orden.map(s => {
       const comp = comprometido(s.nombre);
       const falta = comp > s.cantidad;
       const flex = falta ? flexPara(s.nombre) : null;
@@ -3943,16 +3968,23 @@
         ? `<div class="stock-comprometido ${falta ? 'falta' : ''}">${comp} comprometidas${falta ? ` · faltan ${comp - s.cantidad}` : ''}</div>${sugerencia}`
         : '';
       const esFlex = !!FLEX_SABORES[s.nombre.toLowerCase()];
+      const n = escapeHtml(s.nombre);
+      const menu = stockMenuAbierto === s.nombre;
       return `
-      <div class="stock-item">
-        <div class="stock-nombre">${escapeHtml(s.nombre)}${nota}</div>
-        <div class="stock-cantidad">${s.cantidad} u.</div>
-        <div class="stock-acciones">
-          ${esFlex && s.cantidad > 0 ? `<button class="link-btn" data-flex-abrir="${escapeHtml(s.nombre)}">Armar sabor</button>` : ''}
-          <button class="link-btn" data-reponer="${escapeHtml(s.nombre)}">+ Reponer</button>
-          <button class="link-btn" data-editar="${escapeHtml(s.nombre)}">Editar</button>
-          <button class="item-del" data-quitar="${escapeHtml(s.nombre)}" title="Quitar sabor">✕</button>
+      <div class="stock-item ${s.cantidad > 0 ? '' : 'cero'}">
+        <div class="stock-nombre">${n}${nota}
+          ${esFlex && s.cantidad > 0 ? `<button class="link-btn stock-armar" data-flex-abrir="${n}">Armar sabor</button>` : ''}</div>
+        <div class="stock-mas-menos">
+          <button type="button" data-stock-menos="${n}" aria-label="Restar una de ${n}" ${s.cantidad > 0 ? '' : 'disabled'}>−</button>
+          <span class="stock-cantidad">${s.cantidad}</span>
+          <button type="button" data-stock-mas="${n}" aria-label="Sumar una de ${n}">+</button>
+          <button type="button" class="stock-mas-opciones" data-stock-menu="${n}" aria-label="Más opciones de ${n}">⋯</button>
         </div>
+        ${menu ? `<div class="stock-acciones">
+          <button class="link-btn" data-reponer="${n}">Sumar varias</button>
+          <button class="link-btn" data-editar="${n}">Corregir cantidad</button>
+          <button class="link-btn" data-quitar="${n}">Quitar sabor</button>
+        </div>` : ''}
       </div>${armandoFlex && armandoFlex.flex === s.nombre ? panelFlex(s) : ''}`;
     }).join('');
     refrescarChips();
@@ -4493,6 +4525,18 @@
     return '';
   }
 
+  let editandoEventoId = null;   // evento con los datos abiertos para editar (si no, se ven para leer)
+  function faltaDato(campo, texto){
+    return `<button type="button" class="badge-falta" data-editar-campo="${campo}">${texto}</button>`;
+  }
+  function origenTexto(id){
+    const o = id && origenes().find(x => x.id === id);
+    return o ? `${escapeHtml(o.emoji)} ${escapeHtml(o.nombre)}` : '';
+  }
+  function menuTexto(id){
+    const m = MENUS.find(x => x.id === id);
+    return m ? m.nombre : '';
+  }
   // el nombre sin el "25 pax" del final, para las listas que ya muestran las personas aparte
   function nombreEvento(e){
     const n = String(e.nombre || '').replace(/\s*[·,\-–]?\s*\d+\s*(pax|personas)\s*$/i, '').trim();
@@ -5094,6 +5138,7 @@
     const objetivo = Number(ev.pizzas) || 0;
     const nombresStock = pizzas.stock.map(s => s.nombre);
     const hechas = tareas.filter(t => t.hecho).length;
+    const editando = editandoEventoId === ev.id;
 
     let avisoSabores = '';
     if(objetivo > 0 && asignadas !== objetivo){
@@ -5110,8 +5155,9 @@
       <div class="card">
         <div class="ev-cabecera">
           <div class="ev-titulo">${escapeHtml(ev.nombre)}</div>
-          <div class="ev-sub">${formatoFecha(ev.fecha)}${ev.hora ? ' · ' + ev.hora : ''}${ratio ? ' · ' + ratio : ''}</div>
+          ${editando ? `<div class="ev-sub">${formatoFecha(ev.fecha)}${ev.hora ? ' · ' + ev.hora : ''}${ratio ? ' · ' + ratio : ''}</div>` : ''}
         </div>
+        ${editando ? `
         <div class="card-nota" style="margin:10px 0 14px">Los cambios se guardan solos al salir de cada campo.</div>
         <div class="form-campos">
           <label class="campo full"><span>Nombre del evento</span>
@@ -5132,19 +5178,31 @@
           <div class="campo full"><span>Cómo nos conoció</span>
             <select data-campo="origen" class="sel-chips">${opcionesOrigen(ev.origen)}</select></div>
         </div>
-        ${ev.lugar ? `<a class="pedido-mapa" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(ev.lugar)}" target="_blank" rel="noopener">📍 Cómo llegar</a>` : ''}
-        ${botonesContacto(ev.telefono, msjEvento(ev))}
+        <div class="botones" style="margin-top:4px">
+          <button type="button" class="btn btn-fuego" id="btnListoEvento">Listo</button>
+        </div>
         <div class="footer-row" style="justify-content:flex-start;margin-top:16px">
           <button type="button" class="link-btn" id="btnBorrarEvento">Borrar evento</button>
+        </div>` : `
+        <div class="ev-datos">
+          <div class="ev-dato"><span>Cuándo</span><b>${DIAS[new Date(ev.fecha + 'T12:00:00').getDay()]} ${formatoFecha(ev.fecha)} · ${ev.hora || faltaDato('hora', 'agregar horario')}</b></div>
+          <div class="ev-dato"><span>Dónde</span><b>${ev.lugar ? escapeHtml(ev.lugar) : faltaDato('lugar', 'agregar dirección')}</b></div>
+          <div class="ev-dato"><span>Personas</span><b>${ev.personas || 0} pax${ev.pizzas ? ' · ' + ev.pizzas + ' pizzas' : ''}</b></div>
+          ${ev.telefono ? '' : `<div class="ev-dato"><span>Teléfono</span><b>${faltaDato('telefono', 'agregar teléfono')}</b></div>`}
+          ${ev.notas ? `<div class="ev-dato"><span>Notas</span><b class="ev-notas">${escapeHtml(ev.notas)}</b></div>` : ''}
+          <div class="ev-dato"><span>Cómo nos conoció</span><b>${origenTexto(ev.origen) || faltaDato('origen', 'sin dato')}</b></div>
         </div>
+        ${ev.lugar ? `<a class="pedido-mapa" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(ev.lugar)}" target="_blank" rel="noopener">📍 Cómo llegar</a>` : ''}
+        ${botonesContacto(ev.telefono, msjEvento(ev))}
+        <button type="button" class="btn btn-sec" id="btnEditarEvento" style="width:100%;margin-top:16px">✎ Editar datos del evento</button>`}
       </div>
 
       <div class="card">
         <div class="card-titulo">Cobro</div>
-        <div class="form-campos">
+        ${editando ? `<div class="form-campos">
           <label class="campo full"><span>Precio total del evento</span>
             <input type="number" data-campo="precio" min="0" step="any" inputmode="decimal" value="${ev.precio || ''}" placeholder="Ej: 940000"></label>
-        </div>
+        </div>` : `<div class="ev-dato" style="margin-bottom:10px"><span>Precio total</span><b>${ev.precio ? `${fmt(ev.precio)} <button type="button" class="link-btn" data-editar-campo="precio" style="margin-left:8px">cambiar</button>` : faltaDato('precio', 'agregar precio')}</b></div>`}
         ${precioDeLista(ev.menu, Number(ev.personas)) ? `<div class="card-nota" style="margin:-4px 0 8px">Precio de lista: <b>${fmt(precioDeLista(ev.menu, Number(ev.personas)))}</b>
           (${Math.max(Number(ev.personas), Number(costos.minPersonas) || 0)} × ${fmt(costos.precios[ev.menu])} + logística ${fmt(costos.precios.logistica)})
           ${precioDeLista(ev.menu, Number(ev.personas)) !== Number(ev.precio) ? ' · <button type="button" class="link-btn" id="btnPrecioLista">usar este precio</button>' : ''}</div>` : ''}
@@ -5166,6 +5224,7 @@
             <div class="card-nota" style="margin:8px 0">Vale para todos los cobros del evento. Vacío = consumidor final.</div>
             <button type="button" class="btn btn-sec" id="btnGuardarFacturaA">Guardar</button></div>
         </details>
+        ${r.precio > 0 && r.falta === 0 ? '<details class="ajustes" style="margin-top:18px"><summary><div style="font-size:.92rem">+ Anotar otro cobro</div></summary>' : ''}
         <div class="check-grupo" style="margin-top:18px">Anotar un cobro</div>
         <div class="form-campos" style="margin-top:8px">
           <div class="campo full"><span>Cómo te pagaron</span><select id="cobroMedio" class="sel-medio">${opcionesMedio(medioUltimo())}</select></div>
@@ -5182,6 +5241,7 @@
             <input type="text" id="cobroMonto" class="inp-monto inp-plata" inputmode="decimal" autocomplete="off" placeholder="Ej: 200000"></label>
           <button type="button" class="btn ${r.falta > 0 ? 'btn-sec' : 'btn-fuego'}" id="btnSena" style="flex:0 1 auto">Registrar seña</button>
         </div>
+        ${r.precio > 0 && r.falta === 0 ? '</details>' : ''}
         <div class="costo-totales">
           <div><div class="label">Cobrado</div><div class="val">${fmt(r.cobrado)}</div></div>
           <div><div class="label">Falta cobrar</div><div class="val">${fmt(r.falta)}</div></div>
@@ -5193,7 +5253,9 @@
 
       <div class="card">
         <div class="card-titulo">Costos y ganancia</div>
-        <div class="form-campos">
+        ${editando ? '' : `<div class="ev-dato" style="margin-bottom:6px"><span>Menú y viaje</span><b>${escapeHtml(menuTexto(ev.menu) || 'Sin menú')} · ${ev.km ? ev.km + ' km' : 'sin km'}${ev.peajes ? ' · peajes ' + fmt(ev.peajes) : ''}${ev.pizzasSalieron ? ' · salieron ' + ev.pizzasSalieron + ' pizzas' : ''}
+          <button type="button" class="link-btn" data-editar-campo="menu" style="margin-left:8px">cambiar</button></b></div>`}
+        <div class="form-campos" ${editando ? '' : 'hidden'}>
           <label class="campo full"><span>Menú</span><select data-campo="menu">${opcionesMenu(ev.menu)}</select></label>
           <label class="campo"><span>Km ida y vuelta</span>
             <input type="number" data-campo="km" min="0" step="any" inputmode="decimal" value="${ev.km || ''}" placeholder="Ej: 60"></label>
@@ -5224,8 +5286,8 @@
               <button type="button" class="item-del" data-extra-del="${x.id}" title="Quitar" aria-label="Quitar costo">✕</button></div>`;
           }).join('')}
         </div>
-        <form id="formCostoExtra" novalidate style="margin-top:16px">
-          <div class="check-grupo" style="margin:0 0 8px;width:100%">Agregar otro costo de este evento</div>
+        <details class="ajustes" style="margin-top:16px" id="extraWrap"><summary><div style="font-size:.92rem">+ Agregar otro costo de este evento</div></summary>
+        <form id="formCostoExtra" novalidate style="margin-top:12px">
           <div class="form-campos" style="width:100%;margin:0">
             <label class="campo full"><span>Qué fue</span>
               <input type="text" id="extraDesc" list="extrasConocidos" autocomplete="off" placeholder="Ej: hielo, alquiler de mesas, viáticos"></label>
@@ -5236,6 +5298,7 @@
           </div>
           <button type="submit" class="btn btn-fuego" style="width:100%">+ Agregar costo</button>
         </form>
+        </details>
         <datalist id="extrasConocidos">${distintosRecientes(catering.flatMap(e => costosExtraDe(e)), x => x.desc, 60)
           .map(o => `<option value="${escapeHtml(o.valor)}">`).join('')}</datalist>
         ${(() => {
@@ -5348,11 +5411,29 @@
 
     document.getElementById('btnVolverCatering').addEventListener('click', () => {
       eventoAbierto = null;
+      editandoEventoId = null;
       renderCatering();
       window.scrollTo(0, 0);
     });
 
-    document.getElementById('btnBorrarEvento').addEventListener('click', () => {
+    // ver o editar los datos: "Editar", "cambiar" o un dato que falta abren la edición en ese campo
+    cont.querySelectorAll('#btnEditarEvento, [data-editar-campo]').forEach(b => b.addEventListener('click', () => {
+      const campo = b.dataset.editarCampo;
+      editandoEventoId = ev.id;
+      renderCatering();
+      const inp = campo && document.querySelector(`#cateringDetalle [data-campo="${campo}"]`);
+      if(inp){ inp.scrollIntoView({ block: 'center' }); inp.focus(); }
+    }));
+    const btnListo = document.getElementById('btnListoEvento');
+    if(btnListo) btnListo.addEventListener('click', () => {
+      if(document.activeElement) document.activeElement.blur();   // guarda el campo que se estaba escribiendo
+      editandoEventoId = null;
+      renderCatering();
+      document.getElementById('cateringDetalle').scrollIntoView({ block: 'start' });
+    });
+
+    const btnBorrar = document.getElementById('btnBorrarEvento');
+    if(btnBorrar) btnBorrar.addEventListener('click', () => {
       if(!confirm(`¿Borrar el evento "${ev.nombre}"? Se borra con su checklist y personal.\n\nLos cobros y gastos ya anotados quedan en Objetivo y Gastos.`)) return;
       const f = foto();
       catering = catering.filter(e => e.id !== ev.id);
@@ -5853,6 +5934,8 @@
       renderCatering();
       // tocar "sin horario" o "sin teléfono" lleva directo a ese campo del evento
       const falta = e.target.closest('[data-falta]');
+      editandoEventoId = falta ? eventoAbierto : null;
+      if(falta) renderCatering();
       const campo = falta && document.querySelector(`#panel-catering [data-campo="${falta.dataset.falta}"]`);
       if(campo){ campo.scrollIntoView({ block: 'center' }); campo.focus(); }
     }
@@ -6116,6 +6199,25 @@
   document.getElementById('btnRefrescar').addEventListener('click', () => refrescarTodo(true));
 
   document.getElementById('stockLista').addEventListener('click', e => {
+    const mm = e.target.closest('[data-stock-mas], [data-stock-menos]');
+    if(mm){
+      const nombre = mm.dataset.stockMas || mm.dataset.stockMenos;
+      const item = pizzas.stock.find(x => x.nombre === nombre);
+      if(!item) return;
+      const d = mm.dataset.stockMas ? 1 : -1;
+      if(item.cantidad + d < 0) return;
+      const f = foto();
+      item.cantidad += d;
+      persistirPizzas();
+      hecho(`${nombre}: ${item.cantidad} en stock.`, f);
+      return;
+    }
+    const menu = e.target.closest('[data-stock-menu]');
+    if(menu){
+      stockMenuAbierto = stockMenuAbierto === menu.dataset.stockMenu ? null : menu.dataset.stockMenu;
+      renderStockLista();
+      return;
+    }
     const abrir = e.target.closest('[data-flex-abrir]');
     if(abrir){
       const nombre = abrir.dataset.flexAbrir;
@@ -6454,6 +6556,11 @@
   // Cada cambio de la app que llega a main suma una entrada ARRIBA de todo, con el id siguiente.
   // Tono neutral: qué cambió y dónde se ve, en 1 a 3 líneas.
   const NOVEDADES = [
+    { id: 19, fecha: '2026-11-26', titulo: 'Eventos para leer y stock más claro', cambios: [
+      'Al abrir un evento de Catering los datos se ven para leer; "Editar datos del evento" o tocar un dato que falta abre la edición. Agregar un costo y anotar otro cobro (con el evento ya cobrado) quedan plegados.',
+      'En Inicio el stock muestra primero lo que hay, y los sabores en 0 van en una línea aparte que avisa si se arman con Flex.',
+      'En Producción cada sabor ocupa una fila con − y + para sumar o restar de a una; las Flex van arriba y "⋯" tiene sumar varias, corregir y quitar.'
+    ]},
     { id: 18, fecha: '2026-11-26', titulo: 'Pedidos y Gastos más ordenados', cambios: [
       'Pedidos muestra primero los pedidos a entregar; el formulario se abre con "+ Agendar pedido". En Gastos, el resumen del mes va arriba y el formulario se abre con "+ Anotar gasto".',
       'Los gastos variables tienen buscador y filtro por categoría, y aparecen agrupados por día con el total de cada uno.',
