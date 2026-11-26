@@ -637,7 +637,9 @@
   .ff-cuenta:first-child{margin-top:4px}
   .ff-cab{display:flex;justify-content:space-between;gap:10px;font-weight:800;font-size:.95rem}
   .ff-item{flex-wrap:wrap}
-  .ff-acciones{flex-basis:100%;display:flex;gap:14px;flex-wrap:wrap}
+  .ff-acciones{flex-basis:100%;display:flex;gap:4px 16px;flex-wrap:wrap;align-items:flex-start}
+  .ff-acciones .fa-det{margin-top:0}
+  .ff-acciones .fa-det[open]{flex-basis:100%}
   .ff-form{flex-basis:100%;margin-top:6px}
 
   /* ---------- catering: cobro y personal ---------- */
@@ -1311,6 +1313,9 @@
   // facturas emitidas en ARCA (las escribe la función de facturación; la app solo las lee) y datos de cada emisor
   const FACTURAS_URL = FIREBASE_BASE + 'facturas.json';
   const FACTURACION_URL = FIREBASE_BASE + 'facturacion.json';
+  const FACTURAS_PRUEBA_URL = FIREBASE_BASE + 'facturas_homo.json';
+  // función de Firebase que pide el CAE a ARCA (functions/index.js)
+  const FUNCION_FACTURAR = 'https://southamerica-east1-objetivo-julio.cloudfunctions.net/facturarIngresos';
 
   const CACHE_KEY_INGRESOS = 'lasinergia_cache_ingresos';
   const CACHE_KEY_PIZZAS   = 'lasinergia_cache_pizzas';
@@ -1326,6 +1331,7 @@
   const CACHE_KEY_RECETAS  = 'lasinergia_cache_recetas';
   const CACHE_KEY_FACTURAS = 'lasinergia_cache_facturas';
   const CACHE_KEY_FACTURACION = 'lasinergia_cache_facturacion';
+  const CACHE_KEY_FACTURAS_PRUEBA = 'lasinergia_cache_facturas_homo';
   const CACHE_KEY_TAB      = 'lasinergia_tab';
 
   const SABORES_DEFAULT = ['Margarita','Honey pesto','Diavola','Di patate','Caramellata','4 Formaggi'];
@@ -1446,6 +1452,7 @@
   let recetas = { insumos: [], preparaciones: [], productos: [] };   // costos de productos
   let facturas = {};      // { idIngreso: { numero, cae, ... } } facturas emitidas desde Bardo (producción)
   let facturacion = {};   // { entorno, emisores: { thiago: {...} } }
+  let facturasPrueba = {}; // facturas de homologación (sin validez fiscal): no sacan el cobro de "Falta facturar"
   let pizzas   = { stock: [], ventas: [] };
   let pedidos  = [];
   let metas    = {};
@@ -1901,7 +1908,7 @@
       traer(COMPRAS_URL, CACHE_KEY_COMPRAS), traer(RECETAS_URL, CACHE_KEY_RECETAS)
     ]);
     // solo lectura: si fallan se usa la última copia y no cambian el estado de sincronización
-    const [rFac, rFcn] = await Promise.allSettled([fetchJSON(FACTURAS_URL), fetchJSON(FACTURACION_URL)]);
+    const [rFac, rFcn, rFhp] = await Promise.allSettled([fetchJSON(FACTURAS_URL), fetchJSON(FACTURACION_URL), fetchJSON(FACTURAS_PRUEBA_URL)]);
 
     // si mientras traíamos datos tocaste algo acá, descartamos lo del servidor
     if(revLocal !== rev || escrituras > 0) return;
@@ -1966,6 +1973,8 @@
     guardarCache(CACHE_KEY_FACTURAS, facturas);
     facturacion = (rFcn.status === 'fulfilled' ? rFcn.value : leerCache(CACHE_KEY_FACTURACION, null)) || {};
     guardarCache(CACHE_KEY_FACTURACION, facturacion);
+    facturasPrueba = (rFhp.status === 'fulfilled' ? rFhp.value : leerCache(CACHE_KEY_FACTURAS_PRUEBA, null)) || {};
+    guardarCache(CACHE_KEY_FACTURAS_PRUEBA, facturasPrueba);
 
     guardarCache(CACHE_KEY_INGRESOS, items);
     guardarCache(CACHE_KEY_PIZZAS, pizzas);
@@ -2361,13 +2370,23 @@
       if(!emisores[c.id]){
         return `<div class="ff-cuenta">${cab}<div class="item-fecha">Sin monotributo todavía: sus cobros no se facturan por ahora.</div></div>`;
       }
-      return `<div class="ff-cuenta">${cab}${suyos.length ? `<div class="lista">${suyos.map(itemFaltaFacturar).join('')}</div>` : ''}</div>`;
+      const enCurso = facturando && facturando.cuenta === c.id;
+      return `<div class="ff-cuenta">${cab}${enCurso ? panelFacturando() : suyos.length ? `
+        <button type="button" class="btn btn-fuego" data-facturar="${suyos.map(i => i.id).join(',')}" data-cuenta="${c.id}" style="width:100%;margin:10px 0 2px">
+          🧾 Facturar ${suyos.length === 1 ? 'este cobro' : `los ${suyos.length} cobros`}</button>` : ''}
+        ${suyos.length ? `<div class="lista">${suyos.map(itemFaltaFacturar).join('')}</div>` : ''}</div>`;
     });
     const sinCuenta = pend.filter(i => !CUENTAS.some(c => c.id === i.cuenta));
     cont.innerHTML = bloques.join('') +
       (sinCuenta.length ? `<div class="card-nota" style="margin:12px 0 0">⚠ ${sinCuenta.length === 1 ? 'Un cobro no tiene' : sinCuenta.length + ' cobros no tienen'} cuenta (Thiago o Juan): ${sinCuenta.map(i => escapeHtml(i.desc)).join(', ')}.</div>` : '') +
       (hechas ? `<div class="card-nota" style="margin:12px 0 0">🧾 Con factura en ${nombreMes(mesSel)}: ${hechas} ${hechas === 1 ? 'cobro' : 'cobros'}.</div>` : '');
     seguirDetalles(cont);
+    cont.querySelectorAll('[data-facturar]').forEach(btn => btn.addEventListener('click', () =>
+      vistaPreviaFacturas(btn.dataset.facturar.split(',').map(Number), btn.dataset.cuenta)));
+    const emitir = cont.querySelector('#btnEmitirFacturas');
+    if(emitir) emitir.addEventListener('click', emitirFacturas);
+    const cerrar = cont.querySelector('#btnCerrarFacturando');
+    if(cerrar) cerrar.addEventListener('click', () => { facturando = null; renderIngresos(); });
 
     cont.querySelectorAll('[data-fa-guardar]').forEach(btn => btn.addEventListener('click', () => {
       const i = items.find(x => String(x.id) === btn.dataset.faGuardar);
@@ -2392,6 +2411,91 @@
       hecho(`"${i.desc}" quedó con la factura ${nro}.`, f);
     }));
   }
+  // ---------- emitir desde la app ----------
+  // facturando: { cuenta, ids, paso: 'cargando'|'vista'|'emitiendo'|'listo', entorno, resultados, error }
+  let facturando = null;
+  const CONCEPTO_NOMBRE = { 1: 'Productos', 2: 'Servicios', 3: 'Productos y servicios' };
+  async function llamarFacturar(ids, emitir){
+    let res;
+    try{
+      res = await fetch(FUNCION_FACTURAR, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + await tokenActual() },
+        body: JSON.stringify({ data: { ids, emitir } })
+      });
+    }catch(e){
+      throw new Error('No se pudo conectar con el servicio de facturación. Revisá internet; si sigue, todavía no está activado y por ahora se factura a mano en ARCA.');
+    }
+    const r = await res.json().catch(() => null);
+    if(!res.ok || !r || r.error) throw new Error((r && r.error && r.error.message) || `El servicio de facturación respondió con error ${res.status}.`);
+    return r.result;
+  }
+  async function vistaPreviaFacturas(ids, cuenta){
+    facturando = { cuenta, ids, paso: 'cargando' };
+    renderIngresos();
+    try{
+      const r = await llamarFacturar(ids, false);
+      if(!facturando || facturando.ids !== ids) return;
+      Object.assign(facturando, { paso: 'vista', entorno: r.entorno, resultados: r.resultados });
+    }catch(e){
+      if(!facturando || facturando.ids !== ids) return;
+      Object.assign(facturando, { paso: 'listo', error: e.message });
+    }
+    renderIngresos();
+  }
+  async function emitirFacturas(){
+    const f = facturando;
+    if(!f || f.paso !== 'vista') return;
+    const ids = f.resultados.filter(r => r.ok).map(r => r.id);
+    if(!ids.length) return;
+    // en producción las facturas son reales y no se pueden borrar: ahí sí se confirma
+    if(f.entorno === 'prod' && !confirm(`¿Emitir ${ids.length === 1 ? '1 factura' : ids.length + ' facturas'} en ARCA?\n\nSon facturas reales: para anular una hay que hacer una nota de crédito.`)) return;
+    f.paso = 'emitiendo';
+    renderIngresos();
+    try{
+      const r = await llamarFacturar(ids, true);
+      Object.assign(f, { paso: 'listo', entorno: r.entorno, resultados: r.resultados.concat(f.resultados.filter(x => !x.ok)) });
+    }catch(e){
+      Object.assign(f, { paso: 'listo', error: e.message + ' Antes de reintentar, fijate en ARCA si alguna se emitió.' });
+    }
+    renderIngresos();
+    refrescarTodo(false);
+  }
+  function panelFacturando(){
+    const f = facturando;
+    const prueba = f.entorno && f.entorno !== 'prod'
+      ? '<div class="card-nota" style="margin:8px 0">🧪 <b>Modo prueba</b> (homologación de ARCA): las facturas no tienen validez fiscal y el cobro sigue en "Falta facturar".</div>' : '';
+    const desc = id => { const i = items.find(x => x.id === id); return i ? escapeHtml(i.desc) : 'Cobro ' + id; };
+    if(f.paso === 'cargando' || f.paso === 'emitiendo'){
+      return `<div class="vacio" style="margin:10px 0">${f.paso === 'cargando' ? 'Armando las facturas…' : 'Pidiendo el CAE a ARCA… puede tardar un minuto.'}</div>`;
+    }
+    const filas = (f.resultados || []).map(r => {
+      if(!r.ok) return `<div class="item"><div class="item-info"><div class="item-desc">${desc(r.id)}</div>
+        <div class="item-fecha" style="color:var(--fuego-claro)">⚠ ${escapeHtml(r.error || 'No se pudo facturar')}</div></div></div>`;
+      if(r.vistaPrevia){
+        const c = r.comprobante;
+        return `<div class="item"><div class="item-info"><div class="item-desc">${desc(r.id)}</div>
+          <div class="item-fecha">Factura C · ${CONCEPTO_NOMBRE[c.concepto] || ''} · ${formatoFecha(c.fecha)}${c.servDesde ? ` · servicio del ${formatoFecha(c.servDesde)}` : ''}
+          <br>A: ${escapeHtml(c.nombre || 'Consumidor final')}${c.docTipo !== 99 ? ` · ${c.docTipo === 80 ? 'CUIT' : 'DNI'} ${formatoCuit(String(c.docNro))} · ${escapeHtml(c.condNombre || '')}` : ''}
+          ${c.fecha !== c.fechaCobro ? `<br>Fecha distinta a la del cobro (${formatoFecha(c.fechaCobro)}): ARCA no deja facturar más atrás.` : ''}</div></div>
+          <div class="item-monto">${fmt(c.total)}</div></div>`;
+      }
+      const fa = r.factura || {};
+      return `<div class="item"><div class="item-info"><div class="item-desc">✓ ${desc(r.id)}</div>
+        <div class="item-fecha">Factura C ${escapeHtml(fa.numero || '')} · CAE ${escapeHtml(String(fa.cae || ''))}
+        ${fa.pdf ? ` · <a href="${escapeHtml(fa.pdf)}" target="_blank" rel="noopener">Ver PDF</a>` : r.errorPdf ? `<br>⚠ El PDF no se pudo guardar en Drive (${escapeHtml(r.errorPdf)})` : ''}</div></div>
+        <div class="item-monto">${fmt(fa.total || 0)}</div></div>`;
+    }).join('');
+    const okVista = f.paso === 'vista' ? f.resultados.filter(r => r.ok).length : 0;
+    return `<div style="margin-top:10px">${prueba}
+      ${f.error ? `<div class="card-nota" style="margin:8px 0;color:var(--fuego-claro)">⚠ ${escapeHtml(f.error)}</div>` : ''}
+      ${filas ? `<div class="lista">${filas}</div>` : ''}
+      <div class="botones" style="margin-top:10px">
+        ${okVista ? `<button type="button" class="btn btn-fuego" id="btnEmitirFacturas">Emitir ${okVista === 1 ? '1 factura' : okVista + ' facturas'}</button>` : ''}
+        <button type="button" class="btn btn-sec" id="btnCerrarFacturando">${f.paso === 'vista' ? 'Cancelar' : 'Listo'}</button>
+      </div></div>`;
+  }
+
   // "1-16", "00001-00000016" o "16" (punto de venta 1) → "00001-00000016"
   function leerNumeroFactura(txt){
     const m = String(txt).trim().match(/^(?:(\d{1,5})\s*-\s*)?(\d{1,8})$/);
@@ -2403,10 +2507,11 @@
     return `<div class="item ff-item">
       <div class="item-info">
         <div class="item-desc">${escapeHtml(i.desc)}</div>
-        <div class="item-fecha">${formatoFecha(i.fecha)}${medioTexto(i.medio)} · 🧾 ${textoFacturaA(fa)}${de === 'evento' ? ' (del evento)' : ''}</div>
+        <div class="item-fecha">${formatoFecha(i.fecha)}${medioTexto(i.medio)} · 🧾 ${textoFacturaA(fa)}${de === 'evento' ? ' (del evento)' : ''}${facturasPrueba[i.id] && facturasPrueba[i.id].numero ? `<br>🧪 Factura de prueba ${facturasPrueba[i.id].numero}${facturasPrueba[i.id].pdf ? ` · <a href="${escapeHtml(facturasPrueba[i.id].pdf)}" target="_blank" rel="noopener">PDF</a>` : ''}` : ''}</div>
       </div>
       <div class="item-monto">${montoTexto(i)}</div>
       <div class="ff-acciones">
+        <button type="button" class="link-btn" data-facturar="${i.id}" data-cuenta="${i.cuenta}">Facturar solo este</button>
         <details class="fa-det" data-det="fa-${i.id}"${detAbierto('fa-' + i.id)}><summary><span class="link-btn">Facturar a…</span></summary>
           <div class="ff-form">${camposFacturaA(i.facturaA || fa)}
             <div class="card-nota" style="margin:8px 0">Vacío = consumidor final${de === 'evento' ? '. Lo que se guarde acá vale solo para este cobro' : ''}.</div>
@@ -6117,7 +6222,7 @@
   // Tono neutral: qué cambió y dónde se ve, en 1 a 3 líneas.
   const NOVEDADES = [
     { id: 14, fecha: '2026-11-26', titulo: 'Falta facturar', cambios: [
-      'En Objetivo, "Falta facturar" muestra por cuenta los cobros del mes que todavía no tienen factura (los de efectivo no entran).',
+      'En Objetivo, "Falta facturar" muestra por cuenta los cobros del mes que todavía no tienen factura (los de efectivo no entran), con un botón para emitir la Factura C en ARCA después de ver la vista previa.',
       'Cada cobro puede marcarse como facturado a mano con el número de factura, que después se ve en la lista de ingresos.',
       'En un evento y en cada cobro, "Facturar a" guarda nombre, CUIT y condición frente al IVA cuando el cliente pide la factura a su nombre.'
     ]},

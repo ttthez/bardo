@@ -77,15 +77,54 @@ Con la cuenta de Google donde quieran las facturas:
 
 La carpeta `Facturas La Sinergia` se crea sola con la primera factura.
 
-### Parte C — Firebase para el botón de la app (~10 min)
+### Parte C — Activar el botón "Facturar" de la app (~25 min, una sola vez)
 
-**C1. Plan Blaze.** console.firebase.google.com › proyecto de Bardo › ⚙ › **Uso y facturación** › **Detalles y configuración** ›
-**Modificar plan** › **Blaze** › crear/vincular una cuenta de facturación con tarjeta.
-Cuando lo pida, poné una **alerta de presupuesto de US$ 5**. Con el uso de ustedes queda dentro de la capa gratuita o en centavos.
+El botón está en Objetivo › **Falta facturar**. Llama a la función `facturarIngresos` (`functions/index.js`), que corre en
+Firebase y es la única que tiene los certificados. Mientras `facturacion.entorno` sea `'homo'`, todo va a homologación.
 
-**C2. Permiso para publicar la función** (se hace cuando la función esté probada en homologación; Claude avisa).
-Se crea una cuenta de servicio de Google Cloud y su clave se guarda como secreto del repo en GitHub
-(Settings › Secrets and variables › Actions). Así cada cambio en `main` publica la función solo.
+**C1. Plan Blaze.** console.firebase.google.com › proyecto **objetivo-julio** › ⚙ › **Uso y facturación** ›
+**Detalles y configuración** › **Modificar plan** › **Blaze** › vincular una tarjeta.
+Cuando lo ofrezca, poné una **alerta de presupuesto de US$ 5**. Con el uso de ustedes queda en la capa gratuita o en centavos.
+
+**C2. Abrir Cloud Shell.** Entrá a **console.cloud.google.com/?cloudshell=true&project=objetivo-julio** con la misma cuenta
+de Google del proyecto. Abajo se abre una terminal en el navegador (no hace falta instalar nada). Pegá de a un bloque:
+
+```bash
+git clone -b facturacion-arca https://github.com/ttthez/bardo.git && cd bardo
+npx -y firebase-tools@latest login --no-localhost
+```
+El `login` muestra un link: abrilo, elegí la cuenta, copiá el código que te da y pegalo en la terminal.
+
+**C3. Cargar los secretos.** Cada comando pide un valor (no se ve mientras pegás, es normal) y Enter:
+
+```bash
+npx -y firebase-tools functions:secrets:set ARCA_HOMO_CRT --project objetivo-julio
+npx -y firebase-tools functions:secrets:set ARCA_HOMO_KEY --project objetivo-julio
+```
+- `ARCA_HOMO_CRT`: en la Terminal de la Mac corré `base64 -i ~/arca/homo.crt | tr -d '\n' | pbcopy` y pegá.
+- `ARCA_HOMO_KEY`: `base64 -i ~/arca/homo.key | tr -d '\n' | pbcopy` y pegá.
+
+Los de producción y Drive todavía no existen: cargalos con la palabra `pendiente` (después se cambian con el mismo comando):
+
+```bash
+for s in ARCA_CRT ARCA_KEY DRIVE_URL DRIVE_SECRETO; do echo -n pendiente | npx -y firebase-tools functions:secrets:set $s --data-file=- --project objetivo-julio; done
+```
+Con `DRIVE_URL` en `pendiente` las facturas se emiten igual, sin subir el PDF a Drive (eso se suma con la Parte B).
+
+**C4. Publicar la función.**
+
+```bash
+npx -y firebase-tools deploy --only functions --project objetivo-julio
+```
+La primera vez tarda unos minutos porque activa servicios de Google Cloud. Si pregunta cuántos días guardar las imágenes
+de los contenedores, respondé `1`. Al final tiene que decir **Deploy complete!**. Si sale un error, copiáselo a Claude.
+
+**C5. Probar.** En la app (con esta versión publicada): Objetivo › Falta facturar › **Facturar** en un cobro › revisar
+la vista previa › **Emitir**. En modo prueba aparece "🧪 Factura de prueba 00001-0000000X" en el cobro, que sigue
+pendiente porque no tiene validez fiscal.
+
+**Después:** cada vez que cambie algo en `functions/`, se repite C2 (`git pull` en vez de `git clone`) y C4.
+Un secreto se cambia repitiendo su línea de C3 y volviendo a publicar (C4).
 
 ### Parte D — Producción (cuando todo ande en homologación)
 
@@ -114,5 +153,5 @@ En el **Administrador de Relaciones de Clave Fiscal** de Juan:
 
 **D5. Punto de venta de Juan (Thiago).** Entrar con la clave de Thiago, elegir "representar a" Juan y repetir D3 para su CUIT.
 
-**D6. Encender producción.** Las claves `prod.key` / `.crt` se cargan como secretos de Firebase (`ARCA_KEY`, `ARCA_CRT`),
+**D6. Encender producción.** Las claves `prod.key` / `.crt` se cargan como secretos de Firebase (`ARCA_KEY`, `ARCA_CRT`, igual que en C3, y C4),
 nunca en el repo ni en el environment de Claude. Claude pone `facturacion.entorno = 'prod'` **solo con confirmación explícita**.

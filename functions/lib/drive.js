@@ -1,6 +1,7 @@
 // Sube PDFs a Drive a través del Apps Script de apps-script/drive.gs.
 export function driveAppsScript({ url, secreto, fetchImpl = fetch }) {
-  if (!url || !secreto) return null;
+  // sin la URL del Apps Script (o con un valor de relleno como "pendiente") se factura igual, sin subir el PDF
+  if (!/^https:\/\//.test(url || '') || !secreto) return null;
   return {
     async subir(carpeta, nombre, pdf) {
       const res = await fetchImpl(url, {
