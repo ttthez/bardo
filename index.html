@@ -876,8 +876,12 @@
 
     <div class="card" id="quienSos" hidden>
       <div class="card-titulo">¿Quién sos?</div>
-      <div class="card-nota">Para saludarte y anotar quién carga cada gasto, cobro y venta. Se elige una sola vez por cuenta.</div>
-      <div class="toggle" id="quienSosOpciones" style="margin:0"></div>
+      <div class="card-nota">Para saludarte y anotar quién carga cada gasto, cobro y venta. Se escribe una sola vez por cuenta.</div>
+      <form id="formQuienSos" novalidate class="item-nuevo" style="margin-top:0;align-items:flex-end">
+        <label class="campo" style="flex:1;margin:0"><span>Tu nombre</span>
+          <input type="text" id="quienSosNombre" autocomplete="given-name" placeholder="Ej: Thiago"></label>
+        <button type="submit" class="btn btn-fuego">Guardar</button>
+      </form>
     </div>
 
     <div class="card home-compras" id="homeCompras">
@@ -2740,8 +2744,6 @@
       (hora < 6 ? 'Buenas noches' : hora < 13 ? 'Buen día' : hora < 20 ? 'Buenas tardes' : 'Buenas noches') + (nombre ? `, ${nombre}` : '');
     const quien = document.getElementById('quienSos');
     quien.hidden = !!nombre || !(sesion && sesion.email);
-    if(!quien.hidden) document.getElementById('quienSosOpciones').innerHTML =
-      CUENTAS.map(c => `<button type="button" data-soy="${escapeHtml(c.nombre)}">${escapeHtml(c.nombre)}</button>`).join('');
     document.getElementById('homeFecha').textContent =
       `${DIAS[ahora.getDay()]} ${ahora.getDate()} de ${MESES[ahora.getMonth()].toLowerCase()}`;
 
@@ -6239,16 +6241,21 @@
   });
 
   document.getElementById('btnRefrescar').addEventListener('click', () => refrescarTodo(true));
-  document.getElementById('quienSosOpciones').addEventListener('click', e => {
-    const b = e.target.closest('[data-soy]');
-    if(!b || !sesion || !sesion.email) return;
+  document.getElementById('formQuienSos').addEventListener('submit', e => {
+    e.preventDefault();
+    const inp = document.getElementById('quienSosNombre');
+    const nombre = inp.value.trim().replace(/\s+/g, ' ');
+    if(!nombre) return errorEn(inp, 'Escribí tu nombre, ej: Thiago');
+    if(!sesion || !sesion.email) return;
     const f = foto();
     const email = sesion.email.toLowerCase();
     costos.usuarios = (costos.usuarios || []).filter(x => String(x.email || '').toLowerCase() !== email)
-      .concat({ email, nombre: b.dataset.soy });
+      .concat({ email, nombre });
+    inp.value = '';
+    inp.blur();
     persistirCostos();
     renderTodo();
-    hecho(`Listo, ${b.dataset.soy}: lo que cargues desde esta cuenta va a decir "cargó ${b.dataset.soy}".`, f);
+    hecho(`Listo, ${nombre}: lo que cargues desde esta cuenta va a decir "cargó ${nombre}".`, f);
   });
 
   document.getElementById('stockLista').addEventListener('click', e => {
@@ -6610,7 +6617,7 @@
   // Tono neutral: qué cambió y dónde se ve, en 1 a 3 líneas.
   const NOVEDADES = [
     { id: 21, fecha: '2026-11-26', titulo: 'Quién cargó cada movimiento', cambios: [
-      'Cada cuenta elige una vez quién es (Thiago o Juan) en Inicio, y el saludo pasa a incluir el nombre.',
+      'Cada cuenta escribe una vez su nombre en Inicio, y el saludo pasa a incluirlo.',
       'Los gastos, cobros y ventas que se cargan desde ahora guardan quién los anotó, y en las listas de Gastos e Ingresos se ve "cargó Thiago" o "cargó Juan".'
     ]},
     { id: 20, fecha: '2026-11-26', titulo: 'Checklist de eventos más confiable', cambios: [
