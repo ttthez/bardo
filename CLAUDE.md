@@ -119,7 +119,11 @@ Ventas" copia su costo a `costos.sabores`.
 `{ entorno: 'homo'|'prod', emisores: { thiago: { nombre, nombreCorto, fantasia, cuit, domicilio, iibb, inicio: 'YYYY-MM-DD', ptoVtaHomo, ptoVta? } } }`.
 `entorno` está en `'homo'` (homologación, sin validez fiscal); pasarlo a `'prod'` solo con confirmación explícita de Thiago.
 `ptoVta` es el punto de venta de web services de producción (el 00001 es el de Comprobantes en línea y no sirve).
-Juan todavía no tiene monotributo: no tiene emisor hasta que avise. Las facturas emitidas van en `facturas` (prod) o
+Juan todavía no tiene monotributo: no tiene emisor hasta que avise (en "Falta facturar" su cuenta figura sin monotributo).
+Un evento o un ingreso puede llevar `facturaA: { nombre, cuit (solo números, CUIT 11 o DNI 7-8), condIva: 'cf'|'monotributo'|'ri'|'exento', domicilio? }`
+(el del ingreso manda sobre el del evento; sin campo = consumidor final). `facturaManual: '00001-00000015'` en un ingreso
+marca que ya se facturó a mano en ARCA: no se vuelve a facturar. Objetivo › "Falta facturar" lista por cuenta los cobros del mes
+que no son en efectivo y no tienen factura (`facturas` o `facturaManual`). Las facturas emitidas van en `facturas` (prod) o
 `facturas_homo` (pruebas), por id de ingreso.
 
 **`titulares`** (no lo usa la app): `{ reglas: [texto], lista: [{ titular, es, tipo, cat?, nota? }] }`.

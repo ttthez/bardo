@@ -24,6 +24,7 @@ export function emisorDe(config, cuenta, entorno) {
 }
 
 // Ingresos sin factura de la cuenta. Los cobros en efectivo no entran: esos los factura Thiago a mano en ARCA.
+// `facturaManual` (número de una factura hecha a mano en ARCA) también los saca.
 export function pendientes(datos, facturas, { desde, hasta, cuenta } = {}) {
   const hechas = facturas || {};
   return lista(datos).filter(
@@ -32,6 +33,7 @@ export function pendientes(datos, facturas, { desde, hasta, cuenta } = {}) {
       i.medio !== 'efectivo' &&
       !hechas[i.id] &&
       !i.noFacturar &&
+      !i.facturaManual &&
       Number(i.monto) > 0 &&
       (!cuenta || i.cuenta === cuenta) &&
       (!desde || i.fecha >= desde) &&
@@ -63,6 +65,10 @@ export async function facturar(ids, opts) {
     }
     if (facturas?.[ing.id]) {
       resultados.push({ id: ing.id, ok: false, error: 'Ya está facturado', factura: facturas[ing.id] });
+      continue;
+    }
+    if (ing.facturaManual) {
+      resultados.push({ id: ing.id, ok: false, error: `Ya tiene factura hecha a mano (${ing.facturaManual})` });
       continue;
     }
     if (!ing.cuenta) {

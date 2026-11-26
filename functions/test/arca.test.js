@@ -82,7 +82,8 @@ test('pendientes: solo los que tienen cuenta y no están facturados', () => {
     { id: 3, monto: 10, fecha: '2026-11-21', medio: 'efectivo' },
     null,
     { id: 4, cuenta: 'thiago', monto: 10, fecha: '2026-11-22' },
-    { id: 5, cuenta: 'juan', monto: 10, fecha: '2026-11-22', medio: 'efectivo' }
+    { id: 5, cuenta: 'juan', monto: 10, fecha: '2026-11-22', medio: 'efectivo' },
+    { id: 6, cuenta: 'thiago', monto: 10, fecha: '2026-11-22', facturaManual: '00001-00000015' }
   ];
   assert.deepEqual(pendientes(datos, { 4: {} }).map((i) => i.id), [1, 2]);
   assert.deepEqual(pendientes(datos, {}, { cuenta: 'juan' }).map((i) => i.id), [2]);
