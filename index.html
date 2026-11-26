@@ -641,6 +641,13 @@
   .ff-acciones .fa-det{margin-top:0}
   .ff-acciones .fa-det[open]{flex-basis:100%}
   .ff-form{flex-basis:100%;margin-top:6px}
+  .fx-prog{margin:12px 0 6px}
+  .fx-prog-txt{display:flex;justify-content:space-between;gap:10px;font-size:.88rem;font-weight:700;margin-bottom:8px}
+  .fx-barra{height:10px;border-radius:99px;background:rgba(244,236,225,.1);overflow:hidden}
+  .fx-relleno{height:100%;border-radius:99px;background:var(--fuego-claro);transition:width .35s ease}
+  .fx-indet{width:35%;animation:fx-ir 1.2s ease-in-out infinite}
+  @keyframes fx-ir{from{transform:translateX(-100%)}to{transform:translateX(290%)}}
+  @media (prefers-reduced-motion: reduce){.fx-indet{animation:none;width:100%;opacity:.5}}
 
   /* ---------- catering: cobro y personal ---------- */
   .cobro-acciones{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
@@ -797,6 +804,16 @@
     <div class="login-error" id="loginError"></div>
   </form>
 </div>
+
+<dialog class="novedades" id="dlgFactura" aria-labelledby="dlgFacturaTitulo">
+  <div class="novedades-caja">
+    <div class="novedades-cab">
+      <h2 id="dlgFacturaTitulo">🧾 ¿Hacemos la factura?</h2>
+      <p id="dlgFacturaSub"></p>
+    </div>
+    <div class="novedades-lista" id="dlgFacturaCuerpo" style="padding-bottom:20px"></div>
+  </div>
+</dialog>
 
 <dialog class="novedades" id="novedades" aria-labelledby="novedadesTitulo">
   <div class="novedades-caja">
@@ -2370,7 +2387,7 @@
       if(!emisores[c.id]){
         return `<div class="ff-cuenta">${cab}<div class="item-fecha">Sin monotributo todavía: sus cobros no se facturan por ahora.</div></div>`;
       }
-      const enCurso = facturando && facturando.cuenta === c.id;
+      const enCurso = facturando && !facturando.modal && facturando.cuenta === c.id;
       return `<div class="ff-cuenta">${cab}${enCurso ? panelFacturando() : suyos.length ? `
         <button type="button" class="btn btn-fuego" data-facturar="${suyos.map(i => i.id).join(',')}" data-cuenta="${c.id}" style="width:100%;margin:10px 0 2px">
           🧾 Facturar ${suyos.length === 1 ? 'este cobro' : `los ${suyos.length} cobros`}</button>` : ''}
@@ -2430,9 +2447,10 @@
     if(!res.ok || !r || r.error) throw new Error((r && r.error && r.error.message) || `El servicio de facturación respondió con error ${res.status}.`);
     return r.result;
   }
-  async function vistaPreviaFacturas(ids, cuenta){
-    facturando = { cuenta, ids, paso: 'cargando' };
-    renderIngresos();
+  function renderFlujoFactura(){ renderIngresos(); renderDialogoFactura(); }
+  async function vistaPreviaFacturas(ids, cuenta, modal){
+    facturando = { cuenta, ids, paso: 'cargando', modal: !!modal };
+    renderFlujoFactura();
     try{
       const r = await llamarFacturar(ids, false);
       if(!facturando || facturando.ids !== ids) return;
@@ -2441,7 +2459,7 @@
       if(!facturando || facturando.ids !== ids) return;
       Object.assign(facturando, { paso: 'listo', error: e.message });
     }
-    renderIngresos();
+    renderFlujoFactura();
   }
   async function emitirFacturas(){
     const f = facturando;
@@ -2450,24 +2468,108 @@
     if(!ids.length) return;
     // en producción las facturas son reales y no se pueden borrar: ahí sí se confirma
     if(f.entorno === 'prod' && !confirm(`¿Emitir ${ids.length === 1 ? '1 factura' : ids.length + ' facturas'} en ARCA?\n\nSon facturas reales: para anular una hay que hacer una nota de crédito.`)) return;
+    // de a una, en el orden de la vista previa (por fecha), para mostrar el avance real
+    const fallidas = f.resultados.filter(x => !x.ok);
+    const hechas = [];
     f.paso = 'emitiendo';
-    renderIngresos();
-    try{
-      const r = await llamarFacturar(ids, true);
-      Object.assign(f, { paso: 'listo', entorno: r.entorno, resultados: r.resultados.concat(f.resultados.filter(x => !x.ok)) });
-    }catch(e){
-      Object.assign(f, { paso: 'listo', error: e.message + ' Antes de reintentar, fijate en ARCA si alguna se emitió.' });
+    f.progreso = { hechas: 0, total: ids.length, actual: ids[0] };
+    renderFlujoFactura();
+    for(const id of ids){
+      f.progreso.actual = id;
+      renderFlujoFactura();
+      try{
+        const r = await llamarFacturar([id], true);
+        f.entorno = r.entorno;
+        hechas.push(...r.resultados);
+      }catch(e){
+        const faltan = ids.length - hechas.length;
+        f.error = `${e.message} Se cortó con ${hechas.length} de ${ids.length} emitidas: ` +
+          `${faltan === 1 ? 'la que falta sigue' : `las ${faltan} que faltan siguen`} en "Falta facturar". Antes de reintentar, fijate en ARCA si la última salió.`;
+        break;
+      }
+      f.progreso.hechas++;
     }
-    renderIngresos();
+    Object.assign(f, { paso: 'listo', resultados: hechas.concat(fallidas) });
+    delete f.progreso;
+    renderFlujoFactura();
     refrescarTodo(false);
   }
+  // después de anotar un cobro que va a una cuenta que factura, se ofrece hacer la factura ahí mismo
+  function ofrecerFactura(i){
+    if(!i || i.medio === 'efectivo' || !(Number(i.monto) > 0) || numeroFactura(i)) return;
+    const emisores = (facturacion && facturacion.emisores) || {};
+    if(!emisores[i.cuenta]) return;
+    if(facturando && (facturando.paso === 'cargando' || facturando.paso === 'emitiendo')) return;
+    facturando = { cuenta: i.cuenta, ids: [i.id], paso: 'oferta', modal: true };
+    renderFlujoFactura();
+  }
+  function cerrarDialogoFactura(){
+    facturando = null;
+    const dlg = document.getElementById('dlgFactura');
+    if(dlg.open) dlg.close();
+    renderIngresos();
+  }
+  function renderDialogoFactura(){
+    const dlg = document.getElementById('dlgFactura');
+    const f = facturando;
+    if(!f || !f.modal){ if(dlg.open) dlg.close(); return; }
+    const i = items.find(x => x.id === f.ids[0]);
+    // si se deshizo el cobro, no hay nada que facturar
+    if(!i && f.paso === 'oferta'){ facturando = null; if(dlg.open) dlg.close(); return; }
+    if(escribiendoEn(dlg)) return;
+    document.getElementById('dlgFacturaTitulo').textContent = f.paso === 'oferta' ? '🧾 ¿Hacemos la factura?' : '🧾 Factura';
+    document.getElementById('dlgFacturaSub').innerHTML = i
+      ? `${escapeHtml(i.desc)} · <b>${montoTexto(i)}</b>${medioTexto(i.medio, i.cuenta)}` : '';
+    const cuerpo = document.getElementById('dlgFacturaCuerpo');
+    if(f.paso === 'oferta'){
+      const { fa, de } = facturaADe(i);
+      cuerpo.innerHTML = `
+        <div class="card-nota" style="margin:6px 0 4px">Va a nombre de: <b>${textoFacturaA(fa)}</b>${de === 'evento' ? ' (del evento)' : ''}</div>
+        <details class="fa-det" data-det="dlg-${i.id}"><summary><span class="link-btn">El cliente la pide a su nombre</span></summary>
+          <div class="ff-form" id="dlgFacturaA">${camposFacturaA(i.facturaA || fa)}
+            <button type="button" class="btn btn-sec" id="dlgGuardarFA" style="margin-top:10px">Guardar</button></div>
+        </details>
+        <div class="card-nota" style="margin:12px 0">Primero se ve la vista previa: no se emite nada hasta tocar Emitir.
+          Si no, queda en Objetivo › Falta facturar para hacerla después.</div>
+        <div class="botones">
+          <button type="button" class="btn btn-fuego" id="dlgFacturaSi">Ver la factura</button>
+          <button type="button" class="btn btn-sec" id="dlgFacturaNo">Ahora no</button>
+        </div>`;
+      document.getElementById('dlgFacturaSi').addEventListener('click', () => vistaPreviaFacturas(f.ids, f.cuenta, true));
+      document.getElementById('dlgFacturaNo').addEventListener('click', cerrarDialogoFactura);
+      document.getElementById('dlgGuardarFA').addEventListener('click', () => {
+        const nuevo = leerFacturaA(document.getElementById('dlgFacturaA'));
+        if(nuevo === false) return;
+        if(nuevo) i.facturaA = nuevo; else delete i.facturaA;
+        persistirIngresos();
+        avisar(nuevo ? `Se factura a ${nuevo.nombre}.` : 'Se factura a consumidor final.');
+      });
+    }else{
+      cuerpo.innerHTML = panelFacturando();
+      const emitir = cuerpo.querySelector('#btnEmitirFacturas');
+      if(emitir) emitir.addEventListener('click', emitirFacturas);
+      const cerrar = cuerpo.querySelector('#btnCerrarFacturando');
+      if(cerrar) cerrar.addEventListener('click', cerrarDialogoFactura);
+    }
+    if(!dlg.open) dlg.showModal();
+  }
+
   function panelFacturando(){
     const f = facturando;
     const prueba = f.entorno && f.entorno !== 'prod'
       ? '<div class="card-nota" style="margin:8px 0">🧪 <b>Modo prueba</b> (homologación de ARCA): las facturas no tienen validez fiscal y el cobro sigue en "Falta facturar".</div>' : '';
     const desc = id => { const i = items.find(x => x.id === id); return i ? escapeHtml(i.desc) : 'Cobro ' + id; };
-    if(f.paso === 'cargando' || f.paso === 'emitiendo'){
-      return `<div class="vacio" style="margin:10px 0">${f.paso === 'cargando' ? 'Armando las facturas…' : 'Pidiendo el CAE a ARCA… puede tardar un minuto.'}</div>`;
+    if(f.paso === 'cargando'){
+      return `<div class="fx-prog"><div class="fx-prog-txt">Armando la vista previa…</div>
+        <div class="fx-barra"><div class="fx-relleno fx-indet"></div></div></div>`;
+    }
+    if(f.paso === 'emitiendo'){
+      const pr = f.progreso || { hechas: 0, total: 1 };
+      const pct = Math.round(pr.hechas / pr.total * 100);
+      return `<div class="fx-prog" role="progressbar" aria-valuemin="0" aria-valuemax="${pr.total}" aria-valuenow="${pr.hechas}">
+        <div class="fx-prog-txt"><span>Emitiendo en ARCA · ${Math.min(pr.hechas + 1, pr.total)} de ${pr.total}</span><b>${pct}%</b></div>
+        <div class="fx-barra"><div class="fx-relleno" style="width:${Math.max(pct, 4)}%"></div></div>
+        <div class="item-fecha" style="margin-top:6px">${pr.actual ? desc(pr.actual) : ''} · no cierres la app hasta que termine.</div></div>`;
     }
     const filas = (f.resultados || []).map(r => {
       if(!r.ok) return `<div class="item"><div class="item-info"><div class="item-desc">${desc(r.id)}</div>
@@ -3201,6 +3303,7 @@
     if(costoEnvio > 0) persistirGastos();
     hecho(`Entregado a ${p.cliente}: ${totalPizzas} pizzas${monto > 0 ? `, cobrado ${fmt(monto)}` : ', sin cobrar'}` +
       `${costoEnvio > 0 ? `, envío ${fmt(costoEnvio)} a Gastos` : ''}. Stock descontado.`, f);
+    if(monto > 0) ofrecerFactura(items.find(x => x.id === ventaId + 1));
   }
 
 
@@ -5238,6 +5341,7 @@
       persistirIngresos();
       const mm = MEDIOS.find(x => x.id === medio);
       hecho(`${tipo === 'seña' ? 'Seña' : 'Saldo'} de ${montoCorto(m)} anotado${mm ? ` (${mm.nombre})` : ''}. Ya suma en los ingresos.`, f);
+      ofrecerFactura(items[items.length - 1]);
     };
     document.getElementById('btnSena').addEventListener('click', () => {
       const m = leerMonto('cobroMonto', 'cobroMoneda', 'cobroTc');
@@ -5720,6 +5824,7 @@
     guardarBorrador();
     if(otro) document.getElementById('monto').focus(); else document.activeElement.blur();
     hecho(`Ingreso anotado: ${montoCorto(m)} · ${desc}${otroMes ? ` (en ${nombreMes(mesSel)})` : ''}.`, f);
+    if(!otro) ofrecerFactura(items[items.length - 1]);
   });
   // si la descripción ya se usó, completamos cómo se cobró y a qué cuenta entró
   document.getElementById('desc').addEventListener('change', e => {
@@ -6053,6 +6158,7 @@
     persistirPizzas();
     guardarBorrador();
     hecho(`Venta registrada: ${n} ${n === 1 ? 'pizza' : 'pizzas'}${cobrado > 0 ? `, cobrado ${fmt(cobrado)}` : ', sin cobrar'}. Stock descontado.`, f);
+    if(cobrado > 0) ofrecerFactura(items.find(x => x.id === ventaId + 1));
   });
 
   document.getElementById('btnCalcularProd').addEventListener('click', () => {
@@ -6222,6 +6328,9 @@
   // Cada cambio de la app que llega a main suma una entrada ARRIBA de todo, con el id siguiente.
   // Tono neutral: qué cambió y dónde se ve, en 1 a 3 líneas.
   const NOVEDADES = [
+    { id: 16, fecha: '2026-11-26', titulo: 'Facturar al anotar un cobro', cambios: [
+      'Al anotar un cobro que no es en efectivo, en una cuenta que factura, aparece un cartel para ver la factura y emitirla en el momento, o dejarla para después en "Falta facturar".'
+    ]},
     { id: 15, fecha: '2026-11-26', titulo: 'Falta facturar', cambios: [
       'En Objetivo, "Falta facturar" muestra por cuenta los cobros del mes que todavía no tienen factura (los de efectivo no entran), con un botón para emitir la Factura C en ARCA después de ver la vista previa.',
       'Cada cobro puede marcarse como facturado a mano con el número de factura, que después se ve en la lista de ingresos.',
@@ -6311,6 +6420,14 @@
     if(e.target.id === 'novedades') e.target.close();
   });
   document.getElementById('btnNovedades').addEventListener('click', () => mostrarNovedades(true));
+  // mientras se emite no se puede cerrar el cartel de la factura
+  const dlgFactura = document.getElementById('dlgFactura');
+  dlgFactura.addEventListener('cancel', e => {
+    if(facturando && facturando.paso === 'emitiendo') e.preventDefault();
+  });
+  dlgFactura.addEventListener('close', () => {
+    if(facturando && facturando.modal && facturando.paso !== 'emitiendo'){ facturando = null; renderIngresos(); }
+  });
 
   // la app siempre abre en Inicio
   irATab('inicio');
