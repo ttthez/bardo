@@ -738,6 +738,16 @@
   .ajustes > summary::-webkit-details-marker{display:none}
   .ajustes > summary::after{content:'›';color:var(--gris);font-size:1.3rem;transition:transform .15s}
   .ajustes[open] > summary::after{transform:rotate(90deg)}
+  .form-plegado > summary{color:var(--fuego-claro)}
+  .form-plegado > summary small{margin-top:4px}
+  .form-plegado-cuerpo{margin-top:16px}
+  .gasto-dia{display:flex;justify-content:space-between;gap:10px;font-size:.72rem;font-weight:800;text-transform:uppercase;
+    letter-spacing:.06em;color:var(--gris);padding:14px 0 4px}
+  .gasto-dia:first-child{padding-top:0}
+  .sin-detalle{background:none;border:0;padding:0;font:inherit;color:#f2b84b;cursor:pointer;text-decoration:underline dotted}
+  .desc-edit{display:flex;gap:8px;margin:2px 0 12px}
+  .desc-edit .btn{flex:none;width:auto;padding-inline:18px}
+  .desc-edit input{flex:1;min-width:0}
   .ajustes > summary small{display:block;font-weight:500;font-size:.8rem;color:var(--gris)}
 
   /* ---------- torta: cómo nos conocieron ---------- */
@@ -906,8 +916,13 @@
   <!-- ============ PEDIDOS ============ -->
   <section class="tab-panel" id="panel-pedidos">
     <div class="card">
-      <div class="card-titulo">Agendar pedido</div>
-      <div class="card-nota">Para pizzas que se entregan otro día. Al marcarlo entregado se descuenta del stock.</div>
+      <div class="card-titulo">Pedidos a entregar <span class="item-fecha" id="pedidosCuenta"></span></div>
+      <div class="lista" id="listaPedidos"></div>
+    </div>
+
+    <details class="card ajustes form-plegado" id="pedidoNuevoWrap">
+      <summary><div>+ Agendar pedido<small>Para pizzas que se entregan otro día. Al marcarlo entregado se descuenta del stock.</small></div></summary>
+      <div class="form-plegado-cuerpo">
       <div id="pedidoEditandoAviso"></div>
       <div class="form-campos">
         <label class="campo full"><span>Cliente</span>
@@ -931,12 +946,8 @@
       </div>
       <div class="card-nota" id="pedidoSugerido" style="margin:0 0 12px"></div>
       <button type="button" class="btn btn-fuego" id="btnAgendarPedido" style="width:100%">Agendar pedido</button>
-    </div>
-
-    <div class="card">
-      <div class="card-titulo">Pedidos a entregar <span class="item-fecha" id="pedidosCuenta"></span></div>
-      <div class="lista" id="listaPedidos"></div>
-    </div>
+      </div>
+    </details>
 
     <div class="card" id="cardVenta">
       <div class="card-titulo">Venta sin pedido</div>
@@ -1138,30 +1149,6 @@
 
   <!-- ============ GASTOS ============ -->
   <section class="tab-panel" id="panel-gastos">
-    <div class="card" id="cardGasto">
-      <div class="card-titulo">Anotar gasto</div>
-      <form id="formGasto" novalidate>
-        <div class="form-campos" style="width:100%;margin:0">
-          <label class="campo"><span>Monto</span>
-            <input type="text" id="gastoMonto" class="inp-monto inp-plata" inputmode="decimal" autocomplete="off" placeholder="Ej: 25000"></label>
-          <label class="campo"><span>Fecha</span><input type="date" id="gastoFecha"></label>
-          <label class="campo full"><span>Qué fue <small>· opcional</small></span>
-            <input type="text" id="gastoDesc" list="descGastos" autocomplete="off" placeholder="Ej: Mozzarella 5kg, Festa, nafta">
-            <span class="ayuda" id="gastoDescAyuda">Si ya lo cargaste antes, elegilo de la lista y se completa la categoría.</span></label>
-          <div class="campo full"><span>Categoría</span><div class="toggle gasto-cats" id="gastoCats" style="margin:0"></div></div>
-          <div class="campo full"><span>Cómo se pagó</span><select id="gastoMedio" class="sel-medio"></select></div>
-          <div class="campo full"><span>Moneda</span><select id="gastoMoneda" class="sel-moneda"></select></div>
-          <label class="campo full"><span>Cotización del dólar</span>
-            <input type="text" id="gastoTc" class="inp-tc inp-plata" inputmode="decimal" autocomplete="off" placeholder="Ej: 1450 (pesos por 1 US$)"></label>
-        </div>
-        <div class="botones" style="width:100%">
-          <button type="submit" class="btn btn-fuego">Anotar gasto</button>
-          <button type="submit" class="btn btn-sec" data-otro="1">Anotar y cargar otro</button>
-        </div>
-      </form>
-      <datalist id="descGastos"></datalist>
-    </div>
-
     <div class="card">
       <div class="card-titulo">Gastos del negocio</div>
       <div class="totales">
@@ -1182,6 +1169,30 @@
       <div class="card-nota" id="gastoEfectivo" style="margin:14px 0 0"></div>
       <div id="gastoPorCat" style="margin-top:18px"></div>
     </div>
+
+    <details class="card ajustes form-plegado" id="cardGasto">
+      <summary><div>+ Anotar gasto</div></summary>
+      <form id="formGasto" novalidate class="form-plegado-cuerpo">
+        <div class="form-campos" style="width:100%;margin:0">
+          <label class="campo"><span>Monto</span>
+            <input type="text" id="gastoMonto" class="inp-monto inp-plata" inputmode="decimal" autocomplete="off" placeholder="Ej: 25000"></label>
+          <label class="campo"><span>Fecha</span><input type="date" id="gastoFecha"></label>
+          <label class="campo full"><span>Qué fue <small>· opcional</small></span>
+            <input type="text" id="gastoDesc" list="descGastos" autocomplete="off" placeholder="Ej: Mozzarella 5kg, Festa, nafta">
+            <span class="ayuda" id="gastoDescAyuda">Si ya lo cargaste antes, elegilo de la lista y se completa la categoría.</span></label>
+          <div class="campo full"><span>Categoría</span><div class="toggle gasto-cats" id="gastoCats" style="margin:0"></div></div>
+          <div class="campo full"><span>Cómo se pagó</span><select id="gastoMedio" class="sel-medio"></select></div>
+          <div class="campo full"><span>Moneda</span><select id="gastoMoneda" class="sel-moneda"></select></div>
+          <label class="campo full"><span>Cotización del dólar</span>
+            <input type="text" id="gastoTc" class="inp-tc inp-plata" inputmode="decimal" autocomplete="off" placeholder="Ej: 1450 (pesos por 1 US$)"></label>
+        </div>
+        <div class="botones" style="width:100%">
+          <button type="submit" class="btn btn-fuego">Anotar gasto</button>
+          <button type="submit" class="btn btn-sec" data-otro="1">Anotar y cargar otro</button>
+        </div>
+      </form>
+      <datalist id="descGastos"></datalist>
+    </details>
 
     <div class="card">
       <div class="card-titulo">Fijos mensuales <span class="item-fecha" id="fijosPagados"></span></div>
@@ -1206,7 +1217,10 @@
     </div>
 
     <div class="card">
-      <div class="card-titulo">Gastos variables del mes</div>
+      <div class="card-titulo">Gastos variables del mes <span class="item-fecha" id="gastosCuenta"></span></div>
+      <label class="campo full" style="margin-bottom:10px"><span>Buscar</span>
+        <input type="search" id="gastoBuscar" autocomplete="off" placeholder="Ej: verdulería, Uber, 15000"></label>
+      <div class="toggle seg" id="gastoFiltroCat" style="margin-bottom:14px"></div>
       <div class="lista" id="listaGastos"></div>
     </div>
   </section>
@@ -2906,6 +2920,8 @@
   }
 
   function renderGastos(){
+    if(document.getElementById('gastoMonto').value.trim() || document.getElementById('gastoDesc').value.trim())
+      document.getElementById('cardGasto').open = true;
     const fijos = fijosDe(mesSel).sort((a,b) => (a.dia || 99) - (b.dia || 99));
     const movs = movsDe(mesSel).sort((a,b) => b.fecha.localeCompare(a.fecha) || b.id - a.id);
     const pagados = gastos.pagos[mesSel] || [];
@@ -3012,21 +3028,65 @@
     }).join('') : `<div class="vacio">Agregá tus fijos: monotributo, seguro del auto, alquiler…</div>`;
     if(editandoFijoId !== null) listaFijos.querySelectorAll('.inp-plata').forEach(mostrarPlataPrevia);
 
-    // variables
-    document.getElementById('listaGastos').innerHTML = movs.length ? movs.map(g => {
+    // variables: filtro por categoría y búsqueda, agrupados por día
+    renderListaGastos(movs);
+  }
+
+  let filtroCatGasto = '';      // categoría elegida en la lista de variables ('' = todas)
+  let editandoDescGasto = null; // id del gasto al que se le está escribiendo "qué fue"
+  function renderListaGastos(movs){
+    const cont = document.getElementById('listaGastos');
+    if(escribiendoEn(cont)) return;   // escribiendo "qué fue": la sincronización no lo pisa
+    const cats = CATS_GASTO.filter(c => movs.some(g => (g.cat || 'otros') === c.id));
+    if(filtroCatGasto && !cats.some(c => c.id === filtroCatGasto)) filtroCatGasto = '';
+    document.getElementById('gastoFiltroCat').innerHTML = cats.length > 1
+      ? [`<button type="button" data-filtro-cat="" class="${filtroCatGasto ? '' : 'activo'}">Todas</button>`,
+         ...cats.map(c => `<button type="button" data-filtro-cat="${c.id}" class="${c.id === filtroCatGasto ? 'activo' : ''}">${c.emoji} ${c.nombre}</button>`)].join('')
+      : '';
+    const q = document.getElementById('gastoBuscar').value.trim().toLowerCase();
+    const qNum = q.replace(/[.$\s]/g, '');
+    const lista = movs.filter(g => {
+      if(filtroCatGasto && catGastoDe(g.cat).id !== filtroCatGasto) return false;
+      if(!q) return true;
       const c = catGastoDe(g.cat);
-      return `<div class="item">
-        <div class="item-info">
-          <div class="item-desc">${c.emoji} ${g.desc ? escapeHtml(g.desc) : c.nombre}</div>
-          <div class="item-fecha">${formatoFecha(g.fecha)}${g.desc ? ' · ' + c.nombre : ''}${medioTexto(g.medio)}</div>
-        </div>
-        <div class="item-monto gasto">${montoTexto(g)}</div>
-        <button class="item-del" data-borrar="${g.id}" title="Borrar" aria-label="Borrar gasto">✕</button>
-      </div>`;
-    }).join('') : `<div class="vacio">No hay gastos anotados en ${nombreMes(mesSel)}.</div>`;
+      return `${g.desc || ''} ${c.nombre}`.toLowerCase().includes(q) || (qNum && String(g.monto).includes(qNum));
+    });
+    const filtrado = q || filtroCatGasto;
+    document.getElementById('gastosCuenta').textContent = filtrado
+      ? `${lista.length} de ${movs.length} · ${fmt(lista.reduce((s, g) => s + g.monto, 0))}` : (movs.length ? `${movs.length}` : '');
+    const porDia = [];
+    lista.forEach(g => {
+      const ult = porDia[porDia.length - 1];
+      if(ult && ult.fecha === g.fecha) ult.movs.push(g); else porDia.push({ fecha: g.fecha, movs: [g] });
+    });
+    cont.innerHTML = porDia.length ? porDia.map(d => {
+      const dia = DIAS[new Date(d.fecha + 'T12:00:00').getDay()];
+      return `<div class="gasto-dia"><span>${dia} ${Number(d.fecha.slice(8))}</span><span>${fmt(d.movs.reduce((s, g) => s + g.monto, 0))}</span></div>` +
+        d.movs.map(g => {
+          const c = catGastoDe(g.cat);
+          const editando = editandoDescGasto === g.id;
+          const detalle = g.desc ? c.nombre
+            : `<button type="button" class="sin-detalle" data-desc-gasto="${g.id}">¿Qué fue?</button>`;
+          return `<div class="item">
+            <div class="item-info">
+              <div class="item-desc">${c.emoji} ${g.desc ? escapeHtml(g.desc) : c.nombre}</div>
+              <div class="item-fecha">${detalle}${medioTexto(g.medio)}</div>
+            </div>
+            <div class="item-monto gasto">${montoTexto(g)}</div>
+            <button class="item-del" data-borrar="${g.id}" title="Borrar" aria-label="Borrar gasto">✕</button>
+          </div>${editando ? `<div class="desc-edit"><input type="text" id="gastoDescEdit" list="descGastos" autocomplete="off" placeholder="Ej: Verdulería, mozzarella 5kg">
+            <button type="button" class="btn btn-fuego" data-desc-ok="${g.id}">Guardar</button></div>` : ''}`;
+        }).join('');
+    }).join('') : `<div class="vacio">${filtrado ? 'No hay gastos que coincidan.' : `No hay gastos anotados en ${nombreMes(mesSel)}.`}</div>`;
+    if(editandoDescGasto !== null){
+      const inp = document.getElementById('gastoDescEdit');
+      if(inp) inp.focus();
+    }
   }
 
   function renderPedidos(){
+    if(editandoPedidoId !== null || document.getElementById('pedidoCliente').value.trim())
+      document.getElementById('pedidoNuevoWrap').open = true;
     renderPedidoModo();
     renderPedidoForm();
     renderPedidosLista();
@@ -3090,6 +3150,7 @@
     document.getElementById('pedidoNotas').value = p.notas || '';
     pedidoDraft = p.items.map(i => ({ sabor: i.nombre, cantidad: i.cantidad }));
 
+    document.getElementById('pedidoNuevoWrap').open = true;
     renderPedidos();
     document.getElementById('pedidoEditandoAviso').scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
@@ -5724,6 +5785,8 @@
     irATab(tab);
     const el = document.getElementById(id);
     if(!el) return;
+    const plegado = el.closest('details');
+    if(plegado) plegado.open = true;
     el.closest('.card').scrollIntoView({ behavior: 'smooth', block: 'start' });
     if(el.matches('input, select')) setTimeout(() => el.focus({ preventScroll: true }), 350);
   }
@@ -5907,7 +5970,8 @@
     document.getElementById('gastoDescAyuda').textContent = 'Si ya lo cargaste antes, elegilo de la lista y se completa la categoría.';
     persistirGastos();
     guardarBorrador();
-    if(otro) document.getElementById('gastoMonto').focus(); else document.activeElement.blur();
+    if(otro) document.getElementById('gastoMonto').focus();
+    else { document.activeElement.blur(); document.getElementById('cardGasto').open = false; }
     const c = catGastoDe(catGasto);
     hecho(`Gasto anotado: ${montoCorto(m)} en ${c.nombre}${desc ? ` · ${desc}` : ''}${otroMes ? ` (en ${nombreMes(mesSel)})` : ''}.`, f);
   });
@@ -6011,7 +6075,35 @@
     persistirCaja();
   });
 
+  function guardarDescGasto(id){
+    const inp = document.getElementById('gastoDescEdit');
+    const g = gastos.movs.find(x => x.id === id);
+    const desc = inp ? inp.value.trim() : '';
+    if(!g) return;
+    if(!desc) return errorEn(inp, 'Escribí qué fue, ej: Verdulería');
+    const f = foto();
+    g.desc = desc;
+    editandoDescGasto = null;
+    inp.blur();
+    persistirGastos();
+    hecho(`Anotado: "${desc}".`, f);
+  }
+  document.getElementById('listaGastos').addEventListener('keydown', e => {
+    if(e.key === 'Enter' && e.target.id === 'gastoDescEdit'){ e.preventDefault(); guardarDescGasto(editandoDescGasto); }
+    if(e.key === 'Escape' && e.target.id === 'gastoDescEdit'){ editandoDescGasto = null; e.target.blur(); renderGastos(); }
+  });
+  document.getElementById('gastoBuscar').addEventListener('input', () => renderGastos());
+  document.getElementById('gastoFiltroCat').addEventListener('click', e => {
+    const b = e.target.closest('[data-filtro-cat]');
+    if(!b) return;
+    filtroCatGasto = b.dataset.filtroCat;
+    renderGastos();
+  });
   document.getElementById('listaGastos').addEventListener('click', e => {
+    const sd = e.target.closest('[data-desc-gasto]');
+    if(sd){ editandoDescGasto = Number(sd.dataset.descGasto); document.activeElement.blur(); renderGastos(); return; }
+    const ok = e.target.closest('[data-desc-ok]');
+    if(ok){ guardarDescGasto(Number(ok.dataset.descOk)); return; }
     const btn = e.target.closest('[data-borrar]');
     if(!btn) return;
     const f = foto();
@@ -6134,6 +6226,7 @@
     }
 
     limpiarFormPedido();
+    document.getElementById('pedidoNuevoWrap').open = false;   // queda a la vista la lista con el pedido nuevo
     persistirPedidos();
     guardarBorrador();
     const n = validas.reduce((t, x) => t + x.cantidad, 0);
@@ -6361,6 +6454,11 @@
   // Cada cambio de la app que llega a main suma una entrada ARRIBA de todo, con el id siguiente.
   // Tono neutral: qué cambió y dónde se ve, en 1 a 3 líneas.
   const NOVEDADES = [
+    { id: 18, fecha: '2026-11-26', titulo: 'Pedidos y Gastos más ordenados', cambios: [
+      'Pedidos muestra primero los pedidos a entregar; el formulario se abre con "+ Agendar pedido". En Gastos, el resumen del mes va arriba y el formulario se abre con "+ Anotar gasto".',
+      'Los gastos variables tienen buscador y filtro por categoría, y aparecen agrupados por día con el total de cada uno.',
+      'Los gastos sin descripción muestran "¿Qué fue?" para completarla ahí mismo.'
+    ]},
     { id: 17, fecha: '2026-11-26', titulo: 'Avisos en los próximos eventos', cambios: [
       'En Inicio, los eventos de los próximos 7 días muestran "sin horario" o "sin teléfono" cuando falta ese dato; al tocarlo se abre el evento en ese campo.',
       'En las listas de eventos el nombre ya no repite las personas ("25 pax"), que se muestran aparte.'
