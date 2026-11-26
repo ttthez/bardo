@@ -5406,7 +5406,18 @@
     enlazarEventoDetalle(ev);
   }
 
-  function enlazarEventoDetalle(ev){
+  function enlazarEventoDetalle(evDibujado){
+    // Si la app se sincroniza mientras escribís, la pantalla no se redibuja pero `catering` trae objetos nuevos.
+    // Los botones de esta pantalla siempre leen y escriben el evento actual (por id), no la copia que se dibujó.
+    const actual = () => eventoPorId(evDibujado.id) || evDibujado;
+    const ev = new Proxy({}, {
+      get: (_, k) => actual()[k],
+      set: (_, k, v) => { actual()[k] = v; return true; },
+      deleteProperty: (_, k) => { delete actual()[k]; return true; },
+      has: (_, k) => k in actual(),
+      ownKeys: () => Reflect.ownKeys(actual()),
+      getOwnPropertyDescriptor: (_, k) => { const d = Object.getOwnPropertyDescriptor(actual(), k); if(d) d.configurable = true; return d; }
+    });
     const cont = document.getElementById('cateringDetalle');
 
     document.getElementById('btnVolverCatering').addEventListener('click', () => {
@@ -5496,6 +5507,7 @@
       });
     });
     document.getElementById('btnAgregarSaborEv').addEventListener('click', () => {
+      ev.sabores = ev.sabores || [];
       ev.sabores = ev.sabores || [];
       ev.sabores.push({ nombre: '', cantidad: 0 });
       persistirCatering();
@@ -5646,7 +5658,9 @@
 
     cont.querySelectorAll('[data-chk]').forEach(chk => {
       chk.addEventListener('change', () => {
-        ev.checklist[+chk.getAttribute('data-chk')].hecho = chk.checked;
+        const t = (ev.checklist = itemsDe(ev))[+chk.getAttribute('data-chk')];
+        if(!t) return renderCatering();   // la lista cambió en otro celular: se redibuja
+        t.hecho = chk.checked;
         // actualizamos la fila y el contador acá mismo, sin depender de que se redibuje todo
         chk.closest('.item-check').classList.toggle('hecho', chk.checked);
         const hechas = ev.checklist.filter(t => t.hecho).length;
@@ -5657,13 +5671,17 @@
     });
     cont.querySelectorAll('[data-item]').forEach(inp => {
       inp.addEventListener('change', () => {
-        ev.checklist[+inp.getAttribute('data-item')].nombre = inp.value.trim();
+        const t = (ev.checklist = itemsDe(ev))[+inp.getAttribute('data-item')];
+        if(!t) return renderCatering();   // la lista cambió en otro celular: se redibuja
+        t.nombre = inp.value.trim();
         persistirCatering();
       });
     });
     cont.querySelectorAll('[data-item-cant]').forEach(inp => {
       inp.addEventListener('change', () => {
-        ev.checklist[+inp.getAttribute('data-item-cant')].cantidad = inp.value.trim();
+        const t = (ev.checklist = itemsDe(ev))[+inp.getAttribute('data-item-cant')];
+        if(!t) return renderCatering();   // la lista cambió en otro celular: se redibuja
+        t.cantidad = inp.value.trim();
         persistirCatering();
       });
     });
@@ -5689,6 +5707,7 @@
       const inpCant = document.getElementById('nuevoItemCant');
       const nombre = inpNombre.value.trim();
       if(!nombre) return;
+      ev.checklist = itemsDe(ev);   // Firebase no guarda listas vacías: puede venir sin checklist
       ev.checklist.push({ nombre, cantidad: inpCant.value.trim(), hecho: false,
                           grupo: document.getElementById('nuevoItemGrupo').value });
       // soltamos el foco para que se redibuje la lista, y lo devolvemos al campo
@@ -6556,6 +6575,9 @@
   // Cada cambio de la app que llega a main suma una entrada ARRIBA de todo, con el id siguiente.
   // Tono neutral: qué cambió y dónde se ve, en 1 a 3 líneas.
   const NOVEDADES = [
+    { id: 20, fecha: '2026-11-26', titulo: 'Checklist de eventos más confiable', cambios: [
+      'Se corrigió que a veces no quedara guardado un ítem nuevo de la checklist (o un cambio en el evento) cuando la app se sincronizaba mientras se escribía.'
+    ]},
     { id: 19, fecha: '2026-11-26', titulo: 'Eventos para leer y stock más claro', cambios: [
       'Al abrir un evento de Catering los datos se ven para leer; "Editar datos del evento" o tocar un dato que falta abre la edición. Agregar un costo y anotar otro cobro (con el evento ya cobrado) quedan plegados.',
       'En Inicio el stock muestra primero lo que hay, y los sabores en 0 van en una línea aparte que avisa si se arman con Flex.',
