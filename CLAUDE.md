@@ -169,6 +169,7 @@ de pago. Esos datos van solo en Bardo (`catering.precio`, notas del evento e ing
   así la ganancia del mes ya viene con los sueldos descontados. Lo que se lleve cada uno por encima del sueldo es retiro y se descuenta en la liquidación.
 - Las señas de eventos futuros son parte del colchón de la empresa, pero el colchón no baja de lo que cuestan esos eventos (~28% de su precio).
 - Personal de eventos: $40.000 por persona salvo que se indique otro monto.
+- A Jordi se le paga siempre en efectivo y a Xavi por transferencia: sus pagos llevan ese `medio`. La app usa, para cada persona, el medio de su último pago.
 - No son gastos: pagos de resumen de tarjeta, transferencias entre cuentas propias o a socios para liquidez, reservas de dinero.
 - Compras en cuotas: cada cuota en el mes del resumen en que aparece; las largas, como gasto fijo con `desde`/`hasta`.
 - Compras en dólares: al tipo de cambio del resumen; percepciones e IVA de las compras de la empresa van en `impuestos`.

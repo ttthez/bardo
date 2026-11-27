@@ -4487,6 +4487,15 @@
       .sort((a, b) => b.id - a.id)[0] : null;
     return prev ? Number(prev.monto) : PAGO_PERSONAL;
   }
+  // cómo se le pagó la última vez a esa persona (ej. Jordi en efectivo, Xavi por transferencia); si es nueva, el último medio usado
+  function medioPersonalDe(nombre){
+    const clave = n => String(n || '').trim().toLowerCase().split(/\s+/)[0];
+    const k = clave(nombre);
+    const ids = new Set(k ? catering.flatMap(e => personalDe(e)).filter(p => clave(p.nombre) === k).map(p => p.id) : []);
+    const ult = gastos.movs.filter(g => g.personalId && ids.has(g.personalId) && g.medio)
+      .sort((a, b) => b.fecha.localeCompare(a.fecha) || b.id - a.id)[0];
+    return ult ? ult.medio : medioUltimo();
+  }
   // un pago al personal "ya está en gastos" si existe el gasto que lo referencia
   function gastoDePersonal(p){ return gastos.movs.find(g => g.personalId === p.id) || null; }
   // costos puntuales de un evento (hielo, alquiler, viáticos…): restan de su ganancia y se pueden pasar a Gastos
@@ -5614,7 +5623,7 @@
       pendientes.forEach((pp, i) => gastos.movs.push(conPor({
         id: Date.now() + i, fecha: ev.fecha || hoyISO(), cat: 'personal', monto: Number(pp.monto),
         desc: `${pp.nombre || 'Personal'} · ${ev.nombre}`, personalId: pp.id, eventoId: ev.id,
-        medio: medioUltimo()
+        medio: medioPersonalDe(pp.nombre)
       })));
       persistirGastos();
     });
@@ -6616,6 +6625,9 @@
   // Cada cambio de la app que llega a main suma una entrada ARRIBA de todo, con el id siguiente.
   // Tono neutral: qué cambió y dónde se ve, en 1 a 3 líneas.
   const NOVEDADES = [
+    { id: 22, fecha: '2026-11-27', titulo: 'Medio de pago del personal', cambios: [
+      'Al anotar en Gastos los pagos del personal de un evento, cada persona lleva el medio con el que se le pagó la última vez (por ejemplo, efectivo o transferencia).'
+    ]},
     { id: 21, fecha: '2026-11-26', titulo: 'Quién cargó cada movimiento', cambios: [
       'Cada cuenta escribe una vez su nombre en Inicio, y el saludo pasa a incluirlo.',
       'Los gastos, cobros y ventas que se cargan desde ahora guardan quién los anotó, y en las listas de Gastos e Ingresos se ve "cargó Thiago" o "cargó Juan".'
