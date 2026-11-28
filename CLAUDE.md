@@ -54,7 +54,7 @@ Los ingresos que no son en efectivo llevan además `cuenta`: `thiago` o `juan`, 
 
 **Quién cargó** (`por`, opcional en ingresos de `datos`, `gastos.movs` y `pizzas.ventas`): el nombre de quien lo anotó
 (ej. `Thiago`). La app lo pone sola según la cuenta con la que se entró (`costos.usuarios: [{ email, nombre }]`: cada
-uno escribe su nombre una vez en Inicio). Lo que se carga con `scripts/bardo.mjs` lleva `por: 'Claude'`. Los movimientos viejos no lo tienen.
+uno escribe su nombre una vez en Inicio). Lo que se carga con `scripts/bardo.mjs` lleva `por: 'Thiago'` (lo carga Claude a pedido de Thiago). Los movimientos viejos no lo tienen.
 
 **Dólares**: un ingreso o gasto en dólares lleva `moneda: 'USD'`, `usd` (lo que fue en dólares) y `tc` (pesos por US$);
 `monto` sigue en pesos (`usd × tc`, redondeado) para que todos los totales sigan en pesos.
